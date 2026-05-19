@@ -137,6 +137,9 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 GLOBAL_LOOP = None
+APP_VERSION = "2026.05.19"
+GITHUB_REPO_URL = "https://github.com/hero8152/Infinite-Canvas"
+GITHUB_VERSION_URL = "https://raw.githubusercontent.com/hero8152/Infinite-Canvas/main/VERSION"
 
 @app.on_event("startup")
 async def startup_event():
@@ -638,6 +641,22 @@ app.mount("/output", StaticFiles(directory=OUTPUT_DIR), name="output")
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 
 # --- Pydantic 模型 ---
+
+@app.get("/api/app-info")
+def app_info():
+    version = APP_VERSION
+    version_file = os.path.join(BASE_DIR, "VERSION")
+    try:
+        if os.path.exists(version_file):
+            with open(version_file, "r", encoding="utf-8") as f:
+                version = (f.read().strip().splitlines() or [APP_VERSION])[0].strip() or APP_VERSION
+    except Exception:
+        version = APP_VERSION
+    return {
+        "version": version,
+        "repo_url": GITHUB_REPO_URL,
+        "version_url": GITHUB_VERSION_URL,
+    }
 
 class GenerateRequest(BaseModel):
     prompt: str = ""
