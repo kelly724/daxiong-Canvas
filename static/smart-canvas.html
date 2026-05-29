@@ -30,6 +30,7 @@
                         <div class="composer-head-left">
                             <select id="engineSelect" class="engine-select">
                                 <option value="api" data-i18n="smart.engineApi">API生成</option>
+                                <option value="volcengine" data-i18n="smart.engineVolcengine">火山引擎</option>
                                 <option value="modelscope" data-i18n="smart.engineMs">MS生成</option>
                                 <option value="comfy" data-i18n="smart.engineComfy">ComfyUI生成</option>
                                 <option value="runninghub" data-i18n="smart.engineRh">RunningHub</option>
@@ -67,8 +68,8 @@
                 <button class="create-card" type="button" data-create-type="image">
                     <span class="create-card-icon"><i data-lucide="upload-cloud"></i></span>
                     <span>
-                        <div class="create-card-title">上传节点</div>
-                        <div class="create-card-sub">支持图片/音频/视频/批量上传</div>
+                        <div class="create-card-title" data-i18n="smart.createImportNode">上传节点</div>
+                        <div class="create-card-sub" data-i18n="smart.createImportNodeSub">支持图片/音频/视频/批量上传</div>
                     </span>
                 </button>
                 <button class="create-card" type="button" data-create-type="prompt">
@@ -227,6 +228,7 @@
                     <button class="image-edit-btn secondary" type="button" data-brush-tool="rect" onclick="setBrushTool('rect')" title="矩形"><i data-lucide="square" class="w-4 h-4"></i></button>
                     <button class="image-edit-btn secondary" type="button" data-brush-tool="ellipse" onclick="setBrushTool('ellipse')" title="椭圆"><i data-lucide="circle" class="w-4 h-4"></i></button>
                     <button class="image-edit-btn secondary" type="button" data-brush-tool="label" onclick="setBrushTool('label')" title="数字标签"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+                    <button class="image-edit-btn secondary" type="button" data-brush-tool="text" onclick="setBrushTool('text')" title="文字标签"><i data-lucide="type" class="w-4 h-4"></i></button>
                     <label><span data-i18n="canvas.color">颜色</span> <input id="paintBrushColor" type="color" value="#ff2d55"></label>
                     <label><span data-i18n="canvas.brushSize">笔刷</span> <input id="paintBrushSize" type="range" min="2" max="80" value="14"></label>
                     <button id="brushUndoBtn" class="image-edit-btn secondary" type="button" onclick="undoEditDrawing()" title="撤销"><i data-lucide="undo-2" class="w-4 h-4"></i></button>
@@ -264,6 +266,7 @@
                         <div id="previewStage" class="preview-stage" style="display:none">
                             <div id="previewFrame" class="preview-frame">
                                 <img id="previewCurrentImage" class="preview-current" alt="current">
+                                <video id="previewCurrentVideo" class="preview-current preview-current-video" controls preload="metadata" crossorigin="anonymous" playsinline disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback" style="display:none"></video>
                                 <div id="previewCompareLayer" class="preview-compare-layer">
                                     <img id="previewCompareImage" alt="original">
                                 </div>
@@ -273,6 +276,7 @@
                         <div id="cropCanvas" class="crop-canvas">
                             <img id="cropImage" alt="crop source">
                             <canvas id="editDrawCanvas" class="edit-draw-canvas"></canvas>
+                            <canvas id="editTextCanvas" class="edit-text-canvas"></canvas>
                             <div id="cropBox" class="crop-box">
                                 <div id="cropHandle" class="crop-handle"></div>
                             </div>
@@ -297,7 +301,12 @@
                 </div>
                 <div class="image-edit-actions">
                     <span id="imageEditZoomLabel" style="color:#94a3b8;font-size:11px;font-weight:800;padding:0 4px;margin-right:auto;cursor:pointer;user-select:none" title="双击重置缩放" ondblclick="resetImageEditZoom()">100%</span>
-                    <button class="image-edit-btn secondary" type="button" onclick="closeImageEditor()" data-i18n="common.cancel">取消</button>
+                    <div id="videoFrameTools" class="video-frame-tools" style="display:none">
+                        <button class="image-edit-btn secondary" type="button" onclick="exportVideoFrame('first')"><i data-lucide="skip-back" class="w-4 h-4"></i><span>导出首帧</span></button>
+                        <button class="image-edit-btn primary" type="button" onclick="exportVideoFrame('current')"><i data-lucide="image-down" class="w-4 h-4"></i><span>导出当前帧</span></button>
+                        <button class="image-edit-btn secondary" type="button" onclick="exportVideoFrame('last')"><i data-lucide="skip-forward" class="w-4 h-4"></i><span>导出尾帧</span></button>
+                    </div>
+                    <button id="imageEditCancelBtn" class="image-edit-btn secondary" type="button" onclick="closeImageEditor()" data-i18n="common.cancel">取消</button>
                     <button id="imageEditApplyBtn" class="image-edit-btn primary" type="button" onclick="applyImageEdit()"><i data-lucide="crop" class="w-4 h-4"></i><span data-i18n="canvas.applyCrop">应用裁剪</span></button>
                 </div>
             </div>

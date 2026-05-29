@@ -83,6 +83,7 @@ const outputCompareOriginalWrap = document.getElementById('outputCompareOriginal
 const outputCompareSlider = document.getElementById('outputCompareSlider');
 const outputResolution = document.getElementById('outputResolution');
 const outputDownloadBtn = document.getElementById('outputDownloadBtn');
+const outputDownloadAllBtn = document.getElementById('outputDownloadAllBtn');
 const outputLightboxVideo = document.getElementById('outputLightboxVideo');
 const outputPromptPanel = document.getElementById('outputPromptPanel');
 const outputPromptText = document.getElementById('outputPromptText');
@@ -180,6 +181,11 @@ let cropDrag = null;
 let imageEditMode = 'crop';
 let imageEditModeTouched = false;
 let editDrawState = null;
+let editTextItems = [];
+let editTextSelectedId = '';
+let editTextDrag = null;
+let editTextDirty = false;
+let editTextInlineEditor = null;
 let editDrawUndoStack = [];
 let editDrawRedoStack = [];
 const EDIT_DRAW_HISTORY_MAX = 40;
@@ -216,7 +222,9 @@ const SIZE_MAP = {
     landscape43: { '1k':'1344x1008', '2k':'2048x1536', '4k':'3264x2448' },
     landscape: { '1k':'1536x1024', '2k':'2048x1360', '4k':'3520x2352' },
     story: { '1k':'720x1280', '2k':'1152x2048', '4k':'2160x3840' },
-    wide: { '1k':'1280x720', '2k':'2048x1152', '4k':'3840x2160' }
+    wide: { '1k':'1280x720', '2k':'2048x1152', '4k':'3840x2160' },
+    ultrawide: { '1k':'1280x544', '2k':'2048x880', '4k':'3840x1648' },
+    ultratall: { '1k':'544x1280', '2k':'880x2048', '4k':'1648x3840' }
 };
 const RES_LONG_SIDE = { '1k':1536, '2k':2048, '4k':3840 };
 const RES_PIXEL_LIMIT = { '1k':1572864, '2k':4194304, '4k':8294400 };
@@ -1069,6 +1077,30 @@ async function setTrashMode(active){
 function renderCanvasList(){
     renderCanvasListInto(gateCanvasList);
 }
+function sortCanvasListByUpdated(){
+    canvases.sort((a, b) => Number(b.updated_at || b.created_at || 0) - Number(a.updated_at || a.created_at || 0));
+}
+function updateCanvasListRecord(record){
+    if(!record?.id) return;
+    const index = canvases.findIndex(item => item.id === record.id);
+    if(index >= 0) canvases[index] = {...canvases[index], ...record};
+    else canvases.unshift(record);
+    sortCanvasListByUpdated();
+    renderCanvasList();
+}
+async function touchCanvasOpened(id){
+    if(!id) return null;
+    try {
+        const res = await fetch(`/api/canvases/${encodeURIComponent(id)}/touch`, {method:'POST'});
+        if(!res.ok) return null;
+        const data = await res.json();
+        if(data.canvas) updateCanvasListRecord(data.canvas);
+        return data.canvas || data;
+    } catch(e) {
+        console.warn('touch canvas failed', e);
+        return null;
+    }
+}
 function renderCanvasListInto(list){
     if(!list) return;
     refreshGateViewControls();
@@ -1334,6 +1366,8 @@ async function openCanvas(id){
         const data = await res.json();
         resetCascadeRuntimeState();
         canvas = data.canvas;
+        const touched = await touchCanvasOpened(canvas.id);
+        if(touched?.updated_at) canvas.updated_at = Number(touched.updated_at);
         if((canvas.kind || 'classic') === 'smart'){
             openSmartCanvasPage(canvas.id);
             return;
@@ -1649,6 +1683,27 @@ document.getElementById('editDrawCanvas').addEventListener('pointermove', moveEd
 document.getElementById('editDrawCanvas').addEventListener('pointerup', endEditDraw);
 document.getElementById('editDrawCanvas').addEventListener('pointercancel', endEditDraw);
 document.getElementById('editDrawCanvas').addEventListener('pointerleave', endEditDraw);
+document.getElementById('editTextCanvas')?.addEventListener('pointerdown', beginEditText);
+document.getElementById('editTextCanvas')?.addEventListener('pointermove', moveEditText);
+document.getElementById('editTextCanvas')?.addEventListener('pointerup', endEditText);
+document.getElementById('editTextCanvas')?.addEventListener('pointercancel', endEditText);
+document.getElementById('editTextCanvas')?.addEventListener('pointerleave', endEditText);
+document.getElementById('editTextCanvas')?.addEventListener('dblclick', event => {
+    if(imageEditMode !== 'brush' || brushTool !== 'text') return;
+    event.preventDefault();
+    event.stopPropagation();
+    const hit = hitEditTextItem(editTextPoint(event));
+    if(hit){
+        setSelectedEditTextItem(hit.id);
+        beginEditTextInline(hit);
+    }
+});
+['paintBrushSize','paintBrushColor'].forEach(id => {
+    const control = document.getElementById(id);
+    if(!control) return;
+    control.addEventListener('input', syncSelectedEditTextStyleFromBrush);
+    control.addEventListener('change', () => { editTextDirty = false; });
+});
 ['gridHorizontalLines','gridVerticalLines','gridGapSize'].forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
         syncGridGapValue();
@@ -1940,6 +1995,8 @@ function renderMsGenBody(node){
                         <option value="landscape43">4:3</option>
                         <option value="story">9:16</option>
                         <option value="wide">16:9</option>
+                        <option value="ultrawide">21:9</option>
+                        <option value="ultratall">9:21</option>
                         <option value="custom">${tr('canvas.custom')}</option>
                     </select>
                     <div class="gen-count-row">
@@ -2479,16 +2536,46 @@ function openImageNodeMenu(nodeId, clientX, clientY){
     const node = nodes.find(n => n.id === nodeId);
     if(!node || node.type !== 'image') return;
     closeCreateMenu();
-    imageNodeMenu.innerHTML = `<button class="menu-btn" data-image-replace="${escapeAttr(nodeId)}"><i data-lucide="image-plus" class="w-4 h-4"></i><span>替换</span></button>`;
+    const kind = mediaKindForNode(node);
+    const canPreview = node.url && !isMissingAssetUrl(node.url) && ['image','video'].includes(kind);
+    const canEdit = node.url && !isMissingAssetUrl(node.url) && kind === 'image';
+    imageNodeMenu.innerHTML = `
+        ${canPreview ? `<button class="menu-btn" data-image-preview="${escapeAttr(nodeId)}"><i data-lucide="eye" class="w-4 h-4"></i><span>预览</span></button>` : ''}
+        ${canEdit ? `<button class="menu-btn" data-image-edit="${escapeAttr(nodeId)}"><i data-lucide="pencil" class="w-4 h-4"></i><span>编辑</span></button>` : ''}
+        <button class="menu-btn" data-image-replace="${escapeAttr(nodeId)}"><i data-lucide="image-plus" class="w-4 h-4"></i><span>替换</span></button>
+    `;
     imageNodeMenu.style.left = `${clientX}px`;
     imageNodeMenu.style.top = `${clientY}px`;
     imageNodeMenu.classList.add('open');
+    const previewBtn = imageNodeMenu.querySelector('[data-image-preview]');
+    if(previewBtn){
+        previewBtn.onclick = e => {
+            e.stopPropagation();
+            closeImageNodeMenu();
+            openImageNodePreview(nodeId);
+        };
+    }
+    const editBtn = imageNodeMenu.querySelector('[data-image-edit]');
+    if(editBtn){
+        editBtn.onclick = e => {
+            e.stopPropagation();
+            closeImageNodeMenu();
+            openImageEditor(nodeId);
+        };
+    }
     imageNodeMenu.querySelector('[data-image-replace]').onclick = e => {
         e.stopPropagation();
         closeImageNodeMenu();
         pickImageForNode(nodeId);
     };
     refreshIcons();
+}
+function openImageNodePreview(nodeId){
+    const node = nodes.find(n => n.id === nodeId);
+    if(!node?.url || isMissingAssetUrl(node.url)) return;
+    const kind = mediaKindForNode(node);
+    if(!['image','video'].includes(kind)) return;
+    openOutputLightbox(node.url, node);
 }
 function openOutputNodeMenu(nodeId, clientX, clientY){
     const node = nodes.find(n => n.id === nodeId);
@@ -2542,6 +2629,27 @@ function outputImageUrls(node){
 }
 function outputDownloadableImageUrls(node){
     return (node?.images || []).map(outputUrlValue).filter(url => url && !isMissingAssetUrl(url) && (url.startsWith('/output/') || url.startsWith('/assets/')));
+}
+function groupImageItems(group){
+    if(!group || group.type !== 'group') return [];
+    return (group.items || [])
+        .map(id => nodes.find(n => n.id === id))
+        .filter(n => n?.type === 'image' && n.url && mediaKindForNode(n) === 'image' && !isMissingAssetUrl(n.url))
+        .map((n, index) => ({url:n.url, name:n.name || outputImageName(n.url) || `image-${index + 1}.png`, kind:'image', nodeId:n.id, __index:index}));
+}
+function extensionFromNameOrUrl(name='', url=''){
+    const source = [name, url].map(value => String(value || '').split('?')[0].split('#')[0]).find(value => /\.[a-z0-9]{2,8}$/i.test(value));
+    return source?.match(/(\.[a-z0-9]{2,8})$/i)?.[1] || '.png';
+}
+function safeDownloadFileName(name, fallback='image.png'){
+    const cleaned = String(name || fallback).replace(/[\\/:*?"<>|]+/g, '_').trim() || fallback;
+    return cleaned;
+}
+function downloadNameForGroupImage(item, index=0){
+    const fallback = `image-${String(index + 1).padStart(2, '0')}${extensionFromNameOrUrl(item?.name, item?.url)}`;
+    let name = safeDownloadFileName(item?.name || outputImageName(item?.url || '') || fallback, fallback);
+    if(!/\.[a-z0-9]{2,8}$/i.test(name)) name += extensionFromNameOrUrl(name, item?.url);
+    return name;
 }
 function createInputGroupFromOutput(node, point){
     const urls = outputImageUrls(node);
@@ -2641,6 +2749,38 @@ async function downloadOutputNodeImages(nodeId){
         link.click();
         link.remove();
         setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    } catch(err) {
+        alert(err.message || tr('canvas.outputDownloadEmpty'));
+    }
+}
+async function downloadGroupNodeImages(groupId){
+    const group = nodes.find(n => n.id === groupId);
+    const items = groupImageItems(group);
+    if(!group || !items.length){
+        alert(tr('canvas.outputDownloadEmpty'));
+        return;
+    }
+    const filename = safeDownloadFileName(`${canvas?.title || 'canvas-group'}-${group.id}.zip`, 'canvas-group.zip');
+    try {
+        const res = await fetch('/api/canvas-assets/download', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                filename,
+                urls:items.map(item => item.url).filter(Boolean),
+                items:items.map((item, index) => ({url:item.url, name:downloadNameForGroupImage(item, index)}))
+            })
+        });
+        if(!res.ok) throw new Error(await responseErrorMessage(res, tr('canvas.outputDownloadEmpty')));
+        const blob = await res.blob();
+        const href = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 1200);
     } catch(err) {
         alert(err.message || tr('canvas.outputDownloadEmpty'));
     }
@@ -3287,6 +3427,349 @@ function cropBounds(){
 function editDrawCanvas(){
     return document.getElementById('editDrawCanvas');
 }
+function editTextCanvas(){
+    return document.getElementById('editTextCanvas');
+}
+function editTextContext(){
+    return editTextCanvas()?.getContext('2d') || null;
+}
+function selectedEditTextItem(){
+    return editTextItems.find(item => item.id === editTextSelectedId) || null;
+}
+function defaultEditTextText(){
+    return langIsEn() ? 'Double-click to edit' : '双击编辑';
+}
+function editTextSizeFromBrush(){
+    return Math.max(14, Math.min(120, Math.round(editBrushSize() * 2)));
+}
+function createEditTextItem(text, point, preset={}){
+    const size = Math.max(10, Math.min(120, Number(preset.size) || editTextSizeFromBrush()));
+    return {
+        id: uid('txt'),
+        text: String(text || defaultEditTextText()).trim(),
+        x: Number(point?.x || 0),
+        y: Number(point?.y || 0),
+        color: preset.color || brushColor(),
+        size,
+    };
+}
+function textItemFont(item){
+    const size = Math.max(10, Math.min(120, Number(item?.size) || 28));
+    return `900 ${size}px Arial, sans-serif`;
+}
+function measureEditTextItem(item, ctx=editTextContext()){
+    if(!item || !ctx) return {x:0, y:0, w:0, h:0};
+    const size = Math.max(10, Math.min(120, Number(item.size) || 28));
+    ctx.save();
+    ctx.font = textItemFont(item);
+    const metrics = ctx.measureText(String(item.text || ''));
+    ctx.restore();
+    const width = Math.max(1, metrics.width || 1);
+    const ascent = Number.isFinite(metrics.actualBoundingBoxAscent) ? metrics.actualBoundingBoxAscent : size * 0.8;
+    const descent = Number.isFinite(metrics.actualBoundingBoxDescent) ? metrics.actualBoundingBoxDescent : size * 0.25;
+    const pad = Math.max(4, Math.round(size * 0.18));
+    return {
+        x: item.x - width / 2 - pad,
+        y: item.y - (ascent + descent) / 2 - pad,
+        w: width + pad * 2,
+        h: ascent + descent + pad * 2,
+        textW: width,
+        textH: ascent + descent,
+        pad
+    };
+}
+function hitEditTextItem(point){
+    const ctx = editTextContext();
+    if(!ctx) return null;
+    for(let i = editTextItems.length - 1; i >= 0; i--){
+        const item = editTextItems[i];
+        const box = measureEditTextItem(item, ctx);
+        if(point.x >= box.x && point.x <= box.x + box.w && point.y >= box.y && point.y <= box.y + box.h) return item;
+    }
+    return null;
+}
+function renderEditTextCanvas(){
+    const canvasEl = editTextCanvas();
+    const ctx = editTextContext();
+    if(!canvasEl || !ctx) return;
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    editTextItems.forEach(item => {
+        if(!item?.text) return;
+        const selected = item.id === editTextSelectedId;
+        const box = measureEditTextItem(item, ctx);
+        ctx.save();
+        ctx.font = textItemFont(item);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = item.color || brushColor();
+        ctx.strokeStyle = 'rgba(255,255,255,.92)';
+        ctx.lineWidth = Math.max(2, (Number(item.size) || 28) / 8);
+        ctx.strokeText(String(item.text || ''), item.x, item.y);
+        ctx.fillText(String(item.text || ''), item.x, item.y);
+        if(selected){
+            ctx.setLineDash([7, 5]);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(15,23,42,.72)';
+            ctx.strokeRect(box.x, box.y, box.w, box.h);
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(15,23,42,.92)';
+            ctx.beginPath();
+            ctx.arc(item.x + box.w / 2 - box.pad, item.y - box.h / 2 + box.pad, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    });
+    positionEditTextInlineEditor();
+}
+function syncTextToolState(force=false){
+    const selected = selectedEditTextItem();
+    const cropCanvasEl = document.getElementById('cropCanvas');
+    cropCanvasEl?.classList.toggle('text-mode', imageEditMode === 'brush' && brushTool === 'text');
+}
+function syncSelectedEditTextStyleFromBrush(){
+    if(imageEditMode !== 'brush' || brushTool !== 'text' || editTextInlineEditor) return;
+    const item = selectedEditTextItem();
+    if(!item) return;
+    const nextSize = editTextSizeFromBrush();
+    const nextColor = brushColor();
+    if(item.size === nextSize && item.color === nextColor) return;
+    beginTextEditChange();
+    item.size = nextSize;
+    item.color = nextColor;
+    renderEditTextCanvas();
+    syncTextToolState(true);
+}
+function beginTextEditChange(){
+    if(editTextDirty) return;
+    pushEditDrawHistory();
+    editTextDirty = true;
+}
+function setSelectedEditTextItem(id){
+    editTextSelectedId = id || '';
+    renderEditTextCanvas();
+    syncTextToolState(true);
+}
+function confirmSelectedEditTextItem(){
+    const selected = selectedEditTextItem();
+    if(!selected) return false;
+    if(!String(selected.text || '').trim()){
+        editTextItems = editTextItems.filter(item => item.id !== selected.id);
+    }
+    editTextSelectedId = '';
+    editTextDrag = null;
+    editTextDirty = false;
+    renderEditTextCanvas();
+    syncTextToolState(true);
+    return true;
+}
+function editTextCanvasScale(){
+    const canvasEl = editTextCanvas();
+    const rect = canvasEl?.getBoundingClientRect?.();
+    return {
+        x:(rect?.width || canvasEl?.width || 1) / Math.max(1, canvasEl?.width || 1),
+        y:(rect?.height || canvasEl?.height || 1) / Math.max(1, canvasEl?.height || 1),
+        rect
+    };
+}
+function selectInlineEditorText(el){
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+function inlineEditorText(){
+    return String(editTextInlineEditor?.el?.innerText || editTextInlineEditor?.el?.textContent || '').replace(/\u00a0/g, ' ');
+}
+function autosizeEditTextInlineEditor(){
+    const editor = editTextInlineEditor;
+    if(!editor?.el) return;
+    const el = editor.el;
+    el.style.width = 'auto';
+    el.style.height = 'auto';
+    const minW = Number(editor.minW || 48);
+    const minH = Number(editor.minH || 28);
+    el.style.width = `${Math.max(minW, el.scrollWidth + 10)}px`;
+    el.style.height = `${Math.max(minH, el.scrollHeight + 4)}px`;
+}
+function positionEditTextInlineEditor(){
+    const editor = editTextInlineEditor;
+    if(!editor?.el) return;
+    const item = editTextItems.find(x => x.id === editor.itemId);
+    const canvasEl = editTextCanvas();
+    const cropCanvasEl = document.getElementById('cropCanvas');
+    if(!item || !canvasEl || !cropCanvasEl) return;
+    const ctx = editTextContext();
+    const box = measureEditTextItem(item, ctx);
+    const scale = editTextCanvasScale();
+    const hostRect = cropCanvasEl.getBoundingClientRect();
+    const canvasRect = scale.rect || canvasEl.getBoundingClientRect();
+    const left = canvasRect.left - hostRect.left + box.x * scale.x;
+    const top = canvasRect.top - hostRect.top + box.y * scale.y;
+    const w = Math.max(48, box.w * scale.x);
+    const h = Math.max(28, box.h * scale.y);
+    editor.minW = w;
+    editor.minH = h;
+    editor.el.style.left = `${left}px`;
+    editor.el.style.top = `${top}px`;
+    editor.el.style.minWidth = `${w}px`;
+    editor.el.style.minHeight = `${h}px`;
+    editor.el.style.font = `900 ${Math.max(10, (Number(item.size) || 28) * scale.y)}px Arial, sans-serif`;
+    editor.el.style.color = item.color || brushColor();
+    autosizeEditTextInlineEditor();
+}
+function removeEditTextInlineEditor(commit=true){
+    const editor = editTextInlineEditor;
+    if(!editor) return;
+    const item = editTextItems.find(x => x.id === editor.itemId);
+    const next = inlineEditorText().trim();
+    editTextInlineEditor = null;
+    editor.el.remove();
+    if(!item) return;
+    if(commit){
+        if(next !== String(editor.before || '')){
+            beginTextEditChange();
+            if(next){
+                item.text = next;
+            } else {
+                editTextItems = editTextItems.filter(x => x.id !== item.id);
+                editTextSelectedId = '';
+            }
+        }
+    } else {
+        item.text = editor.before || item.text || defaultEditTextText();
+    }
+    editTextDirty = false;
+    renderEditTextCanvas();
+    syncTextToolState(true);
+}
+function beginEditTextInline(item){
+    if(!item) return;
+    removeEditTextInlineEditor(true);
+    editTextSelectedId = item.id;
+    const host = document.getElementById('cropCanvas');
+    if(!host) return;
+    const el = document.createElement('div');
+    el.className = 'edit-text-inline';
+    el.contentEditable = 'true';
+    el.spellcheck = false;
+    el.textContent = item.text || defaultEditTextText();
+    host.appendChild(el);
+    editTextInlineEditor = {el, itemId:item.id, before:item.text || ''};
+    positionEditTextInlineEditor();
+    el.addEventListener('input', autosizeEditTextInlineEditor);
+    el.addEventListener('keydown', event => {
+        if(event.key === 'Enter' && !event.shiftKey){
+            event.preventDefault();
+            removeEditTextInlineEditor(true);
+        } else if(event.key === 'Escape'){
+            event.preventDefault();
+            removeEditTextInlineEditor(false);
+        }
+    });
+    el.addEventListener('blur', () => removeEditTextInlineEditor(true));
+    requestAnimationFrame(() => {
+        el.focus();
+        selectInlineEditorText(el);
+    });
+    renderEditTextCanvas();
+    syncTextToolState(true);
+}
+function editTextPoint(event){
+    return editDrawPoint(event);
+}
+function beginEditText(event){
+    if(imageEditMode !== 'brush' || brushTool !== 'text') return;
+    event.preventDefault();
+    event.stopPropagation();
+    removeEditTextInlineEditor(true);
+    const canvasEl = editTextCanvas();
+    const point = editTextPoint(event);
+    const hit = hitEditTextItem(point);
+    if(hit){
+        editTextSelectedId = hit.id;
+        editTextDrag = {
+            id: hit.id,
+            pointerId: event.pointerId,
+            startX: hit.x,
+            startY: hit.y,
+            sx: event.clientX,
+            sy: event.clientY,
+            moved: false,
+            hasHistory: false
+        };
+        canvasEl.setPointerCapture?.(event.pointerId);
+        canvasEl.style.cursor = 'grabbing';
+        syncTextToolState(true);
+        renderEditTextCanvas();
+        return;
+    }
+    if(selectedEditTextItem()){
+        confirmSelectedEditTextItem();
+        return;
+    }
+    beginTextEditChange();
+    const item = createEditTextItem(defaultEditTextText(), point, {color:brushColor(), size:editTextSizeFromBrush()});
+    editTextItems.push(item);
+    editTextSelectedId = item.id;
+    canvasEl.style.cursor = 'text';
+    renderEditTextCanvas();
+    syncTextToolState(true);
+}
+function updateEditTextCursor(event){
+    const canvasEl = editTextCanvas();
+    if(!canvasEl || imageEditMode !== 'brush' || brushTool !== 'text') return;
+    const hit = hitEditTextItem(editTextPoint(event));
+    canvasEl.style.cursor = hit ? 'move' : 'text';
+}
+function moveEditText(event){
+    if(!editTextDrag){
+        updateEditTextCursor(event);
+        return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const item = editTextItems.find(x => x.id === editTextDrag.id);
+    if(!item) return;
+    const dx = event.clientX - editTextDrag.sx;
+    const dy = event.clientY - editTextDrag.sy;
+    if(!editTextDrag.moved && Math.abs(dx) + Math.abs(dy) < 2) return;
+    editTextDrag.moved = true;
+    if(!editTextDrag.hasHistory){
+        beginTextEditChange();
+        editTextDrag.hasHistory = true;
+    }
+    const canvasEl = editTextCanvas();
+    const rect = canvasEl?.getBoundingClientRect?.();
+    const scaleX = canvasEl ? canvasEl.width / Math.max(1, rect?.width || canvasEl.width) : 1;
+    const scaleY = canvasEl ? canvasEl.height / Math.max(1, rect?.height || canvasEl.height) : 1;
+    item.x = editTextDrag.startX + dx * scaleX;
+    item.y = editTextDrag.startY + dy * scaleY;
+    renderEditTextCanvas();
+}
+function endEditText(event){
+    if(editTextDrag && event?.pointerId != null) editTextCanvas()?.releasePointerCapture?.(event.pointerId);
+    editTextDrag = null;
+    editTextDirty = false;
+    renderEditTextCanvas();
+    syncTextToolState(true);
+    if(event) updateEditTextCursor(event);
+}
+function editTextHasContent(){
+    return editTextItems.some(item => String(item?.text || '').trim().length > 0);
+}
+function resizeEditTextCanvas(){
+    const img = document.getElementById('cropImage');
+    const canvasEl = editTextCanvas();
+    if(!img || !canvasEl) return;
+    const w = Math.max(1, img.naturalWidth || img.clientWidth || 1);
+    const h = Math.max(1, img.naturalHeight || img.clientHeight || 1);
+    if(canvasEl.width !== w) canvasEl.width = w;
+    if(canvasEl.height !== h) canvasEl.height = h;
+    canvasEl.style.width = `${img.clientWidth || 1}px`;
+    canvasEl.style.height = `${img.clientHeight || 1}px`;
+    renderEditTextCanvas();
+}
 function resizeEditDrawCanvas(){
     const img = document.getElementById('cropImage');
     const canvasEl = editDrawCanvas();
@@ -3298,11 +3781,13 @@ function resizeEditDrawCanvas(){
     }
     canvasEl.style.width = `${img.clientWidth || 1}px`;
     canvasEl.style.height = `${img.clientHeight || 1}px`;
+    resizeEditTextCanvas();
     if(imageEditMode === 'grid') refreshGridSplitPreview();
 }
 function setImageEditMode(mode, userTouched=false){
     if(userTouched) imageEditModeTouched = true;
     const prevImageEditMode = imageEditMode;
+    if(mode !== 'brush') removeEditTextInlineEditor(true);
     imageEditMode = ['crop','outpaint','mask','brush','grid'].includes(mode) ? mode : 'crop';
     const cropCanvasEl = document.getElementById('cropCanvas');
     cropCanvasEl.classList.toggle('mask-mode', imageEditMode === 'mask');
@@ -3332,6 +3817,7 @@ function setImageEditMode(mode, userTouched=false){
     else if(prevImageEditMode === 'grid') clearEditDrawing(true); // 离开 grid 时主动清掉画布上残留的分割线预览
     syncEditDrawingHistoryButtons();
     syncBrushToolButtons();
+    syncTextToolState(true);
     refreshIcons();
 }
 function editDrawSnapshot(){
@@ -3339,14 +3825,21 @@ function editDrawSnapshot(){
     return {
         imageData: canvasEl.getContext('2d').getImageData(0, 0, canvasEl.width, canvasEl.height),
         labelCounter: brushLabelCounter,
+        textItems: editTextItems.map(item => ({...item})),
+        textSelectedId: editTextSelectedId || '',
     };
 }
 function restoreEditDrawSnapshot(snapshot){
     if(!snapshot) return;
+    removeEditTextInlineEditor(false);
     const canvasEl = editDrawCanvas();
     const imageData = snapshot.imageData || snapshot;
     canvasEl.getContext('2d').putImageData(imageData, 0, 0);
     if(snapshot.labelCounter) brushLabelCounter = snapshot.labelCounter;
+    editTextItems = (snapshot.textItems || []).map(item => ({...item}));
+    editTextSelectedId = snapshot.textSelectedId || '';
+    renderEditTextCanvas();
+    syncTextToolState(true);
 }
 function pushEditDrawHistory(){
     editDrawUndoStack.push(editDrawSnapshot());
@@ -3377,21 +3870,38 @@ function redoEditDrawing(){
     syncEditDrawingHistoryButtons();
 }
 function clearEditDrawing(silent=false){
+    removeEditTextInlineEditor(false);
     const canvasEl = editDrawCanvas();
     if(!silent && editCanvasHasPixels()) pushEditDrawHistory();
     canvasEl.getContext('2d').clearRect(0, 0, canvasEl.width, canvasEl.height);
+    const textCanvasEl = editTextCanvas();
+    textCanvasEl?.getContext('2d')?.clearRect(0, 0, textCanvasEl.width, textCanvasEl.height);
+    editTextItems = [];
+    editTextSelectedId = '';
+    editTextDrag = null;
+    editTextDirty = false;
     brushLabelCounter = 1;
+    syncTextToolState(true);
     syncEditDrawingHistoryButtons();
 }
 function resetEditDrawingHistory(){
+    removeEditTextInlineEditor(false);
     editDrawUndoStack = [];
     editDrawRedoStack = [];
     brushLabelCounter = 1;
+    editTextItems = [];
+    editTextSelectedId = '';
+    editTextDrag = null;
+    editTextDirty = false;
+    renderEditTextCanvas();
+    syncTextToolState(true);
     syncEditDrawingHistoryButtons();
 }
 function setBrushTool(tool){
-    brushTool = ['free','rect','ellipse','label'].includes(tool) ? tool : 'free';
+    if(tool !== 'text') removeEditTextInlineEditor(true);
+    brushTool = ['free','rect','ellipse','label','text'].includes(tool) ? tool : 'free';
     syncBrushToolButtons();
+    syncTextToolState(true);
 }
 function syncBrushToolButtons(){
     document.querySelectorAll('[data-brush-tool]').forEach(btn => {
@@ -3399,6 +3909,8 @@ function syncBrushToolButtons(){
         btn.classList.toggle('primary', active);
         btn.classList.toggle('secondary', !active);
     });
+    const cropCanvasEl = document.getElementById('cropCanvas');
+    cropCanvasEl?.classList.toggle('text-mode', imageEditMode === 'brush' && brushTool === 'text');
 }
 function editDrawPoint(event){
     const canvasEl = editDrawCanvas();
@@ -3586,6 +4098,7 @@ function endEditDraw(event){
     syncEditDrawingHistoryButtons();
 }
 function editCanvasHasPixels(){
+    if(editTextHasContent()) return true;
     const canvasEl = editDrawCanvas();
     const data = canvasEl.getContext('2d').getImageData(0, 0, canvasEl.width, canvasEl.height).data;
     for(let i = 3; i < data.length; i += 4) if(data[i] > 0) return true;
@@ -3869,6 +4382,7 @@ function renderCropBox(){
     const cropCanvasEl = document.getElementById('cropCanvas');
     const img = document.getElementById('cropImage');
     const draw = editDrawCanvas();
+    const textCanvas = editTextCanvas();
     let boxX = cropState.x;
     let boxY = cropState.y;
     if(imageEditMode === 'outpaint' && cropCanvasEl && img){
@@ -3882,6 +4396,10 @@ function renderCropBox(){
             draw.style.left = img.style.left;
             draw.style.top = img.style.top;
         }
+        if(textCanvas){
+            textCanvas.style.left = img.style.left;
+            textCanvas.style.top = img.style.top;
+        }
         updateOutpaintResolutionLabel();
     } else if(cropCanvasEl && img){
         cropCanvasEl.style.width = '';
@@ -3891,6 +4409,10 @@ function renderCropBox(){
         if(draw){
             draw.style.left = '';
             draw.style.top = '';
+        }
+        if(textCanvas){
+            textCanvas.style.left = '';
+            textCanvas.style.top = '';
         }
     }
     const box = document.getElementById('cropBox');
@@ -3966,6 +4488,10 @@ function openImageEditor(nodeId){
     imageEditBaseW = 0;
     imageEditBaseH = 0;
     imageEditModeTouched = false;
+    editTextItems = [];
+    editTextSelectedId = '';
+    editTextDrag = null;
+    editTextDirty = false;
     const toggle = document.getElementById('gridCustomToggle');
     if(toggle){ toggle.classList.add('secondary'); toggle.classList.remove('primary'); }
     const custom = document.getElementById('gridCustomControls');
@@ -4023,9 +4549,14 @@ function closeImageEditor(){
     imageEditModeTouched = false;
     document.getElementById('imageEditStage')?.classList.remove('overflowing', 'overflow-x', 'overflow-y');
     const cropCanvasEl = document.getElementById('cropCanvas');
-    cropCanvasEl.classList.remove('grid-custom-h', 'grid-custom-v', 'outpaint-mode', 'outpaint-warning', 'dragging-image');
+    cropCanvasEl.classList.remove('grid-custom-h', 'grid-custom-v', 'outpaint-mode', 'outpaint-warning', 'dragging-image', 'text-mode');
     cropCanvasEl.style.width = '';
     cropCanvasEl.style.height = '';
+    const textCanvas = editTextCanvas();
+    if(textCanvas){
+        textCanvas.style.left = '';
+        textCanvas.style.top = '';
+    }
 }
 function clampCrop(){
     if(!cropState) return;
@@ -4191,6 +4722,7 @@ function maskCanvasFromDrawCanvas(src){
 }
 async function applyImageBrush(){
     if(!cropState) return;
+    removeEditTextInlineEditor(true);
     const node = nodes.find(n => n.id === cropState.nodeId);
     const img = document.getElementById('cropImage');
     if(!node || !img.naturalWidth || !img.naturalHeight || !editCanvasHasPixels()) return;
@@ -4200,6 +4732,7 @@ async function applyImageBrush(){
     const ctx = canvasEl.getContext('2d');
     ctx.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
     ctx.drawImage(editDrawCanvas(), 0, 0);
+    ctx.drawImage(editTextCanvas(), 0, 0);
     const blob = await new Promise(resolve => canvasEl.toBlob(resolve, 'image/png'));
     if(!blob) return;
     const base = (node.name || 'image').replace(/\.[^.]+$/, '');
@@ -4532,16 +5065,17 @@ function renderNode(node){
             }
             const previewWrap = body.querySelector('.image-preview-wrap');
             const loadedImg = body.querySelector('img');
-            const openEditor = e => {
-                if(!isEditableImage) return;
+            const openPreview = e => {
+                if(!node.url || missing) return;
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
-                openImageEditor(node.id);
+                if((e.shiftKey || e.altKey) && isEditableImage) openImageEditor(node.id);
+                else openImageNodePreview(node.id);
             };
             body.onmousedown = e => {
                 if(e.detail >= 2){
-                    openEditor(e);
+                    openPreview(e);
                     return;
                 }
                 startNodeDrag(e, node);
@@ -4559,11 +5093,11 @@ function renderNode(node){
             };
             if(loadedImg && isEditableImage){
                 loadedImg.addEventListener('mousedown', e => {
-                    if(e.detail >= 2) openEditor(e);
+                    if(e.detail >= 2) openPreview(e);
                 }, true);
-                loadedImg.addEventListener('dblclick', openEditor, true);
+                loadedImg.addEventListener('dblclick', openPreview, true);
             }
-            if(isEditableImage) body.addEventListener('dblclick', openEditor, true);
+            body.addEventListener('dblclick', openPreview, true);
             if(loadedImg && loadedImg.complete && loadedImg.naturalHeight > 0){
                 requestAnimationFrame(refreshGeometry);
             } else if(loadedImg) {
@@ -4600,6 +5134,25 @@ function renderNode(node){
         if(promptCount) parts.push(`${promptCount} ${tr('canvas.promptCount')}`);
         const text = parts.length ? `${parts.join(' · ')} ${tr('canvas.grouped')}` : tr('canvas.groupEmpty');
         body.innerHTML = `<div class="text-[11px] text-gray-400">${text}</div>`;
+        const previewItems = groupImageItems(node);
+        if(previewItems.length){
+            const openGroupPreview = e => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation?.();
+                openGroupLightbox(node.id);
+            };
+            body.style.cursor = 'zoom-in';
+            body.onmousedown = e => {
+                if(e.button !== 0) return;
+                if(e.detail >= 2){
+                    openGroupPreview(e);
+                    return;
+                }
+                startNodeDrag(e, node);
+            };
+            body.ondblclick = openGroupPreview;
+        }
     }
     if(node.type === 'promptGroup') {
         const promptNodes = (node.items || []).map(id => nodes.find(n => n.id === id)).filter(Boolean);
@@ -4631,12 +5184,22 @@ function renderNode(node){
         if(e.button !== 0 || !isNodeDragSurface(e.target)) return;
         startNodeDrag(e, node);
     };
-    const canInput = ['generator','comfy','ltxDirector','output','llm','msgen','video','rh'].includes(node.type) || (node.type === 'loop' && (node.imageInput || node.videoInput || node.showPrompt));
+    const canInput = ['generator','comfy','ltxDirector','output','llm','msgen','video','rh'].includes(node.type) || (node.type === 'loop' && (node.imageInput || node.showPrompt));
     const canOutput = ['image','prompt','loop','group','promptGroup','generator','comfy','ltxDirector','llm','msgen','video','rh','output'].includes(node.type);
     if(canInput) el.insertAdjacentHTML('beforeend', `<div class="port in" title="${tr('canvas.connectHere')}"></div>`);
     if(canOutput) el.insertAdjacentHTML('beforeend', `<div class="port out" title="${tr('canvas.dragConnect')}"></div>`);
     el.insertAdjacentHTML('beforeend', `<div class="resize-handle" title="${tr('canvas.resize')}"></div>`);
-    el.querySelector('.node-head').onmousedown = e => { if(e.button === 0) startNodeDrag(e, node); };
+    el.querySelector('.node-head').onmousedown = e => {
+        if(e.button !== 0) return;
+        if(node.type === 'group' && e.detail >= 2 && groupImageItems(node).length){
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation?.();
+            openGroupLightbox(node.id);
+            return;
+        }
+        startNodeDrag(e, node);
+    };
     el.querySelector('.resize-handle').onmousedown = e => { if(e.button === 0 && !e.shiftKey) startNodeResize(e, node); };
     el.ondragstart = e => { e.preventDefault(); e.stopPropagation(); };
     const out = el.querySelector('.port.out');
@@ -4912,10 +5475,10 @@ function autoSizeLoopNode(node, opening){
 function autoSizeLoopForPanels(node){
     if(!node) return;
     node.w = Math.max(Number(node.w || 0), 336);
-    const panels = (node.showPrompt ? 1 : 0) + (node.imageInput ? 1 : 0) + (node.videoInput ? 1 : 0);
+    const panels = (node.showPrompt ? 1 : 0) + (node.imageInput ? 1 : 0);
     if(panels === 0) { delete node.h; return; }
     if(panels === 1) node.h = node.showPrompt ? 330 : 320;
-    else if(panels === 2) node.h = (node.showPrompt && (node.imageInput || node.videoInput)) ? 390 : 380;
+    else if(panels === 2) node.h = (node.showPrompt && node.imageInput) ? 390 : 380;
     else node.h = 460;
 }
 function loopTokenChipHtml(token){
@@ -4978,13 +5541,11 @@ function renderLoopBody(node){
     node.count = loopCount(node);
     node.loopStart = Math.max(1, Number(node.loopStart) || 1);
     node.imageBatchSize = Math.max(1, Math.min(100, Number(node.imageBatchSize) || 1));
-    node.videoBatchSize = Math.max(1, Math.min(100, Number(node.videoBatchSize) || 1));
     node.mode = node.mode === 'parallel' ? 'parallel' : 'serial';
     node.showPrompt = Boolean(node.showPrompt);
     node.imageInput = Boolean(node.imageInput);
-    node.videoInput = Boolean(node.videoInput);
+    node.videoInput = false;
     const imageInputCount = loopInputImageRefs(node, {index:node.loopStart}).length;
-    const videoInputCount = loopInputVideoRefs(node, {index:node.loopStart}).length;
     const promptItemCount = node.showPrompt ? loopInputPromptItems(node).length : 0;
     const hasUpstreamPrompt = promptItemCount > 0;
     const loopTargetId = findLoopCascadeTarget(node.id);
@@ -5007,7 +5568,6 @@ function renderLoopBody(node){
             </div>
             <div class="loop-toggle-row">
                 <button class="loop-toggle loop-image-toggle ${node.imageInput ? 'active' : ''}" type="button"><i data-lucide="image" class="w-3.5 h-3.5"></i>${tr('canvas.loopImageToggle')}</button>
-                <button class="loop-toggle loop-video-toggle ${node.videoInput ? 'active' : ''}" type="button"><i data-lucide="clapperboard" class="w-3.5 h-3.5"></i>${tr('canvas.loopVideoToggle')}</button>
                 <button class="loop-toggle loop-prompt-toggle ${node.showPrompt ? 'active' : ''}" type="button"><i data-lucide="text-cursor-input" class="w-3.5 h-3.5"></i>${tr('canvas.loopPromptToggle')}</button>
             </div>
         </div>
@@ -5019,15 +5579,6 @@ function renderLoopBody(node){
                 <input class="loop-count-input loop-batch-input" type="number" min="1" max="100" step="1" value="${node.imageBatchSize}">
             </div>
             <div class="loop-image-hint loop-image-hint-only">${imageInputCount ? trf('canvas.loopImageWillOutput', {n:imageInputCount}) : tr('canvas.loopImageEmpty')}</div>
-        </div>` : ''}
-        ${node.videoInput ? `<div class="loop-image-panel loop-video-panel">
-            <div class="loop-image-row">
-                <span class="loop-count-label">${tr('canvas.loopImageStart')}</span>
-                <input class="loop-count-input loop-video-start-input" type="number" min="1" max="9999" step="1" value="${node.loopStart}">
-                <span class="loop-count-label">${tr('canvas.loopBatchSize')}</span>
-                <input class="loop-count-input loop-video-batch-input" type="number" min="1" max="100" step="1" value="${node.videoBatchSize}">
-            </div>
-            <div class="loop-image-hint loop-video-hint">${videoInputCount ? trf('canvas.loopVideoWillOutput', {n:videoInputCount}) : tr('canvas.loopVideoEmpty')}</div>
         </div>` : ''}
         ${node.showPrompt ? `<div class="loop-prompt-panel ${hasUpstreamPrompt ? 'has-upstream' : ''}">
             <div class="loop-field">
@@ -5046,7 +5597,6 @@ function renderLoopBody(node){
     const variable = wrap.querySelector('.loop-variable-editor');
     const toggle = wrap.querySelector('.loop-prompt-toggle');
     const imageToggle = wrap.querySelector('.loop-image-toggle');
-    const videoToggle = wrap.querySelector('.loop-video-toggle');
     if(variable) {
         variable.onmousedown = e => e.stopPropagation();
         variable.onclick = e => e.stopPropagation();
@@ -5062,14 +5612,8 @@ function renderLoopBody(node){
         const count = loopInputImageRefs(node, {index:node.loopStart}).length;
         hint.textContent = count ? trf('canvas.loopImageWillOutput', {n:count}) : tr('canvas.loopImageEmpty');
     };
-    const refreshVideoHint = () => {
-        const hint = wrap.querySelector('.loop-video-hint');
-        if(!hint) return;
-        const count = loopInputVideoRefs(node, {index:node.loopStart}).length;
-        hint.textContent = count ? trf('canvas.loopVideoWillOutput', {n:count}) : tr('canvas.loopVideoEmpty');
-    };
     const syncStartInputs = source => {
-        wrap.querySelectorAll('.loop-image-start-input, .loop-video-start-input, .loop-start-input').forEach(input => {
+        wrap.querySelectorAll('.loop-image-start-input, .loop-start-input').forEach(input => {
             if(input !== source && input.value !== String(node.loopStart)) input.value = node.loopStart;
         });
     };
@@ -5104,7 +5648,6 @@ function renderLoopBody(node){
         startInput.oninput = e => {
             node.loopStart = Math.max(1, Number(e.target.value) || 1);
             refreshImageHint();
-            refreshVideoHint();
             syncStartInputs(e.target);
             scheduleSave();
             syncGeneratorInputs();
@@ -5118,7 +5661,6 @@ function renderLoopBody(node){
         imageStartInput.oninput = e => {
             node.loopStart = Math.max(1, Number(e.target.value) || 1);
             refreshImageHint();
-            refreshVideoHint();
             syncStartInputs(e.target);
             scheduleSave();
             syncGeneratorInputs();
@@ -5133,33 +5675,6 @@ function renderLoopBody(node){
             node.imageBatchSize = Math.max(1, Math.min(100, Number(e.target.value) || 1));
             e.target.value = node.imageBatchSize;
             refreshImageHint();
-            scheduleSave();
-            syncGeneratorInputs();
-            refreshGeneratorInputViews();
-        };
-    }
-    const videoStartInput = wrap.querySelector('.loop-video-start-input');
-    if(videoStartInput){
-        videoStartInput.onmousedown = e => e.stopPropagation();
-        videoStartInput.onclick = e => e.stopPropagation();
-        videoStartInput.oninput = e => {
-            node.loopStart = Math.max(1, Number(e.target.value) || 1);
-            refreshImageHint();
-            refreshVideoHint();
-            syncStartInputs(e.target);
-            scheduleSave();
-            syncGeneratorInputs();
-            refreshGeneratorInputViews();
-        };
-    }
-    const videoBatchInput = wrap.querySelector('.loop-video-batch-input');
-    if(videoBatchInput){
-        videoBatchInput.onmousedown = e => e.stopPropagation();
-        videoBatchInput.onclick = e => e.stopPropagation();
-        videoBatchInput.oninput = e => {
-            node.videoBatchSize = Math.max(1, Math.min(100, Number(e.target.value) || 1));
-            e.target.value = node.videoBatchSize;
-            refreshVideoHint();
             scheduleSave();
             syncGeneratorInputs();
             refreshGeneratorInputViews();
@@ -5229,23 +5744,6 @@ function renderLoopBody(node){
             if(node.imageInput){
                 node.loopStart = Math.max(1, Number(node.loopStart) || 1);
                 node.imageBatchSize = Math.max(1, Math.min(100, Number(node.imageBatchSize) || 1));
-            } else {
-                connections = connections.filter(c => c.to !== node.id || canConnect(c.from, node.id));
-            }
-            autoSizeLoopForPanels(node);
-            render();
-            scheduleSave();
-            syncGeneratorInputs();
-            refreshGeneratorInputViews();
-        };
-    }
-    if(videoToggle){
-        videoToggle.onclick = e => {
-            e.stopPropagation();
-            node.videoInput = !node.videoInput;
-            if(node.videoInput){
-                node.loopStart = Math.max(1, Number(node.loopStart) || 1);
-                node.videoBatchSize = Math.max(1, Math.min(100, Number(node.videoBatchSize) || 1));
             } else {
                 connections = connections.filter(c => c.to !== node.id || canConnect(c.from, node.id));
             }
@@ -5593,6 +6091,8 @@ function renderGeneratorBody(node){
                     <option value="landscape43">4:3</option>
                     <option value="story">9:16</option>
                     <option value="wide">16:9</option>
+                    <option value="ultrawide">21:9</option>
+                    <option value="ultratall">9:21</option>
                     <option value="source">${tr('canvas.adaptiveRatio')}</option>
                     <option value="custom">${tr('canvas.custom')}</option>
                 </select>
@@ -6254,7 +6754,7 @@ function renderComfyImages(list, node, imageInputs){
 const RH_KNOWN_FIELD_OPTIONS = {
     aspectRatio:['1:1','16:9','9:16','4:3','3:4','4:5','5:4','3:2','2:3','21:9','9:21'],
     aspect_ratio:['1:1','16:9','9:16','4:3','3:4','4:5','5:4','3:2','2:3','21:9','9:21'],
-    ratio:['1:1','16:9','9:16','4:3','3:4','4:5','5:4','3:2','2:3'],
+    ratio:['1:1','16:9','9:16','21:9','9:21','4:3','3:4','4:5','5:4','3:2','2:3'],
     resolution:['1k','2k','4k','8k'],
     size:['512','768','1024','1280','1536','2048'],
     mode:['text2img','img2img'],
@@ -7420,7 +7920,6 @@ function generatorSources(gen){
             const ctx = gen?._activeLoopCtx || loopContext || null;
             const prompt = renderLoopPrompt(n, ctx);
             const imageRefs = loopInputImageRefs(n, ctx);
-            const videoRefs = loopInputVideoRefs(n, ctx);
             const out = [];
             if(imageRefs.length){
                 const currentIndex = Math.max(1, Number(ctx?.index || n.loopStart || 1) || 1);
@@ -7429,19 +7928,6 @@ function generatorSources(gen){
                         id:`${n.id}:image:${currentIndex + i}:${ref.url}`,
                         type:'loopImage',
                         label:trf('canvas.loopImageLabel', {n:currentIndex + i}),
-                        preview:ref.url,
-                        refs:[ref],
-                        prompt:i === 0 && !out.length ? prompt : ''
-                    });
-                });
-            }
-            if(videoRefs.length){
-                const currentIndex = Math.max(1, Number(ctx?.index || n.loopStart || 1) || 1);
-                videoRefs.forEach((ref, i) => {
-                    out.push({
-                        id:`${n.id}:video:${currentIndex + i}:${ref.url}`,
-                        type:'loopVideo',
-                        label:trf('canvas.loopVideoLabel', {n:currentIndex + i}),
                         preview:ref.url,
                         refs:[ref],
                         prompt:i === 0 && !out.length ? prompt : ''
@@ -8867,8 +9353,7 @@ async function runNodeCascade(nodeId){
     const totalRounds = loop?.count || 1;
     const startIdx = Math.max(1, Number(loop?.node?.loopStart) || 1);
     const loopImageStride = loop?.node?.imageInput ? Math.max(1, Math.min(100, Number(loop?.node?.imageBatchSize) || 1)) : 0;
-    const loopVideoStride = loop?.node?.videoInput ? Math.max(1, Math.min(100, Number(loop?.node?.videoBatchSize) || 1)) : 0;
-    const loopBatchSize = Math.max(1, loopImageStride, loopVideoStride);
+    const loopBatchSize = Math.max(1, loopImageStride);
     const endIdx = startIdx + (totalRounds - 1) * loopBatchSize;
     const ctx = beginCascade(nodeId, order, {serial:true, mode:loop?.mode || 'serial'});
     refreshNodes(cascadeUiNodeIds(nodeId, order));
@@ -9075,7 +9560,7 @@ function clearNodeContentBeforeDelete(id){
         pushUndo();
         node.url = '';
         node.mediaKind = 'image';
-        node.name = '上传卡片';
+        node.name = tr('canvas.imageCard');
         render();
         scheduleSave();
         return true;
@@ -9579,6 +10064,8 @@ function outputLightboxItems(out=null){
     };
     const sourceOut = out?.id ? nodes.find(n => n.id === out.id) || out : null;
     if(sourceOut){
+        if(sourceOut.type === 'group') return groupImageItems(sourceOut).map(item => normalize(item, sourceOut)).filter(Boolean);
+        if(sourceOut.type === 'image' && sourceOut.url) return [normalize({url:sourceOut.url, kind:mediaKindForNode(sourceOut)}, sourceOut)].filter(Boolean);
         return (sourceOut.images || []).map(item => normalize(item, sourceOut)).filter(Boolean);
     }
     const outputNodeItems = nodes
@@ -9587,6 +10074,13 @@ function outputLightboxItems(out=null){
     if(outputNodeItems.length) return outputNodeItems;
     return (canvas?.logs || [])
         .flatMap(log => (log.outputs || []).map(url => normalize(url, null)).filter(Boolean));
+}
+function openGroupLightbox(groupId, index=0){
+    const group = nodes.find(n => n.id === groupId);
+    const items = groupImageItems(group);
+    if(!items.length) return;
+    const item = items[Math.max(0, Math.min(items.length - 1, index))] || items[0];
+    openOutputLightbox(item.url, group);
 }
 function navigateOutputLightbox(direction){
     if(!outputLightbox.classList.contains('open') || !currentOutputLightboxUrl) return false;
@@ -9788,6 +10282,14 @@ function openOutputLightbox(url, out){
     outputResolutionText('--', meta);
     currentOutputCompareUrl = outputCompareUrlFor(url, out);
     setOutputCompareMode(false);
+    const groupDownloadItems = out?.type === 'group' ? groupImageItems(out) : [];
+    if(outputDownloadAllBtn){
+        outputDownloadAllBtn.style.display = groupDownloadItems.length > 1 ? 'flex' : 'none';
+        outputDownloadAllBtn.onclick = e => {
+            e.stopPropagation();
+            if(currentOutputLightboxOutId) downloadGroupNodeImages(currentOutputLightboxOutId);
+        };
+    }
     const videoMode = isVideoUrl(url);
     outputLightboxImg.style.display = videoMode ? 'none' : 'block';
     outputLightboxVideo.style.display = videoMode ? 'block' : 'none';
@@ -9848,6 +10350,10 @@ function closeOutputLightbox(){
     outputCompareResult.src = '';
     outputCompareOriginal.src = '';
     outputPreview.ondblclick = null;
+    if(outputDownloadAllBtn){
+        outputDownloadAllBtn.style.display = 'none';
+        outputDownloadAllBtn.onclick = null;
+    }
     resetOutputPreviewZoom();
     currentOutputCompareUrl = '';
     currentOutputMeta = null;
@@ -10226,9 +10732,8 @@ function canConnect(fromId, toId){
     }
     if(to.type === 'loop'){
         const allowImage = Boolean(to.imageInput) && ['image','group','output'].includes(from.type);
-        const allowVideo = Boolean(to.videoInput) && ['image','group','output'].includes(from.type);
         const allowPrompt = Boolean(to.showPrompt) && ['prompt','promptGroup','loop','llm'].includes(from.type);
-        return allowImage || allowVideo || allowPrompt;
+        return allowImage || allowPrompt;
     }
     if(to.type === 'llm') return ['prompt','loop','promptGroup','llm','image','group','output'].includes(from.type);
     if(from.type === 'llm') return CANVAS_GENERATOR_TYPES.includes(to.type);

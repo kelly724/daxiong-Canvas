@@ -209,6 +209,17 @@ UPDATE_LOCK = Lock()
 PROVIDER_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{2,40}$")
 SUPPORTED_PROVIDER_PROTOCOLS = {"openai", "apimart", "gemini", "volcengine", "runninghub"}
 RUNNINGHUB_DEFAULT_BASE_URL = "https://www.runninghub.cn"
+VOLCENGINE_DEFAULT_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
+VOLCENGINE_DEFAULT_PROJECT_NAME = "default"
+VOLCENGINE_DEFAULT_REGION = "cn-beijing"
+VOLCENGINE_DEFAULT_VIDEO_MODELS = [
+    "doubao-seedance-2-0-260128",
+    "doubao-seedance-2-0-fast-260128",
+    "doubao-seedance-1-5-pro-251215",
+    "doubao-seedance-1-0-pro-250528",
+    "doubao-seedance-1-0-lite-t2v-250428",
+    "doubao-seedance-1-0-lite-i2v-250428",
+]
 RUNNINGHUB_DEFAULT_IMAGE_MODELS = [
     "seedream-v5-lite/text-to-image",
     "seedream-v5-lite/image-to-image",
@@ -505,10 +516,18 @@ def provider_key_env(provider_id):
         return "MODELSCOPE_API_KEY"
     if provider_id == "runninghub":
         return "RUNNINGHUB_API_KEY"
+    if provider_id == "volcengine":
+        return "ARK_API_KEY"
     return f"API_PROVIDER_{re.sub(r'[^A-Za-z0-9]', '_', provider_id).upper()}_KEY"
 
 def runninghub_wallet_key_env():
     return "RUNNINGHUB_WALLET_API_KEY"
+
+def volcengine_access_key_env():
+    return "VOLCENGINE_ACCESS_KEY_ID"
+
+def volcengine_secret_key_env():
+    return "VOLCENGINE_SECRET_ACCESS_KEY"
 
 def read_api_env_value(key: str) -> str:
     key = str(key or "").strip()
@@ -541,6 +560,14 @@ def runninghub_wallet_key_value() -> str:
     env_key = runninghub_wallet_key_env()
     return os.getenv(env_key, "") or read_api_env_value(env_key)
 
+def volcengine_access_key_value() -> str:
+    env_key = volcengine_access_key_env()
+    return os.getenv(env_key, "") or read_api_env_value(env_key)
+
+def volcengine_secret_key_value() -> str:
+    env_key = volcengine_secret_key_env()
+    return os.getenv(env_key, "") or read_api_env_value(env_key)
+
 def mask_secret(value):
     if not value:
         return ""
@@ -559,7 +586,7 @@ def bearer_auth_value(value):
     return f"Bearer {token}" if token else ""
 
 def default_api_providers():
-    # 只保留 ModelScope 为强制默认平台，其他平台均可自定义增删
+    # 独立入口平台强制保留，其他平台均可自定义增删
     return [
         {
             "id": "modelscope",
@@ -592,6 +619,23 @@ def default_api_providers():
             "ms_defaults_version": 0,
             "rh_apps": RUNNINGHUB_DEFAULT_APPS,
             "rh_workflows": RUNNINGHUB_DEFAULT_WORKFLOWS,
+        },
+        {
+            "id": "volcengine",
+            "name": "火山引擎",
+            "base_url": VOLCENGINE_DEFAULT_BASE_URL,
+            "protocol": "volcengine",
+            "image_generation_endpoint": "",
+            "image_edit_endpoint": "",
+            "enabled": True,
+            "primary": False,
+            "image_models": [],
+            "chat_models": [],
+            "video_models": VOLCENGINE_DEFAULT_VIDEO_MODELS,
+            "ms_loras": [],
+            "ms_defaults_version": 0,
+            "volcengine_project_name": VOLCENGINE_DEFAULT_PROJECT_NAME,
+            "volcengine_region": VOLCENGINE_DEFAULT_REGION,
         },
     ]
 
@@ -628,6 +672,29 @@ def merge_default_api_providers(providers):
             current["image_models"] = model_list_from_values([*(current.get("image_models") or []), *(rh_default.get("image_models") or [])])
             current["rh_apps"] = merge_runninghub_system_entries(rh_default.get("rh_apps") or [], current.get("rh_apps") or [], "app")
             current["rh_workflows"] = merge_runninghub_system_entries(rh_default.get("rh_workflows") or [], current.get("rh_workflows") or [], "workflow")
+    volc_default = next((d for d in default_api_providers() if d["id"] == "volcengine"), None)
+    if volc_default:
+        current = next((item for item in merged if item.get("id") == "volcengine"), None)
+        legacy = next((item for item in merged if item.get("id") != "volcengine" and str(item.get("protocol") or "").lower() == "volcengine"), None)
+        if not current:
+            if legacy:
+                current = {
+                    **volc_default,
+                    "base_url": legacy.get("base_url") or volc_default["base_url"],
+                    "image_models": model_list_from_values([*(legacy.get("image_models") or []), *(volc_default.get("image_models") or [])]),
+                    "chat_models": model_list_from_values(legacy.get("chat_models") or []),
+                    "video_models": model_list_from_values([*(legacy.get("video_models") or []), *(volc_default.get("video_models") or [])]),
+                }
+                merged.append(current)
+            else:
+                merged.append(volc_default)
+        else:
+            if not current.get("base_url"):
+                current["base_url"] = volc_default["base_url"]
+            current["protocol"] = "volcengine"
+            current["video_models"] = model_list_from_values([*(current.get("video_models") or []), *(volc_default.get("video_models") or [])])
+            current["volcengine_project_name"] = str(current.get("volcengine_project_name") or VOLCENGINE_DEFAULT_PROJECT_NAME).strip() or VOLCENGINE_DEFAULT_PROJECT_NAME
+            current["volcengine_region"] = str(current.get("volcengine_region") or VOLCENGINE_DEFAULT_REGION).strip() or VOLCENGINE_DEFAULT_REGION
     return merged
 
 def normalize_model_list(values):
@@ -890,6 +957,13 @@ def normalize_provider(item):
         protocol = "openai"
     image_generation_endpoint = normalize_endpoint_override(item.get("image_generation_endpoint"), "文生图端口")
     image_edit_endpoint = normalize_endpoint_override(item.get("image_edit_endpoint"), "图生图/编辑端口")
+    volc_project = re.sub(r"\s+", " ", str(item.get("volcengine_project_name") or "").strip())[:80]
+    volc_region = re.sub(r"\s+", " ", str(item.get("volcengine_region") or "").strip())[:40]
+    if provider_id == "volcengine":
+        protocol = "volcengine"
+        base_url = base_url or VOLCENGINE_DEFAULT_BASE_URL
+        volc_project = volc_project or VOLCENGINE_DEFAULT_PROJECT_NAME
+        volc_region = volc_region or VOLCENGINE_DEFAULT_REGION
     return {
         "id": provider_id,
         "name": name,
@@ -906,6 +980,8 @@ def normalize_provider(item):
         "ms_defaults_version": int(item.get("ms_defaults_version") or 0),
         "rh_apps": normalize_runninghub_entries(item.get("rh_apps") or [], "app"),
         "rh_workflows": normalize_runninghub_entries(item.get("rh_workflows") or [], "workflow"),
+        "volcengine_project_name": volc_project,
+        "volcengine_region": volc_region,
     }
 
 def load_api_providers():
@@ -946,6 +1022,19 @@ def public_provider(provider):
             "has_wallet_key": bool(wallet_key),
             "wallet_key_preview": mask_secret(wallet_key),
             "wallet_key_env": runninghub_wallet_key_env(),
+        })
+    if provider.get("id") == "volcengine":
+        ak = volcengine_access_key_value()
+        sk = volcengine_secret_key_value()
+        item.update({
+            "has_volcengine_access_key": bool(ak),
+            "volcengine_access_key_preview": mask_secret(ak),
+            "volcengine_access_key_env": volcengine_access_key_env(),
+            "has_volcengine_secret_key": bool(sk),
+            "volcengine_secret_key_preview": mask_secret(sk),
+            "volcengine_secret_key_env": volcengine_secret_key_env(),
+            "volcengine_project_name": provider.get("volcengine_project_name") or VOLCENGINE_DEFAULT_PROJECT_NAME,
+            "volcengine_region": provider.get("volcengine_region") or VOLCENGINE_DEFAULT_REGION,
         })
     return item
 
@@ -1767,10 +1856,16 @@ class ApiProviderPayload(BaseModel):
     ms_defaults_version: int = 0
     rh_apps: List[Dict[str, Any]] = []
     rh_workflows: List[Dict[str, Any]] = []
+    volcengine_project_name: str = VOLCENGINE_DEFAULT_PROJECT_NAME
+    volcengine_region: str = VOLCENGINE_DEFAULT_REGION
+    volcengine_access_key_id: Optional[str] = None
+    volcengine_secret_access_key: Optional[str] = None
     api_key: Optional[str] = None
     wallet_api_key: Optional[str] = None
     clear_key: bool = False
     clear_wallet_key: bool = False
+    clear_volcengine_access_key_id: bool = False
+    clear_volcengine_secret_access_key: bool = False
 
 class ChatRequest(BaseModel):
     conversation_id: str = ""
@@ -2853,6 +2948,17 @@ def volcengine_media_reference_url(value, max_image_size=1536):
     if value.startswith("/output/") or value.startswith("/assets/"):
         return reference_to_data_url({"url": value}, max_size=max_image_size)
     return value
+
+def looks_like_image_media_url(value: str) -> bool:
+    text = str(value or "").strip().lower()
+    if not text:
+        return False
+    if text.startswith("data:image/"):
+        return True
+    if text.startswith("asset://"):
+        return False
+    path = urllib.parse.urlparse(text).path or text
+    return bool(re.search(r"\.(png|jpe?g|webp|gif|bmp|tiff)$", path))
 
 def volcengine_content_role(role: str, kind: str = "image") -> str:
     value = str(role or "").strip().lower()
@@ -4729,6 +4835,17 @@ async def save_providers(payload: List[ApiProviderPayload]):
                 env_updates[wallet_env] = ""
             elif item.wallet_api_key is not None and item.wallet_api_key.strip():
                 env_updates[wallet_env] = item.wallet_api_key.strip()
+        if provider["id"] == "volcengine":
+            ak_env = volcengine_access_key_env()
+            sk_env = volcengine_secret_key_env()
+            if item.clear_volcengine_access_key_id:
+                env_updates[ak_env] = ""
+            elif item.volcengine_access_key_id is not None and item.volcengine_access_key_id.strip():
+                env_updates[ak_env] = item.volcengine_access_key_id.strip()
+            if item.clear_volcengine_secret_access_key:
+                env_updates[sk_env] = ""
+            elif item.volcengine_secret_access_key is not None and item.volcengine_secret_access_key.strip():
+                env_updates[sk_env] = item.volcengine_secret_access_key.strip()
         if provider["id"] == "comfly":
             env_updates["COMFLY_BASE_URL"] = provider["base_url"]
             env_updates["IMAGE_MODELS"] = ",".join(provider["image_models"])
@@ -4738,6 +4855,8 @@ async def save_providers(payload: List[ApiProviderPayload]):
             env_updates["MODELSCOPE_CHAT_MODELS"] = ",".join(provider["chat_models"])
         if provider["id"] == "runninghub":
             provider["protocol"] = "runninghub"
+        if provider["id"] == "volcengine":
+            provider["protocol"] = "volcengine"
     if not providers:
         raise HTTPException(status_code=400, detail="至少保留一个 API 平台")
     # 强制最多一个 primary（取最后被标记的；都没标记则保持原样不强制）
@@ -5363,6 +5482,7 @@ async def canvas_video(payload: CanvasVideoRequest):
                         body["generate_audio"] = True
                     if payload.camerafixed:
                         body["camerafixed"] = True
+                    image_like_urls = set()
                     for ref in payload.images[:9]:
                         url = volcengine_media_reference_url(ref.url, max_image_size=1536)
                         if not url:
@@ -5375,9 +5495,18 @@ async def canvas_video(payload: CanvasVideoRequest):
                         if role:
                             item["role"] = role
                         body["content"].append(item)
+                        image_like_urls.add(url)
                     for url in (payload.videos or [])[:3]:
                         media_url = volcengine_media_reference_url(url, max_image_size=None)
                         if not media_url:
+                            continue
+                        if media_url in image_like_urls or looks_like_image_media_url(media_url):
+                            body["content"].append({
+                                "type": "image_url",
+                                "image_url": {"url": media_url},
+                                "role": "reference_image",
+                            })
+                            image_like_urls.add(media_url)
                             continue
                         body["content"].append({
                             "type": "video_url",
@@ -5648,6 +5777,12 @@ async def get_canvas_meta(canvas_id: str):
 @app.get("/api/canvases/{canvas_id}")
 async def get_canvas(canvas_id: str):
     return {"canvas": load_canvas(canvas_id)}
+
+@app.post("/api/canvases/{canvas_id}/touch")
+async def touch_canvas(canvas_id: str):
+    canvas = load_canvas(canvas_id)
+    save_canvas(canvas)
+    return {"canvas": canvas_record(canvas), "updated_at": canvas.get("updated_at", 0)}
 
 @app.get("/api/smart-canvas/prompt-templates")
 async def smart_canvas_prompt_templates():
