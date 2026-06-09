@@ -16,7 +16,7 @@ xattr -r -d com.apple.quarantine main.py 2>/dev/null
 
 # 设置执行权限（修正：原脚本引用了不存在的 启动服务.command/启动服务.py）
 chmod +x *.command 2>/dev/null
-chmod +x main.py 2>/dev/null
+chmod +x mac-*.sh 2>/dev/null
 
 echo "权限已修复！"
 echo ""
@@ -39,17 +39,46 @@ echo "正在启动服务..."
 echo "本机访问： http://127.0.0.1:3000/"
 echo "============================================"
 echo ""
+sleep 3 && open "http://127.0.0.1:3000/" >/dev/null 2>&1 &
 
-# 优先使用 Homebrew Python，避免部分工具管理的 Python 签名问题
-if [ -x /opt/homebrew/bin/python3 ]; then
-    /opt/homebrew/bin/python3 main.py
-elif [ -x /usr/local/bin/python3 ]; then
-    /usr/local/bin/python3 main.py
-elif command -v python3 >/dev/null 2>&1; then
-    python3 main.py
-else
+find_python() {
+    if [ -x ".venv/bin/python" ]; then
+        echo ".venv/bin/python"
+    elif [ -x /opt/homebrew/bin/python3 ]; then
+        echo "/opt/homebrew/bin/python3"
+    elif [ -x /usr/local/bin/python3 ]; then
+        echo "/usr/local/bin/python3"
+    elif command -v python3 >/dev/null 2>&1; then
+        command -v python3
+    else
+        echo ""
+    fi
+}
+
+PYEXE="$(find_python)"
+if [ -z "$PYEXE" ]; then
     echo "错误：找不到 Python3，请先安装 Python 3.10+："
     echo "https://www.python.org/downloads/"
-    read -p "按 Enter 键退出..."
+    read -r -p "按 Enter 键退出..."
     exit 1
 fi
+
+echo "使用 Python：$PYEXE"
+"$PYEXE" - <<'PY' >/dev/null 2>&1
+import fastapi, uvicorn, requests, pydantic, multipart, httpx
+from PIL import Image
+PY
+
+if [ $? -ne 0 ]; then
+    echo "检测到依赖未安装或不完整，正在安装..."
+    chmod +x mac-安装依赖.sh 2>/dev/null
+    ./mac-安装依赖.sh
+    PYEXE="$(find_python)"
+fi
+
+"$PYEXE" main.py
+EXIT_CODE=$?
+echo ""
+echo "服务已退出，退出码：$EXIT_CODE"
+read -r -p "按 Enter 键关闭窗口..."
+exit $EXIT_CODE

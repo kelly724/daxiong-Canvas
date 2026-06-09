@@ -1,0 +1,24 @@
+[
+    {
+        "prompt": "A multi-camera angle reference sheet in 3x3 grid layout, showing [主体] from 9 different perspectives simultaneously: top-left front view, top-center 3/4 front view, top-right side profile, middle-left low angle, middle-center eye-level straight-on, middle-right high angle, bottom-left back view, bottom-center 3/4 back view, bottom-right top-down overhead view. [主体详细描述]. Consistent lighting across all 9 frames, uniform light warm gray background color F0EDE8, subjects softly blending with background with natural edge transition, no hard edges no white halo no light bleed, professional studio photography, clean grid layout with thin white dividers between frames, character consistency maintained across all angles, absolutely no visible numbers text labels frame counters corner marks or annotations anywhere on the image\n\nNegative prompt:\nnumbers, text, letters, labels, frame numbers, corner marks, annotations, captions, watermarks, signatures, logos, readable text, font, typography, grid numbers, sequence markers, page numbers, index, hard edge, glowing edge, white halo, light bleed, overexposed edge, cutout look, pasted on background, floating subject, disconnected shadow, pure white background, stark white, cold gray, bad anatomy, distorted face, extra fingers, deformed hands, inconsistent character design, lighting mismatch between frames, blurry, low quality, cropped, out of frame\n\nParams:\nMidjourney: `--ar 1:1 --style raw --s 50`\n即梦/可灵: 直接粘贴，开启「参考图」锁一致性\nFlux: 配合 `add_detail` LoRA，CFG 3.5-5.0",
+        "images": [
+            "/assets/output/jimeng_b9c678ada5.png"
+        ],
+        "timestamp": 1780952471.406632,
+        "type": "online",
+        "model": "5.0",
+        "provider_id": "jimeng",
+        "provider_name": "即梦 CLI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "jimeng",
+            "model": "5.0",
+            "size": "4096x4096",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": []
+        },
+        "raw_usage": null
+    }
+]
