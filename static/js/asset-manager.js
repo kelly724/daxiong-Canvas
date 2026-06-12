@@ -3,6 +3,27 @@ const statusEl = document.getElementById('assetStatus');
 const refreshBtn = document.getElementById('refreshBtn');
 const uploadInput = document.getElementById('assetUploadInput');
 
+const LOCAL_CAPTION_SETTINGS_KEY = 'asset_manager_local_caption_settings_v1';
+function readLocalCaptionSettings(){
+    try {
+        const data = JSON.parse(localStorage.getItem(LOCAL_CAPTION_SETTINGS_KEY) || '{}');
+        return data && typeof data === 'object' ? data : {};
+    } catch(_) {
+        return {};
+    }
+}
+function writeLocalCaptionSettings(){
+    try {
+        localStorage.setItem(LOCAL_CAPTION_SETTINGS_KEY, JSON.stringify({
+            provider:localCaptionProvider || '',
+            model:localCaptionModel || '',
+            captionPrompt:localCaptionPrompt || '描述图片',
+            classifyPrompt:localClassifyPrompt || ''
+        }));
+    } catch(_) {}
+}
+const savedLocalCaptionSettings = readLocalCaptionSettings();
+
 let activeTab = 'assets';
 let assetLibrary = {libraries:[], categories:[]};
 let promptLibrary = {libraries:[]};
@@ -11,6 +32,8 @@ let avatarRegisterProvider = '';
 let avatarBusyId = '';
 let activeAssetLibraryId = '';
 let activeAssetCategoryId = '';
+let activeAssetClassFilter = '';
+let openAssetClassGroup = 'environment';
 let activeWorkflowLibraryId = '';
 let activeWorkflowCategoryId = '';
 let activePromptLibraryId = '';
@@ -55,17 +78,23 @@ let localQuery = '';
 let localManageMode = false;
 let localClipboard = null;
 let localCaptionBusy = false;
-let localCaptionProvider = '';
-let localCaptionModel = '';
-let localCaptionPrompt = '描述图片';
+let localCaptionProvider = savedLocalCaptionSettings.provider || '';
+let localCaptionModel = savedLocalCaptionSettings.model || '';
+let localCaptionPrompt = savedLocalCaptionSettings.captionPrompt || '描述图片';
+let localClassifyPrompt = savedLocalCaptionSettings.classifyPrompt || '';
+let localClassifyPromptOpen = false;
 let localAssets = [];
 let localAssetsLoaded = false;
 let localUploadTree = null;
 let activeLocalUploadFolder = '';
+let activeLocalUploadClassFilter = '';
+let openLocalUploadClassGroup = '';
 let selectedLocalUploadId = '';
 let selectedLocalUploadIds = new Set();
 let localUploadQuery = '';
 let localUploadManageMode = false;
+let assetClassifyBusy = false;
+let localClassifyBusy = false;
 let lightboxPanState = null;
 let canvasAssetsData = {categories:[], canvases:[], items:[]};
 let activeCanvasAssetCategory = 'smart';
@@ -75,8 +104,12 @@ let selectedCanvasAssetIds = new Set();
 let canvasAssetQuery = '';
 let canvasAssetSort = 'canvas_asc';
 let canvasAssetManageMode = false;
+let searchCompositionActive = false;
+let searchRenderTimer = null;
+let lastSearchCompositionEndAt = 0;
 
 const LOCAL_MEDIA_EXTS = /\.(png|jpe?g|webp|gif|bmp|avif|svg|mp4|webm|mov|m4v|mp3|wav|flac|ogg|m4a|aac)(\?|#|$)/i;
+const SEARCH_INPUT_IDS = new Set(['assetSearch','workflowSearch','promptSearch','localSearch','localUploadSearch','canvasAssetSearch']);
 
 function refreshIcons(){ if(window.lucide) lucide.createIcons(); }
 function setStatus(text='准备就绪'){ if(statusEl) statusEl.textContent = text || '准备就绪'; }
@@ -153,6 +186,17 @@ function activeAssetCategory(){
     const cats = assetCategories();
     return cats.find(cat => cat.id === activeAssetCategoryId) || cats[0] || null;
 }
+function assetViewTitle(){
+    const entry = activeAssetClassEntry();
+    if(entry) return entry.tag || '智能分类';
+    return activeAssetCategory()?.name || '图片资产';
+}
+function assetViewSubtitle(items){
+    const libName = activeAssetLibrary()?.name || '资产库';
+    const entry = activeAssetClassEntry();
+    if(entry) return `${libName} / 智能分类：${entry.label} / ${items.length} 个素材`;
+    return `${libName} / ${items.length} 个素材`;
+}
 function activeWorkflowCategory(){
     const cats = workflowCategories();
     return cats.find(cat => cat.id === activeWorkflowCategoryId && cat.__libraryId === activeWorkflowLibraryId)
@@ -201,6 +245,34 @@ function activePromptCategories(){
     return promptCategoriesFor(activePromptLibrary());
 }
 const PROMPT_BUILTIN_CATEGORY_IDS = new Set(['view','storyboard','character','product','lighting','custom']);
+const ASSET_CLASS_GROUPS = [
+    {id:'environment', name:'环境', dims:['environment','scene','space','mood']},
+    {id:'composition', name:'构图', dims:['composition']},
+    {id:'lighting', name:'光影', dims:['lighting','color']},
+    {id:'model', name:'模特', dims:['model','people']},
+    {id:'subject', name:'主体', dims:['subject','objects','materials']},
+    {id:'style', name:'风格', dims:['style','use_case','quality']},
+    {id:'tags', name:'标签', dims:['tags']},
+];
+const ASSET_CLASS_GROUP_BY_DIM = new Map(ASSET_CLASS_GROUPS.flatMap(group => group.dims.map(dim => [dim, group])));
+const ASSET_CLASSIFICATION_LABELS = {
+    environment:'环境',
+    scene:'场景',
+    space:'空间',
+    subject:'主体',
+    model:'模特',
+    people:'人物',
+    style:'风格',
+    lighting:'光影',
+    color:'色彩',
+    composition:'构图',
+    mood:'氛围',
+    use_case:'用途',
+    objects:'物体',
+    materials:'材质',
+    quality:'质量',
+    tags:'标签'
+};
 function promptCategoryLabel(category='custom'){
     const found = activePromptCategories().find(cat => cat.id === category);
     if(found?.name) return found.name;
@@ -219,6 +291,120 @@ function assetKind(item){
     if(kind.includes('audio') || /\.(mp3|wav|flac|ogg|m4a)(\?|#|$)/.test(url)) return 'audio';
     if(kind.includes('text') || /\.(txt|json|csv|srt|vtt|md)(\?|#|$)/.test(url)) return 'text';
     return 'image';
+}
+function assetClassificationChips(item, limit=10){
+    const flat = Array.isArray(item?.classification?.flat) ? item.classification.flat : [];
+    return flat.slice(0, limit).map(entry => {
+        const label = entry?.label || entry?.dimension || '分类';
+        const tag = entry?.tag || '';
+        const key = assetClassFilterKey(entry);
+        return tag ? {label, tag, key, dimension:entry?.dimension || ''} : null;
+    }).filter(Boolean);
+}
+function assetClassFilterKey(entry){
+    const dimension = String(entry?.dimension || '').trim();
+    const tag = String(entry?.tag || '').trim();
+    return dimension && tag ? `${dimension}::${tag}` : '';
+}
+function parseAssetClassFilterKey(key=''){
+    const text = String(key || '');
+    const index = text.indexOf('::');
+    if(index < 0) return null;
+    return {dimension:text.slice(0, index), tag:text.slice(index + 2)};
+}
+function assetClassificationEntriesForLibrary(lib=activeAssetLibrary()){
+    const items = [];
+    (lib?.categories || []).filter(cat => (cat.type || 'image') === 'image').forEach(cat => items.push(...(cat.items || [])));
+    return assetClassificationEntriesForItems(items);
+}
+function assetClassificationEntriesForItems(items=[]){
+    const groups = new Map();
+    (items || []).forEach(item => {
+        const flat = Array.isArray(item?.classification?.flat) ? item.classification.flat : [];
+        flat.forEach(entry => {
+            const key = assetClassFilterKey(entry);
+            if(!key) return;
+            const current = groups.get(key) || {
+                key,
+                dimension:String(entry.dimension || ''),
+                label:String(entry.label || entry.dimension || '分类'),
+                tag:String(entry.tag || ''),
+                count:0
+            };
+            current.count += 1;
+            groups.set(key, current);
+        });
+    });
+    return [...groups.values()].sort((a, b) => {
+        if(a.label !== b.label) return a.label.localeCompare(b.label, 'zh-Hans-CN', {numeric:true, sensitivity:'base'});
+        return b.count - a.count || a.tag.localeCompare(b.tag, 'zh-Hans-CN', {numeric:true, sensitivity:'base'});
+    });
+}
+function assetClassificationEntryGroup(entry){
+    const dim = String(entry?.dimension || '');
+    if(dim === 'subject' && /人|人物|模特|男|女|儿童|老人|青年|肖像|半身|全身/.test(String(entry?.tag || ''))) {
+        return ASSET_CLASS_GROUPS.find(group => group.id === 'model') || ASSET_CLASS_GROUPS[0];
+    }
+    return ASSET_CLASS_GROUP_BY_DIM.get(dim) || ASSET_CLASS_GROUPS.find(group => group.id === 'tags') || ASSET_CLASS_GROUPS[0];
+}
+function assetClassificationSearchText(item){
+    const classification = item?.classification || {};
+    const flat = Array.isArray(classification.flat) ? classification.flat : [];
+    const flatText = flat.map(entry => {
+        const group = assetClassificationEntryGroup(entry);
+        return [group?.name, entry?.label, entry?.dimension, entry?.tag].filter(Boolean).join(' ');
+    }).join(' ');
+    const categoryText = classification.categories && typeof classification.categories === 'object'
+        ? Object.entries(classification.categories).map(([key, values]) => {
+            const group = ASSET_CLASS_GROUP_BY_DIM.get(String(key || ''));
+            const label = ASSET_CLASSIFICATION_LABELS[key] || key;
+            const list = Array.isArray(values) ? values : [values];
+            return [group?.name, label, key, ...list].filter(Boolean).join(' ');
+        }).join(' ')
+        : '';
+    const tags = Array.isArray(classification.tags) ? classification.tags.join(' ') : '';
+    return [classification.summary, flatText, categoryText, tags].filter(Boolean).join(' ');
+}
+function groupedAssetClassificationEntries(entries=[]){
+    const byGroup = new Map(ASSET_CLASS_GROUPS.map(group => [group.id, {...group, count:0, entries:[]}]));
+    (entries || []).forEach(entry => {
+        const group = assetClassificationEntryGroup(entry);
+        const bucket = byGroup.get(group.id) || byGroup.get('tags');
+        bucket.entries.push(entry);
+        bucket.count += Number(entry.count || 0);
+    });
+    return [...byGroup.values()].filter(group => group.entries.length);
+}
+function assetClassificationGroupIdForFilter(key='', entries=[]){
+    const entry = (entries || []).find(item => item.key === key);
+    return entry ? assetClassificationEntryGroup(entry)?.id || '' : '';
+}
+function activeAssetClassEntry(){
+    return assetClassificationEntriesForLibrary().find(entry => entry.key === activeAssetClassFilter) || null;
+}
+function assetItemsForClassFilter(key=activeAssetClassFilter){
+    const parsed = parseAssetClassFilterKey(key);
+    if(!parsed) return [];
+    return assetCategories().flatMap(cat => cat.items || []).filter(item => {
+        const flat = Array.isArray(item?.classification?.flat) ? item.classification.flat : [];
+        return flat.some(entry => String(entry.dimension || '') === parsed.dimension && String(entry.tag || '') === parsed.tag);
+    });
+}
+function renderClassificationChips(item, limit=10, options={}){
+    const chips = assetClassificationChips(item, limit);
+    const kind = options.kind || '';
+    const libAttr = options.libraryId ? ` data-asset-class-lib="${escapeAttr(options.libraryId)}"` : '';
+    const activeKey = kind === 'localup' ? activeLocalUploadClassFilter : kind === 'asset' ? activeAssetClassFilter : '';
+    return chips.length
+        ? `<div class="classification-chips">${chips.map(chip => {
+            const filterAttr = kind === 'localup'
+                ? ` data-localup-class-filter="${escapeAttr(chip.key)}"`
+                : kind === 'asset'
+                    ? ` data-asset-class-filter="${escapeAttr(chip.key)}"${libAttr}`
+                    : '';
+            return `<button class="${activeKey === chip.key ? 'active' : ''}" type="button"${filterAttr} title="${escapeAttr(chip.label)}">${escapeHtml(chip.tag)}</button>`;
+        }).join('')}</div>`
+        : '';
 }
 function workflowKindLabel(item){
     const format = String(item?.format || '').toLowerCase();
@@ -281,15 +467,19 @@ function localCaptionProviders(){
 }
 function normalizeLocalCaptionSettings(){
     const providers = localCaptionProviders();
+    const beforeProvider = localCaptionProvider;
+    const beforeModel = localCaptionModel;
     if(!providers.length){
         localCaptionProvider = '';
         localCaptionModel = '';
+        if(beforeProvider || beforeModel) writeLocalCaptionSettings();
         return;
     }
     let provider = providers.find(p => p.id === localCaptionProvider) || providers[0];
     localCaptionProvider = provider.id || '';
     const models = (provider.chat_models || []).filter(Boolean);
     if(!models.includes(localCaptionModel)) localCaptionModel = models[0] || '';
+    if(beforeProvider !== localCaptionProvider || beforeModel !== localCaptionModel) writeLocalCaptionSettings();
 }
 function localCaptionModels(){
     normalizeLocalCaptionSettings();
@@ -300,17 +490,23 @@ function renderLocalCaptionTools(imageCount){
     normalizeLocalCaptionSettings();
     const providers = localCaptionProviders();
     const models = localCaptionModels();
-    const disabled = !imageCount || !providers.length || !localCaptionModel || localCaptionBusy;
+    const captionDisabled = !imageCount || !providers.length || !localCaptionModel || localCaptionBusy || localClassifyBusy;
+    const classifyDisabled = !imageCount || !providers.length || !localCaptionModel || localCaptionBusy || localClassifyBusy;
     return `
         <div class="local-caption-tools">
-            <select id="localCaptionProvider" class="manage-select" title="反推平台" ${providers.length ? '' : 'disabled'}>
+            <div class="local-caption-main-row">
+            <select id="localCaptionProvider" class="manage-select" title="平台" ${providers.length ? '' : 'disabled'}>
                 ${providers.length ? providers.map(p => `<option value="${escapeAttr(p.id)}" ${p.id === localCaptionProvider ? 'selected' : ''}>${escapeHtml(p.name || p.id)}</option>`).join('') : '<option value="">暂无聊天平台</option>'}
             </select>
-            <select id="localCaptionModel" class="manage-select" title="反推模型" ${models.length ? '' : 'disabled'}>
+            <select id="localCaptionModel" class="manage-select" title="模型" ${models.length ? '' : 'disabled'}>
                 ${models.length ? models.map(m => `<option value="${escapeAttr(m)}" ${m === localCaptionModel ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('') : '<option value="">暂无模型</option>'}
             </select>
             <input id="localCaptionPrompt" class="local-caption-prompt-input" type="text" value="${escapeAttr(localCaptionPrompt || '描述图片')}" placeholder="描述图片">
-            <button class="asset-btn primary" type="button" data-local-caption-run ${disabled ? 'disabled' : ''}><i data-lucide="${localCaptionBusy ? 'loader-2' : 'wand-sparkles'}"></i><span>${localCaptionBusy ? '反推中' : '提示词反推'}</span></button>
+            <button class="asset-btn" type="button" data-local-classify-run ${classifyDisabled ? 'disabled' : ''}><i data-lucide="${localClassifyBusy ? 'loader-2' : 'tags'}"></i><span>${localClassifyBusy ? '分类中' : '智能分类'}</span></button>
+            <button class="asset-btn primary" type="button" data-local-caption-run ${captionDisabled ? 'disabled' : ''}><i data-lucide="${localCaptionBusy ? 'loader-2' : 'wand-sparkles'}"></i><span>${localCaptionBusy ? '反推中' : '提示词反推'}</span></button>
+            <button class="asset-icon-btn" type="button" data-local-classify-toggle title="智能分类要求"><i data-lucide="${localClassifyPromptOpen ? 'chevron-up' : 'sliders-horizontal'}"></i></button>
+            </div>
+            ${localClassifyPromptOpen ? `<textarea id="localClassifyPrompt" class="local-classify-prompt-input" placeholder="默认已内置室内/室外、空间、主体、光影、模特、风格、色彩等分类。这里可以追加你的分类要求，例如：增加家装风格、镜头焦段、商业用途、人物年龄段、产品材质。">${escapeHtml(localClassifyPrompt || '')}</textarea>` : ''}
         </div>
     `;
 }
@@ -354,6 +550,7 @@ async function loadLocalAssets(){
         localUploadTree = {id:'__root__', path:'', name:'全部上传', count:0, items:[], children:[]};
     }
     if(activeLocalUploadFolder && !localUploadFolderExists(activeLocalUploadFolder)) activeLocalUploadFolder = '';
+    if(activeLocalUploadClassFilter && !activeLocalUploadClassEntry()) activeLocalUploadClassFilter = '';
     selectedLocalUploadIds = new Set([...selectedLocalUploadIds].filter(id => localAssets.some(item => item.id === id)));
     localAssetsLoaded = true;
     return localAssets;
@@ -431,9 +628,14 @@ async function openSharedFolder(folderId){
 }
 function currentAssetItems(){
     const query = assetQuery.trim().toLowerCase();
-    return (activeAssetCategory()?.items || []).filter(item => {
+    const source = activeAssetClassFilter
+        ? assetItemsForClassFilter(activeAssetClassFilter)
+        : query
+            ? assetCategories().flatMap(cat => cat.items || [])
+            : (activeAssetCategory()?.items || []);
+    return source.filter(item => {
         if(!query) return true;
-        return [item.name, item.url, assetKindLabel(item)].join(' ').toLowerCase().includes(query);
+        return [item.name, item.url, assetKindLabel(item), assetClassificationSearchText(item)].join(' ').toLowerCase().includes(query);
     });
 }
 function currentWorkflowItems(){
@@ -659,6 +861,7 @@ function normalizeAssetState(){
     if(!activeAssetLibraryId || !libs.some(lib => lib.id === activeAssetLibraryId)) activeAssetLibraryId = assetLibrary.active_library_id || libs[0]?.id || '';
     const cats = assetCategories();
     if(!activeAssetCategoryId || !cats.some(cat => cat.id === activeAssetCategoryId)) activeAssetCategoryId = cats[0]?.id || '';
+    if(activeAssetClassFilter && !activeAssetClassEntry()) activeAssetClassFilter = '';
     const items = currentAssetItems();
     if(selectedAssetId && !items.some(item => item.id === selectedAssetId)) selectedAssetId = '';
     if(!selectedAssetId && items.length) selectedAssetId = items[0].id;
@@ -742,6 +945,8 @@ async function loadAll(){
     setStatus('准备就绪');
 }
 function render(){
+    const scrollState = [...document.querySelectorAll('.nav-scroll,.content-scroll,.detail-scroll')]
+        .map((el, index) => ({index, top:el.scrollTop, left:el.scrollLeft}));
     document.querySelectorAll('[data-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === activeTab));
     if(activeTab === 'prompts') renderPromptManager();
     else if(activeTab === 'workflows') renderWorkflowManager();
@@ -749,6 +954,44 @@ function render(){
     else if(activeTab === 'canvas-assets') renderCanvasAssetsManager();
     else renderAssetManager();
     refreshIcons();
+    if(scrollState.length){
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.nav-scroll,.content-scroll,.detail-scroll').forEach((el, index) => {
+                const saved = scrollState.find(item => item.index === index);
+                if(!saved) return;
+                el.scrollTop = saved.top;
+                el.scrollLeft = saved.left;
+            });
+        });
+    }
+}
+function updateSearchQueryFromInput(id, value){
+    if(id === 'assetSearch') assetQuery = value || '';
+    else if(id === 'workflowSearch') workflowQuery = value || '';
+    else if(id === 'promptSearch') promptQuery = value || '';
+    else if(id === 'localSearch') localQuery = value || '';
+    else if(id === 'localUploadSearch') localUploadQuery = value || '';
+    else if(id === 'canvasAssetSearch') canvasAssetQuery = value || '';
+}
+function clearSearchSelection(id){
+    if(id === 'assetSearch') selectedAssetId = '';
+    else if(id === 'workflowSearch') selectedWorkflowId = '';
+    else if(id === 'promptSearch') selectedPromptId = '';
+    else if(id === 'localSearch') selectedLocalId = '';
+    else if(id === 'localUploadSearch') selectedLocalUploadId = '';
+    else if(id === 'canvasAssetSearch') selectedCanvasAssetId = '';
+}
+function scheduleSearchRender(id, pos=0, delay=140){
+    clearTimeout(searchRenderTimer);
+    searchRenderTimer = setTimeout(() => {
+        clearSearchSelection(id);
+        render();
+        requestAnimationFrame(() => {
+            const input = document.getElementById(id);
+            input?.focus();
+            try { input?.setSelectionRange?.(pos, pos); } catch(_) {}
+        });
+    }, Math.max(0, delay));
 }
 function renderCanvasAssetsManager(){
     normalizeCanvasAssetState();
@@ -925,8 +1168,11 @@ function focusTreeEditInput(id){
 function localUploadItems(){
     const q = String(localUploadQuery || '').trim().toLowerCase();
     let list = Array.isArray(localAssets) ? localAssets.slice() : [];
-    if(activeLocalUploadFolder) list = list.filter(it => String(it.folder || '') === activeLocalUploadFolder);
-    if(q) list = list.filter(it => [it.name, it.file, assetKindLabel(it)].join(' ').toLowerCase().includes(q));
+    if(activeLocalUploadClassFilter) list = localUploadItemsForClassFilter(activeLocalUploadClassFilter);
+    else if(activeLocalUploadFolder && !q) list = list.filter(it => String(it.folder || '') === activeLocalUploadFolder);
+    if(q) list = list.filter(it => {
+        return [it.name, it.file, assetKindLabel(it), assetClassificationSearchText(it)].join(' ').toLowerCase().includes(q);
+    });
     return list;
 }
 function findLocalUpload(id){
@@ -955,13 +1201,34 @@ function localUploadFolderByPath(path=''){
     return match;
 }
 function localUploadFolderTitle(){
+    const entry = activeLocalUploadClassEntry();
+    if(entry) return entry.tag || '智能分类';
     if(!activeLocalUploadFolder) return '本地上传';
     return localUploadFolderByPath(activeLocalUploadFolder)?.name || activeLocalUploadFolder.split('/').pop() || '本地上传';
+}
+function localUploadViewSubtitle(items){
+    const entry = activeLocalUploadClassEntry();
+    if(entry) return `智能分类：${entry.label} / ${items.length} 个素材`;
+    return `${items.length} / ${(localAssets || []).length} 个素材`;
+}
+function localUploadClassEntries(){
+    return assetClassificationEntriesForItems((localAssets || []).filter(item => assetKind(item) === 'image'));
+}
+function activeLocalUploadClassEntry(){
+    return localUploadClassEntries().find(entry => entry.key === activeLocalUploadClassFilter) || null;
+}
+function localUploadItemsForClassFilter(key=activeLocalUploadClassFilter){
+    const parsed = parseAssetClassFilterKey(key);
+    if(!parsed) return [];
+    return (localAssets || []).filter(item => {
+        const flat = Array.isArray(item?.classification?.flat) ? item.classification.flat : [];
+        return flat.some(entry => String(entry.dimension || '') === parsed.dimension && String(entry.tag || '') === parsed.tag);
+    });
 }
 function renderLocalUploadFolderBranch(folder, depth=0){
     if(!folder) return '';
     const path = folder.path || '';
-    const active = path === activeLocalUploadFolder;
+    const active = !activeLocalUploadClassFilter && path === activeLocalUploadFolder;
     const contains = !active && (folder.children || []).some(child => localUploadFolderContainsActive(child));
     return `<div class="tree-branch">
         <button class="tree-row ${depth ? 'tree-child' : 'tree-parent'} ${active ? 'active' : ''} ${contains ? 'contains-active' : ''}" type="button" data-localup-folder="${escapeAttr(path)}">
@@ -975,11 +1242,38 @@ function renderLocalUploadFolderBranch(folder, depth=0){
 }
 function localUploadFolderContainsActive(folder){
     if(!folder) return false;
+    if(activeLocalUploadClassFilter) return false;
     if(String(folder.path || '') === activeLocalUploadFolder) return true;
     return (folder.children || []).some(child => localUploadFolderContainsActive(child));
 }
+function renderLocalUploadSmartClassTree(){
+    const entries = localUploadClassEntries();
+    const groups = groupedAssetClassificationEntries(entries);
+    const activeEntry = activeLocalUploadClassEntry();
+    const activeGroup = activeEntry ? assetClassificationEntryGroup(activeEntry)?.id : '';
+    return `<div class="tree-smart-class">
+        <button class="tree-row tree-parent ${activeLocalUploadClassFilter ? 'contains-active' : ''}" type="button" data-localup-class-root>
+            <span class="tree-row-icon"><i data-lucide="tags"></i></span>
+            <span class="tree-row-name">智能分类</span>
+            <span class="tree-row-count">${groups.length}</span>
+        </button>
+        ${groups.length ? groups.map(group => `<div class="smart-class-group">
+            <button class="smart-class-group-btn ${openLocalUploadClassGroup === group.id ? 'open' : ''} ${activeGroup === group.id ? 'active' : ''}" type="button" data-localup-class-group="${escapeAttr(group.id)}">
+                <span>${escapeHtml(group.name)}</span><small>${group.entries.length}</small><i data-lucide="${openLocalUploadClassGroup === group.id ? 'chevron-up' : 'chevron-down'}"></i>
+            </button>
+            ${openLocalUploadClassGroup === group.id ? `<div class="smart-class-pills">
+                ${group.entries.map(entry => `<button class="smart-class-pill ${activeLocalUploadClassFilter === entry.key ? 'active' : ''}" type="button" data-localup-class-filter="${escapeAttr(entry.key)}" title="${escapeAttr(entry.label)}">
+                    <span>${escapeHtml(entry.tag)}</span><small>${entry.count}</small>
+                </button>`).join('')}
+            </div>` : ''}
+        </div>`).join('') : '<div class="tree-empty">暂无分类，先选择图片点“智能分类”</div>'}
+    </div>`;
+}
 function selectedLocalUploadImageItems(){
     return [...selectedLocalUploadIds].map(id => findLocalUpload(id)).filter(item => item && assetKind(item) === 'image');
+}
+function selectedAssetImageItems(){
+    return [...selectedAssetIds].map(id => findAssetItem(id)).filter(item => item && assetKind(item) === 'image');
 }
 function renderLocalManager(){
     normalizeLocalCaptionSettings();
@@ -1002,6 +1296,7 @@ function renderLocalManager(){
             <div class="nav-scroll">
                 <div class="nav-tree">
                     ${renderLocalUploadFolderBranch(localUploadTree || {path:'', name:'全部上传', count:total, children:[]})}
+                    ${renderLocalUploadSmartClassTree()}
                 </div>
                 <div class="nav-hint" style="padding:10px 12px;font-size:12px;opacity:.7;">选择图片/视频/音频文件即可上传，文件保存在项目 assets/uploads 目录。</div>
             </div>
@@ -1010,7 +1305,7 @@ function renderLocalManager(){
             <div class="content-toolbar">
                 <div class="content-heading">
                     <strong>${escapeHtml(folderTitle)}</strong>
-                    <span>${items.length} / ${total} 个素材</span>
+                    <span>${localUploadViewSubtitle(items)}</span>
                 </div>
                 <div class="asset-tools">
                     <label class="asset-search-wrap"><i data-lucide="search"></i><input id="localUploadSearch" class="asset-search" type="search" value="${escapeAttr(localUploadQuery)}" placeholder="搜索本地上传"></label>
@@ -1019,11 +1314,17 @@ function renderLocalManager(){
                 </div>
             </div>
             <div class="manage-tools local-manage-tools">
-                <span>已选择 ${selectedLocalUploadIds.size} 个素材，其中 ${imageCount} 张图片。</span>
-                <div class="asset-tools local-manage-actions">
-                    <button class="asset-btn" type="button" data-localup-select-all ${items.length ? '' : 'disabled'}><i data-lucide="check-square"></i><span>全选</span></button>
-                    <button class="asset-btn" type="button" data-localup-clear ${selectedLocalUploadIds.size ? '' : 'disabled'}><i data-lucide="square"></i><span>清空</span></button>
-                    <button class="asset-btn danger" type="button" data-localup-delete-selected ${selectedLocalUploadIds.size ? '' : 'disabled'}><i data-lucide="trash-2"></i><span>删除</span></button>
+                <div class="manage-group manage-select-group">
+                    <span class="manage-group-title">管理</span>
+                    <span class="manage-summary">已选 ${selectedLocalUploadIds.size} 个，其中 ${imageCount} 张图片</span>
+                    <div class="asset-tools local-manage-actions">
+                        <button class="asset-btn" type="button" data-localup-select-all ${items.length ? '' : 'disabled'}><i data-lucide="check-square"></i><span>全选</span></button>
+                        <button class="asset-btn" type="button" data-localup-clear ${selectedLocalUploadIds.size ? '' : 'disabled'}><i data-lucide="square"></i><span>清空</span></button>
+                        <button class="asset-btn danger" type="button" data-localup-delete-selected ${selectedLocalUploadIds.size ? '' : 'disabled'}><i data-lucide="trash-2"></i><span>删除</span></button>
+                    </div>
+                </div>
+                <div class="manage-group manage-ai-group">
+                    <span class="manage-group-title">AI 处理</span>
                     ${renderLocalCaptionTools(imageCount)}
                 </div>
             </div>
@@ -1054,9 +1355,10 @@ function renderLocalUploadCard(item){
         <input class="asset-card-check" type="checkbox" data-localup-check="${escapeAttr(item.id)}" ${selectedLocalUploadIds.has(item.id) ? 'checked' : ''}>
         <div class="asset-thumb">${assetThumb(item)}</div>
         <div class="asset-card-body">
-            <div class="asset-card-name" title="${escapeAttr(item.name || '')}">${escapeHtml(item.name || '本地素材')}</div>
+            <div class="asset-card-name" data-localup-rename="${escapeAttr(item.id)}" title="${escapeAttr(item.name || '')}">${escapeHtml(item.name || '本地素材')}</div>
             <div class="asset-card-meta">${escapeHtml(assetKindLabel(item))} · ${escapeHtml(formatFileSize(item.size))}${hasCaption ? ' · 有提示词' : ''}</div>
         </div>
+        <button class="asset-card-quick asset-card-rename" type="button" data-localup-rename="${escapeAttr(item.id)}" title="重命名"><i data-lucide="pencil"></i></button>
     </article>`;
 }
 function renderLocalUploadDetail(item){
@@ -1066,6 +1368,7 @@ function renderLocalUploadDetail(item){
         <div class="panel-head">
             <div class="panel-title"><strong>素材预览</strong><span>${escapeHtml(assetKindLabel(item))}</span></div>
             <div class="panel-actions">
+                <button class="asset-icon-btn" type="button" data-localup-rename="${escapeAttr(item.id)}" title="重命名"><i data-lucide="pencil"></i></button>
                 <button class="asset-icon-btn" type="button" data-localup-open="${escapeAttr(item.id)}" title="新窗口打开"><i data-lucide="external-link"></i></button>
                 <button class="asset-icon-btn" type="button" data-localup-copy="${escapeAttr(item.id)}" title="复制链接"><i data-lucide="link"></i></button>
                 <button class="asset-icon-btn danger" type="button" data-localup-delete-one="${escapeAttr(item.id)}" title="删除"><i data-lucide="trash-2"></i></button>
@@ -1074,7 +1377,7 @@ function renderLocalUploadDetail(item){
         <div class="detail-scroll">
             <div class="detail-media"><button class="detail-media-frame detail-media-zoomable" type="button" data-localup-preview="${escapeAttr(item.id)}" title="点击放大预览">${assetThumb(item)}</button></div>
             <div class="detail-body">
-                <div class="detail-name">${escapeHtml(item.name || '本地素材')}</div>
+                <input class="detail-name-input" data-localup-inline-name="${escapeAttr(item.id)}" type="text" value="${escapeAttr(item.name || '本地素材')}" title="直接修改名称">
                 <div class="detail-meta-grid">
                     <div class="detail-meta"><span>类型</span><strong>${escapeHtml(assetKindLabel(item))}</strong></div>
                     <div class="detail-meta"><span>大小</span><strong>${escapeHtml(formatFileSize(item.size))}</strong></div>
@@ -1082,11 +1385,19 @@ function renderLocalUploadDetail(item){
                     <div class="detail-meta"><span>来源</span><strong>本地上传</strong></div>
                 </div>
                 <div class="detail-url">${escapeHtml(item.url || '')}</div>
+                ${isImage ? `<div class="detail-caption-card">
+                    <div class="detail-caption-head"><strong>智能分类</strong></div>
+                    <div class="detail-classification-body">${renderClassificationChips(item, 28, {kind:'localup'}) || '<span class="classification-empty">暂无智能分类，可以上传时自动生成或后续批量分类。</span>'}</div>
+                </div>` : ''}
                 ${isImage ? `
                     <div class="detail-caption-card">
                         <div class="detail-caption-head">
                             <strong>反推提示词</strong>
-                            <button class="asset-btn primary" type="button" data-localup-caption-save="${escapeAttr(item.id)}"><i data-lucide="save"></i><span>保存</span></button>
+                            <div class="detail-caption-actions">
+                                <button class="asset-btn" type="button" data-localup-caption-one="${escapeAttr(item.id)}" ${localCaptionBusy || localClassifyBusy ? 'disabled' : ''}><i data-lucide="${localCaptionBusy ? 'loader-2' : 'wand-sparkles'}"></i><span>${localCaptionBusy ? '反推中' : '反推'}</span></button>
+                                <button class="asset-btn" type="button" data-localup-caption-copy="${escapeAttr(item.id)}"><i data-lucide="copy"></i><span>复制</span></button>
+                                <button class="asset-btn primary" type="button" data-localup-caption-save="${escapeAttr(item.id)}"><i data-lucide="save"></i><span>保存</span></button>
+                            </div>
                         </div>
                         <textarea id="localUploadCaptionEdit" class="detail-caption-textarea" placeholder="暂无反推提示词，可以批量反推后自动写入，也可以在这里手动编辑。">${escapeHtml(item.caption || '')}</textarea>
                     </div>
@@ -1169,6 +1480,7 @@ function renderAssetManager(){
     const cat = activeAssetCategory();
     const items = currentAssetItems();
     const detail = selectedAsset();
+    const imageCount = selectedAssetImageItems().length;
     root.innerHTML = `
         <aside class="asset-panel asset-nav">
             <div class="panel-head">
@@ -1187,8 +1499,8 @@ function renderAssetManager(){
         <section class="asset-panel asset-content ${assetManageMode ? 'manage-on' : ''}">
             <div class="content-toolbar">
                 <div class="content-heading">
-                    <strong>${escapeHtml(cat?.name || '图片资产')}</strong>
-                    <span>${escapeHtml(lib?.name || '资产库')} / ${items.length} 个素材</span>
+                    <strong>${escapeHtml(assetViewTitle())}</strong>
+                    <span>${assetViewSubtitle(items)}</span>
                 </div>
                 <div class="asset-tools">
                     <label class="asset-search-wrap"><i data-lucide="search"></i><input id="assetSearch" class="asset-search" type="search" value="${escapeAttr(assetQuery)}" placeholder="搜索素材"></label>
@@ -1198,20 +1510,27 @@ function renderAssetManager(){
             ${renderAssetClipboardBar()}
             ${renderLocalClipboardBar()}
             <div class="manage-tools">
-                <span>已选择 ${selectedAssetIds.size} 个素材，支持拖拽框选或逐个勾选。</span>
-                <div class="asset-tools">
-                    <button class="asset-btn" type="button" data-asset-select-all ${items.length ? '' : 'disabled'}><i data-lucide="check-square"></i><span>全选</span></button>
-                    <button class="asset-btn" type="button" data-asset-clear-selection ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="square"></i><span>清空</span></button>
-                    <button class="asset-btn" type="button" data-asset-cut-selected ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="scissors"></i><span>剪切</span></button>
-                    <button class="asset-btn" type="button" data-asset-copy-selected ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="copy"></i><span>复制</span></button>
-                    <button class="asset-btn" type="button" data-asset-download-selected ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="download"></i><span>下载所选</span></button>
-                    <button class="asset-btn" type="button" data-asset-copy-to-canvas ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="clipboard-paste"></i><span>复制到画布</span></button>
-                    <button class="asset-btn danger" type="button" data-asset-delete-selected ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="trash-2"></i><span>删除所选</span></button>
+                <div class="manage-group manage-select-group">
+                    <span class="manage-group-title">管理</span>
+                    <span class="manage-summary">已选 ${selectedAssetIds.size} 个，其中 ${imageCount} 张图片</span>
+                    <div class="asset-tools">
+                        <button class="asset-btn" type="button" data-asset-select-all ${items.length ? '' : 'disabled'}><i data-lucide="check-square"></i><span>全选</span></button>
+                        <button class="asset-btn" type="button" data-asset-clear-selection ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="square"></i><span>清空</span></button>
+                        <button class="asset-btn" type="button" data-asset-cut-selected ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="scissors"></i><span>剪切</span></button>
+                        <button class="asset-btn" type="button" data-asset-copy-selected ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="copy"></i><span>复制</span></button>
+                        <button class="asset-btn" type="button" data-asset-download-selected ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="download"></i><span>下载所选</span></button>
+                        <button class="asset-btn" type="button" data-asset-copy-to-canvas ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="clipboard-paste"></i><span>复制到画布</span></button>
+                        <button class="asset-btn danger" type="button" data-asset-delete-selected ${selectedAssetIds.size ? '' : 'disabled'}><i data-lucide="trash-2"></i><span>删除所选</span></button>
+                    </div>
+                </div>
+                <div class="manage-group manage-ai-group">
+                    <span class="manage-group-title">AI 处理</span>
+                    <button class="asset-btn" type="button" data-asset-classify-selected ${imageCount && !assetClassifyBusy ? '' : 'disabled'}><i data-lucide="${assetClassifyBusy ? 'loader-2' : 'tags'}"></i><span>${assetClassifyBusy ? '分类中' : '智能分类'}</span></button>
                 </div>
             </div>
             <div class="content-scroll">
                 <div class="asset-grid">
-                    ${renderUploadCard(cat)}
+                    ${activeAssetClassFilter ? '' : renderUploadCard(cat)}
                     ${items.map(item => renderAssetCard(item)).join('')}
                     ${items.length ? '' : '<div class="empty-state">当前分组还没有素材，可以上传，或从智能画布输出保存到素材库。</div>'}
                 </div>
@@ -1382,6 +1701,10 @@ function renderAssetClipboardBar(){
 function renderAssetTreeBranch(lib){
     const isActiveLib = lib.id === activeAssetLibraryId;
     const cats = (lib.categories || []).filter(cat => (cat.type || 'image') === 'image');
+    const smartClasses = isActiveLib ? assetClassificationEntriesForLibrary(lib) : [];
+    const smartGroups = groupedAssetClassificationEntries(smartClasses);
+    const activeClassEntry = isActiveLib ? activeAssetClassEntry() : null;
+    const activeClassGroup = activeClassEntry ? assetClassificationEntryGroup(activeClassEntry)?.id : '';
     const showLibActions = isActiveLib && assetTreeFocus === 'library';
     return `<div class="tree-branch ${isActiveLib ? 'expanded' : ''}">
         <button class="tree-row tree-parent ${isActiveLib ? 'contains-active' : ''} ${showLibActions ? 'active' : ''}" type="button" data-asset-lib="${escapeAttr(lib.id)}">
@@ -1397,6 +1720,23 @@ function renderAssetTreeBranch(lib){
                 <span class="tree-row-name">${escapeHtml(cat.name || '分组')}</span>
                 <span class="tree-row-count">${(cat.items || []).length}</span>
             </button>${isActiveLib && cat.id === activeAssetCategoryId && assetTreeFocus === 'category' ? renderAssetTreeActionBar('category') : ''}`).join('') : '<div class="tree-empty">暂无分组</div>'}
+            ${isActiveLib ? `<div class="tree-smart-class">
+                <button class="tree-row tree-parent ${activeAssetClassFilter ? 'contains-active' : ''}" type="button" data-asset-class-root="${escapeAttr(lib.id)}">
+                    <span class="tree-row-icon"><i data-lucide="tags"></i></span>
+                    <span class="tree-row-name">智能分类</span>
+                    <span class="tree-row-count">${smartGroups.length}</span>
+                </button>
+                ${smartGroups.length ? smartGroups.map(group => `<div class="smart-class-group">
+                    <button class="smart-class-group-btn ${openAssetClassGroup === group.id ? 'open' : ''} ${activeClassGroup === group.id ? 'active' : ''}" type="button" data-asset-class-group="${escapeAttr(group.id)}">
+                        <span>${escapeHtml(group.name)}</span><small>${group.entries.length}</small><i data-lucide="${openAssetClassGroup === group.id ? 'chevron-up' : 'chevron-down'}"></i>
+                    </button>
+                    ${openAssetClassGroup === group.id ? `<div class="smart-class-pills">
+                        ${group.entries.map(entry => `<button class="smart-class-pill ${activeAssetClassFilter === entry.key ? 'active' : ''}" type="button" data-asset-class-filter="${escapeAttr(entry.key)}" data-asset-class-lib="${escapeAttr(lib.id)}" title="${escapeAttr(entry.label)}">
+                            <span>${escapeHtml(entry.tag)}</span><small>${entry.count}</small>
+                        </button>`).join('')}
+                    </div>` : ''}
+                </div>`).join('') : '<div class="tree-empty">暂无分类，先选择图片点“智能分类”</div>'}
+            </div>` : ''}
         </div>
     </div>`;
 }
@@ -1513,6 +1853,7 @@ function renderAvatarSection(item){
 }
 function renderAssetDetail(item){
     if(!item) return `<div class="panel-head"><div class="panel-title"><strong>素材预览</strong><span>选择一个素材查看详情</span></div></div><div class="detail-scroll"><div class="detail-empty"><i data-lucide="image"></i><span>暂无可预览素材</span></div></div>`;
+    const isImage = assetKind(item) === 'image';
     if(assetEditMode && item.id === selectedAssetId){
         return `
             <div class="panel-head">
@@ -1555,6 +1896,10 @@ function renderAssetDetail(item){
                     <div class="detail-meta"><span>分组</span><strong>${escapeHtml(activeAssetCategory()?.name || '分组')}</strong></div>
                 </div>
                 <div class="detail-url">${escapeHtml(item.url || '')}</div>
+                ${isImage ? `<div class="detail-caption-card">
+                    <div class="detail-caption-head"><strong>智能分类</strong></div>
+                    <div class="detail-classification-body">${renderClassificationChips(item, 32, {kind:'asset', libraryId:activeAssetLibraryId}) || '<span class="classification-empty">暂无智能分类，可以选中图片后点击“智能分类”。</span>'}</div>
+                </div>` : ''}
                 ${renderAvatarSection(item)}
             </div>
         </div>
@@ -1881,11 +2226,19 @@ function downloadAssetItem(id){
     setStatus('已开始下载');
 }
 const SMART_CANVAS_ASSET_INBOX_KEY = 'smart_canvas_asset_inbox';
+function canvasInboxAssetFromItem(item){
+    const out = {url:item?.url || '', name:item?.name || '素材', kind:item?.kind || ''};
+    ['natural_w','natural_h','width','height','w','h','layout_w','layout_h'].forEach(key => {
+        const n = Number(item?.[key]);
+        if(Number.isFinite(n) && n > 0) out[key] = n;
+    });
+    return out;
+}
 function copySelectedAssetsToCanvas(){
     const items = [...selectedAssetIds]
         .map(id => findAssetItem(id))
         .filter(it => it?.url)
-        .map(it => ({url: it.url, name: it.name || '素材', kind: it.kind || ''}));
+        .map(canvasInboxAssetFromItem);
     if(!items.length){ setStatus('没有可复制的素材'); return; }
     try {
         // 写入跨页剪贴板，画布页按 Ctrl+V 读取并批量粘贴
@@ -1968,6 +2321,7 @@ async function uploadLocalAssets(files){
         const data = await apiJson('/api/local-assets/upload', {method:'POST', body:form});
         const uploaded = Array.isArray(data.files) ? data.files : [];
         await loadLocalAssets();
+        activeLocalUploadClassFilter = '';
         selectedLocalUploadId = uploaded[0]?.id || selectedLocalUploadId;
         render();
         setStatus(`已上传 ${uploaded.length} 个素材`);
@@ -1986,6 +2340,7 @@ async function deleteLocalAssets(ids){
             body:JSON.stringify({names})
         });
         await loadLocalAssets();
+        if(activeLocalUploadClassFilter && !activeLocalUploadClassEntry()) activeLocalUploadClassFilter = '';
         selectedLocalUploadIds.clear();
         if(selectedLocalUploadId && !findLocalUpload(selectedLocalUploadId)) selectedLocalUploadId = '';
         render();
@@ -1993,6 +2348,74 @@ async function deleteLocalAssets(ids){
     } catch(err) {
         setStatus(err.message || '删除失败');
     }
+}
+async function saveLocalUploadInlineName(id, name){
+    const item = findLocalUpload(id);
+    if(!item) return;
+    if(!String(name || '').trim()) return;
+    if(String(item.name || '') === String(name || '')) return;
+    try {
+        const data = await apiJson('/api/local-assets/items', {
+            method:'PATCH',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({path:item.file || item.id, name})
+        });
+        localAssets = Array.isArray(data.items) ? data.items : localAssets;
+        localUploadTree = data.tree || localUploadTree;
+        selectedLocalUploadId = data.item?.id || data.item?.file || selectedLocalUploadId;
+        if(selectedLocalUploadIds.has(id)){
+            selectedLocalUploadIds.delete(id);
+            if(data.item?.id) selectedLocalUploadIds.add(data.item.id);
+        }
+        render();
+        setStatus('已重命名素材，反推提示词和分类索引已同步');
+    } catch(err) {
+        setStatus(err.message || '重命名失败');
+    }
+}
+function beginLocalUploadInlineRename(id){
+    const item = findLocalUpload(id);
+    const card = [...root.querySelectorAll('[data-localup-card]')].find(el => el.dataset.localupCard === id);
+    const nameEl = card?.querySelector('.asset-card-name');
+    if(!item || !card || !nameEl || card.querySelector('.asset-card-name-input')) return;
+    const previousName = item.name || '本地素材';
+    const input = document.createElement('input');
+    input.className = 'asset-card-name-input';
+    input.type = 'text';
+    input.value = previousName;
+    input.setAttribute('aria-label', '素材名称');
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+    let done = false;
+    const restore = () => {
+        if(input.isConnected) input.replaceWith(nameEl);
+    };
+    const finish = async save => {
+        if(done) return;
+        done = true;
+        const name = input.value.trim();
+        if(!save || !name || name === previousName){
+            restore();
+            return;
+        }
+        input.disabled = true;
+        await saveLocalUploadInlineName(id, name);
+    };
+    input.addEventListener('keydown', event => {
+        event.stopPropagation();
+        if(event.key === 'Enter'){
+            event.preventDefault();
+            finish(true);
+        } else if(event.key === 'Escape'){
+            event.preventDefault();
+            finish(false);
+        }
+    });
+    input.addEventListener('pointerdown', event => event.stopPropagation());
+    input.addEventListener('mousedown', event => event.stopPropagation());
+    input.addEventListener('click', event => event.stopPropagation());
+    input.addEventListener('blur', () => finish(true));
 }
 async function createLocalUploadFolder(){
     const name = window.prompt('新建文件夹名称', '新文件夹');
@@ -2006,6 +2429,7 @@ async function createLocalUploadFolder(){
         localAssets = Array.isArray(data.items) ? data.items : localAssets;
         localUploadTree = data.tree || localUploadTree;
         activeLocalUploadFolder = data.folder?.path || activeLocalUploadFolder;
+        activeLocalUploadClassFilter = '';
         selectedLocalUploadId = '';
         selectedLocalUploadIds.clear();
         render();
@@ -2031,6 +2455,7 @@ async function renameLocalUploadFolder(){
         localAssets = Array.isArray(data.items) ? data.items : localAssets;
         localUploadTree = data.tree || localUploadTree;
         activeLocalUploadFolder = data.folder?.path || activeLocalUploadFolder;
+        activeLocalUploadClassFilter = '';
         selectedLocalUploadId = '';
         selectedLocalUploadIds.clear();
         render();
@@ -2074,6 +2499,123 @@ async function runLocalUploadCaptionSelected(){
         render();
     }
 }
+async function runLocalUploadCaptionOne(id){
+    const item = findLocalUpload(id);
+    if(!item || assetKind(item) !== 'image' || localCaptionBusy || localClassifyBusy) return;
+    normalizeLocalCaptionSettings();
+    if(!localCaptionProvider || !localCaptionModel){
+        setStatus('请先在 API 设置中配置可用的聊天/视觉模型');
+        return;
+    }
+    localCaptionBusy = true;
+    selectedLocalUploadId = item.id;
+    render();
+    setStatus(`正在反推「${item.name || '本地图片'}」的提示词...`);
+    try {
+        const data = await apiJson('/api/local-assets/caption', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                names:[item.file || item.id],
+                provider:localCaptionProvider,
+                model:localCaptionModel,
+                prompt:(localCaptionPrompt || '描述图片').trim() || '描述图片'
+            })
+        });
+        const result = (data.items || [])[0] || null;
+        if(result && !result.ok) throw new Error(result.error || '反推失败');
+        await loadLocalAssets();
+        selectedLocalUploadId = item.id;
+        render();
+        setStatus('已反推并保存当前图片提示词');
+    } catch(err) {
+        setStatus(err.message || '提示词反推失败');
+    } finally {
+        localCaptionBusy = false;
+        render();
+    }
+}
+async function copyLocalUploadCaption(id){
+    const item = findLocalUpload(id);
+    if(!item || assetKind(item) !== 'image') return;
+    const textarea = document.getElementById('localUploadCaptionEdit');
+    const text = textarea ? textarea.value : (item.caption || '');
+    if(!String(text || '').trim()){
+        setStatus('当前图片暂无可复制的提示词');
+        return;
+    }
+    const ok = await copyTextToClipboard(text);
+    setStatus(ok ? '已复制提示词' : '复制失败，请手动复制');
+}
+async function runLocalUploadClassifySelected(){
+    const images = selectedLocalUploadImageItems();
+    if(!images.length || localClassifyBusy) return;
+    normalizeLocalCaptionSettings();
+    if(!localCaptionProvider || !localCaptionModel){
+        setStatus('请先在 API 设置中配置可用的聊天/视觉模型');
+        return;
+    }
+    localClassifyBusy = true;
+    render();
+    setStatus(`正在智能分类 ${images.length} 张本地图片...`);
+    try {
+        const data = await apiJson('/api/local-assets/classify', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                names:images.map(item => item.file || item.id),
+                provider:localCaptionProvider,
+                model:localCaptionModel,
+                prompt:(localClassifyPrompt || '').trim()
+            })
+        });
+        await loadLocalAssets();
+        if(images[0]?.id) selectedLocalUploadId = images[0].id;
+        render();
+        const failed = (data.items || []).filter(item => !item.ok);
+        setStatus(failed.length ? `处理完成 ${data.count || 0} 张，${failed.length} 张失败：${failed[0].error || '分类失败'}` : `处理完成 ${data.count || images.length} 张图片`);
+    } catch(err) {
+        setStatus(err.message || '智能分类失败');
+    } finally {
+        localClassifyBusy = false;
+        render();
+    }
+}
+async function runAssetClassifySelected(){
+    const images = selectedAssetImageItems();
+    if(!images.length || assetClassifyBusy) return;
+    normalizeLocalCaptionSettings();
+    if(!localCaptionProvider || !localCaptionModel){
+        setStatus('请先在 API 设置中配置可用的聊天/视觉模型');
+        return;
+    }
+    assetClassifyBusy = true;
+    render();
+    setStatus(`正在智能分类 ${images.length} 张资产图片...`);
+    try {
+        const data = await apiJson('/api/asset-library/items/classify', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                library_id:activeAssetLibraryId,
+                ids:images.map(item => item.id),
+                provider:localCaptionProvider,
+                model:localCaptionModel,
+                prompt:(localClassifyPrompt || '').trim()
+            })
+        });
+        assetLibrary = data.library || assetLibrary;
+        if(images[0]?.id) selectedAssetId = images[0].id;
+        render();
+        const failed = (data.items || []).filter(item => !item.ok);
+        setStatus(failed.length ? `处理完成 ${data.count || 0} 张，${failed.length} 张失败：${failed[0].error || '分类失败'}` : `处理完成 ${data.count || images.length} 张资产图片`);
+    } catch(err) {
+        setStatus(err.message || '智能分类失败');
+    } finally {
+        assetClassifyBusy = false;
+        render();
+    }
+}
 async function saveLocalUploadCaption(id){
     const item = findLocalUpload(id);
     if(!item || assetKind(item) !== 'image') return;
@@ -2112,6 +2654,31 @@ async function handleClick(event){
     const localUpFolder = target.closest?.('[data-localup-folder]');
     if(localUpFolder){
         activeLocalUploadFolder = localUpFolder.dataset.localupFolder || '';
+        activeLocalUploadClassFilter = '';
+        selectedLocalUploadId = '';
+        selectedLocalUploadIds.clear();
+        pendingBatchDelete = '';
+        render();
+        return;
+    }
+    if(target.closest?.('[data-localup-class-root]')){
+        if(!localUploadClassEntries().length) setStatus('暂无智能分类，请先选择图片并点击“智能分类”');
+        return;
+    }
+    const localUpClassGroup = target.closest?.('[data-localup-class-group]');
+    if(localUpClassGroup){
+        const groupId = localUpClassGroup.dataset.localupClassGroup || '';
+        openLocalUploadClassGroup = openLocalUploadClassGroup === groupId ? '' : groupId;
+        render();
+        return;
+    }
+    const localUpClass = target.closest?.('[data-localup-class-filter]');
+    if(localUpClass){
+        const nextFilter = localUpClass.dataset.localupClassFilter || '';
+        activeLocalUploadClassFilter = activeLocalUploadClassFilter === nextFilter ? '' : nextFilter;
+        if(activeLocalUploadClassFilter) {
+            openLocalUploadClassGroup = assetClassificationGroupIdForFilter(activeLocalUploadClassFilter, localUploadClassEntries()) || openLocalUploadClassGroup;
+        }
         selectedLocalUploadId = '';
         selectedLocalUploadIds.clear();
         pendingBatchDelete = '';
@@ -2127,9 +2694,17 @@ async function handleClick(event){
     if(target.closest?.('[data-localup-select-all]')){ localUploadItems().forEach(item => selectedLocalUploadIds.add(item.id)); render(); return; }
     if(target.closest?.('[data-localup-clear]')){ selectedLocalUploadIds.clear(); render(); return; }
     if(target.closest?.('[data-localup-delete-selected]')){ await deleteLocalAssets([...selectedLocalUploadIds]); return; }
+    if(target.closest?.('[data-local-classify-toggle]')){ localClassifyPromptOpen = !localClassifyPromptOpen; render(); return; }
+    if(target.closest?.('[data-local-classify-run]')){ await runLocalUploadClassifySelected(); return; }
     if(target.closest?.('[data-local-caption-run]')){ await runLocalUploadCaptionSelected(); return; }
+    const localUpCaptionOne = target.closest?.('[data-localup-caption-one]');
+    if(localUpCaptionOne){ await runLocalUploadCaptionOne(localUpCaptionOne.dataset.localupCaptionOne || ''); return; }
+    const localUpCaptionCopy = target.closest?.('[data-localup-caption-copy]');
+    if(localUpCaptionCopy){ await copyLocalUploadCaption(localUpCaptionCopy.dataset.localupCaptionCopy || ''); return; }
     const localUpCaptionSave = target.closest?.('[data-localup-caption-save]');
     if(localUpCaptionSave){ await saveLocalUploadCaption(localUpCaptionSave.dataset.localupCaptionSave || ''); return; }
+    const localUpRename = target.closest?.('[data-localup-rename]');
+    if(localUpRename){ event.stopPropagation(); beginLocalUploadInlineRename(localUpRename.dataset.localupRename || ''); return; }
     const localUpDeleteOne = target.closest?.('[data-localup-delete-one]');
     if(localUpDeleteOne){ await deleteLocalAssets([localUpDeleteOne.dataset.localupDeleteOne || '']); return; }
     const localUpCheck = target.closest?.('[data-localup-check]');
@@ -2329,6 +2904,7 @@ async function handleClick(event){
     if(avatarRegister){ await registerAssetAvatar(avatarRegister.dataset.avatarRegister || '', avatarRegister.dataset.avatarProv || ''); return; }
     const avatarCheck = target.closest?.('[data-avatar-check]');
     if(avatarCheck){ await checkAssetAvatarStatus(avatarCheck.dataset.avatarCheck || '', false, avatarCheck.dataset.avatarProv || ''); return; }
+    if(target.closest?.('[data-asset-classify-selected]')){ await runAssetClassifySelected(); return; }
     if(target.closest?.('[data-asset-download-selected]')){ await downloadSelectedAssets(); return; }
     if(target.closest?.('[data-asset-copy-to-canvas]')){ copySelectedAssetsToCanvas(); return; }
     if(target.closest?.('[data-asset-delete-selected]')){ await deleteSelectedAssets(); return; }
@@ -2374,9 +2950,37 @@ async function handleClick(event){
         await deleteAssetCategory(); return;
     }
     const assetLib = target.closest?.('[data-asset-lib]');
-    if(assetLib){ activeAssetLibraryId = assetLib.dataset.assetLib || ''; assetTreeFocus = 'library'; activeAssetCategoryId = assetCategories()[0]?.id || ''; selectedAssetId = ''; selectedAssetIds.clear(); render(); return; }
+    if(assetLib){ activeAssetLibraryId = assetLib.dataset.assetLib || ''; assetTreeFocus = 'library'; activeAssetClassFilter = ''; activeAssetCategoryId = assetCategories()[0]?.id || ''; selectedAssetId = ''; selectedAssetIds.clear(); render(); return; }
+    const assetClassRoot = target.closest?.('[data-asset-class-root]');
+    if(assetClassRoot){
+        activeAssetLibraryId = assetClassRoot.dataset.assetClassRoot || activeAssetLibraryId;
+        assetTreeFocus = 'class';
+        if(!assetClassificationEntriesForLibrary(activeAssetLibrary()).length) setStatus('暂无智能分类，请先选择图片并点击“智能分类”');
+        return;
+    }
+    const assetClassGroup = target.closest?.('[data-asset-class-group]');
+    if(assetClassGroup){
+        openAssetClassGroup = openAssetClassGroup === (assetClassGroup.dataset.assetClassGroup || '') ? '' : (assetClassGroup.dataset.assetClassGroup || '');
+        render();
+        return;
+    }
+    const assetClass = target.closest?.('[data-asset-class-filter]');
+    if(assetClass){
+        activeAssetLibraryId = assetClass.dataset.assetClassLib || activeAssetLibraryId;
+        const nextFilter = assetClass.dataset.assetClassFilter || '';
+        activeAssetClassFilter = activeAssetClassFilter === nextFilter ? '' : nextFilter;
+        if(activeAssetClassFilter) {
+            openAssetClassGroup = assetClassificationGroupIdForFilter(activeAssetClassFilter, assetClassificationEntriesForLibrary(activeAssetLibrary())) || openAssetClassGroup;
+        }
+        assetTreeFocus = 'class';
+        selectedAssetId = '';
+        selectedAssetIds.clear();
+        pendingBatchDelete = '';
+        render();
+        return;
+    }
     const assetCat = target.closest?.('[data-asset-cat]');
-    if(assetCat){ activeAssetLibraryId = assetCat.dataset.assetCatLib || activeAssetLibraryId; activeAssetCategoryId = assetCat.dataset.assetCat || ''; assetTreeFocus = 'category'; selectedAssetId = ''; selectedAssetIds.clear(); render(); return; }
+    if(assetCat){ activeAssetLibraryId = assetCat.dataset.assetCatLib || activeAssetLibraryId; activeAssetCategoryId = assetCat.dataset.assetCat || ''; activeAssetClassFilter = ''; assetTreeFocus = 'category'; selectedAssetId = ''; selectedAssetIds.clear(); render(); return; }
     const assetCard = target.closest?.('[data-asset-card]');
     if(assetCard){ selectedAssetId = assetCard.dataset.assetCard || ''; assetEditMode = false; pendingDeleteAssetId = ''; render(); return; }
 
@@ -2654,6 +3258,7 @@ async function saveAssetTreeEdit(){
         data = await apiJson('/api/asset-library/libraries', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name})});
         assetLibrary = data.library || assetLibrary;
         activeAssetLibraryId = data.asset_library?.id || activeAssetLibraryId;
+        activeAssetClassFilter = '';
         assetTreeFocus = 'library';
     } else if(assetTreeEdit.kind === 'library-rename'){
         const lib = activeAssetLibrary();
@@ -2665,6 +3270,7 @@ async function saveAssetTreeEdit(){
         data = await apiJson('/api/asset-library/categories', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({library_id:activeAssetLibraryId, name, type:'image'})});
         assetLibrary = data.library || assetLibrary;
         activeAssetCategoryId = data.category?.id || activeAssetCategoryId;
+        activeAssetClassFilter = '';
         assetTreeFocus = 'category';
     } else if(assetTreeEdit.kind === 'category-rename'){
         const cat = activeAssetCategory();
@@ -2760,6 +3366,7 @@ async function deleteAssetLibrary(){
     assetLibrary = data.library || assetLibrary;
     activeAssetLibraryId = assetLibrary.active_library_id || assetLibraries()[0]?.id || '';
     activeAssetCategoryId = '';
+    activeAssetClassFilter = '';
     selectedAssetId = '';
     selectedAssetIds.clear();
     pendingTreeDelete = '';
@@ -2771,6 +3378,7 @@ async function createAssetCategory(){
     const data = await apiJson('/api/asset-library/categories', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({library_id:activeAssetLibraryId, name, type:'image'})});
     assetLibrary = data.library || assetLibrary;
     activeAssetCategoryId = data.category?.id || activeAssetCategoryId;
+    activeAssetClassFilter = '';
     selectedAssetId = '';
     render();
 }
@@ -2796,6 +3404,7 @@ async function deleteAssetCategory(){
     const data = await apiJson(`/api/asset-library/categories/${encodeURIComponent(cat.id)}`, {method:'DELETE'});
     assetLibrary = data.library || assetLibrary;
     activeAssetCategoryId = '';
+    activeAssetClassFilter = '';
     selectedAssetId = '';
     selectedAssetIds.clear();
     pendingTreeDelete = '';
@@ -2803,12 +3412,14 @@ async function deleteAssetCategory(){
 }
 async function renameAssetItem(id){
     const item = findAssetItem(id);
-    const name = window.prompt('素材名称', item?.name || '');
-    if(!item || !String(name || '').trim()) return;
-    const data = await apiJson(`/api/asset-library/items/${encodeURIComponent(id)}`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name})});
-    assetLibrary = data.library || assetLibrary;
+    if(!item) return;
     selectedAssetId = id;
     render();
+    requestAnimationFrame(() => {
+        const input = [...root.querySelectorAll('[data-asset-inline-name]')].find(el => el.dataset.assetInlineName === id);
+        input?.focus();
+        input?.select?.();
+    });
 }
 async function saveAssetEdit(id){
     const item = findAssetItem(id);
@@ -3263,78 +3874,44 @@ document.addEventListener('pointercancel', endLightboxPan);
 root.addEventListener('pointerdown', beginMarqueeSelection);
 document.addEventListener('pointermove', event => updateMarqueeSelection(event));
 document.addEventListener('pointerup', endMarqueeSelection);
+root.addEventListener('compositionstart', event => {
+    if(SEARCH_INPUT_IDS.has(event.target?.id || '')){
+        searchCompositionActive = true;
+        clearTimeout(searchRenderTimer);
+    }
+});
+root.addEventListener('compositionend', event => {
+    const id = event.target?.id || '';
+    if(!SEARCH_INPUT_IDS.has(id)) return;
+    searchCompositionActive = false;
+    lastSearchCompositionEndAt = Date.now();
+    updateSearchQueryFromInput(id, event.target.value || '');
+    scheduleSearchRender(id, event.target.selectionStart || String(event.target.value || '').length, 0);
+});
 root.addEventListener('input', event => {
-    if(event.target?.id === 'assetSearch'){
-        const pos = event.target.selectionStart || 0;
-        assetQuery = event.target.value || '';
-        selectedAssetId = '';
-        render();
-        requestAnimationFrame(() => {
-            const input = document.getElementById('assetSearch');
-            input?.focus();
-            input?.setSelectionRange?.(pos, pos);
-        });
-    }
-    if(event.target?.id === 'workflowSearch'){
-        const pos = event.target.selectionStart || 0;
-        workflowQuery = event.target.value || '';
-        selectedWorkflowId = '';
-        render();
-        requestAnimationFrame(() => {
-            const input = document.getElementById('workflowSearch');
-            input?.focus();
-            input?.setSelectionRange?.(pos, pos);
-        });
-    }
-    if(event.target?.id === 'promptSearch'){
-        const pos = event.target.selectionStart || 0;
-        promptQuery = event.target.value || '';
-        selectedPromptId = '';
-        render();
-        requestAnimationFrame(() => {
-            const input = document.getElementById('promptSearch');
-            input?.focus();
-            input?.setSelectionRange?.(pos, pos);
-        });
-    }
-    if(event.target?.id === 'localSearch'){
-        const pos = event.target.selectionStart || 0;
-        localQuery = event.target.value || '';
-        selectedLocalId = '';
-        render();
-        requestAnimationFrame(() => {
-            const input = document.getElementById('localSearch');
-            input?.focus();
-            input?.setSelectionRange?.(pos, pos);
-        });
-    }
-    if(event.target?.id === 'localUploadSearch'){
-        const pos = event.target.selectionStart || 0;
-        localUploadQuery = event.target.value || '';
-        selectedLocalUploadId = '';
-        render();
-        requestAnimationFrame(() => {
-            const input = document.getElementById('localUploadSearch');
-            input?.focus();
-            input?.setSelectionRange?.(pos, pos);
-        });
-    }
-    if(event.target?.id === 'canvasAssetSearch'){
-        const pos = event.target.selectionStart || 0;
-        canvasAssetQuery = event.target.value || '';
-        selectedCanvasAssetId = '';
-        render();
-        requestAnimationFrame(() => {
-            const input = document.getElementById('canvasAssetSearch');
-            input?.focus();
-            input?.setSelectionRange?.(pos, pos);
-        });
+    const searchId = event.target?.id || '';
+    if(SEARCH_INPUT_IDS.has(searchId)){
+        updateSearchQueryFromInput(searchId, event.target.value || '');
+        if(event.isComposing || searchCompositionActive) return;
+        if(Date.now() - lastSearchCompositionEndAt < 40) return;
+        scheduleSearchRender(searchId, event.target.selectionStart || 0);
+        return;
     }
     if(event.target?.id === 'localCaptionPrompt'){
         localCaptionPrompt = event.target.value || '';
+        writeLocalCaptionSettings();
+    }
+    if(event.target?.id === 'localClassifyPrompt'){
+        localClassifyPrompt = event.target.value || '';
+        writeLocalCaptionSettings();
     }
 });
 root.addEventListener('change', event => {
+    const inlineLocalUploadName = event.target.closest?.('[data-localup-inline-name]');
+    if(inlineLocalUploadName){
+        saveLocalUploadInlineName(inlineLocalUploadName.dataset.localupInlineName || '', inlineLocalUploadName.value || '').catch(err => setStatus(err.message || '保存失败'));
+        return;
+    }
     const inlineAssetName = event.target.closest?.('[data-asset-inline-name]');
     if(inlineAssetName){
         saveAssetInlineName(inlineAssetName.dataset.assetInlineName || '', inlineAssetName.value || '').catch(err => setStatus(err.message || '保存失败'));
@@ -3411,10 +3988,13 @@ root.addEventListener('change', event => {
     if(event.target?.id === 'localCaptionProvider'){
         localCaptionProvider = event.target.value || '';
         localCaptionModel = '';
+        normalizeLocalCaptionSettings();
+        writeLocalCaptionSettings();
         render();
     }
     if(event.target?.id === 'localCaptionModel'){
         localCaptionModel = event.target.value || '';
+        writeLocalCaptionSettings();
         render();
     }
     const avatarProvider = event.target.closest?.('[data-avatar-provider]');
