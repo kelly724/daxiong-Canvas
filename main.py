@@ -291,6 +291,7 @@ PROVIDER_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{2,40}$")
 SUPPORTED_PROVIDER_PROTOCOLS = {"openai", "apimart", "gemini", "volcengine", "runninghub", "jimeng", "codex_cli", "lovart"}
 SUPPORTED_IMAGE_REQUEST_MODES = {"openai", "openai-json"}
 RUNNINGHUB_DEFAULT_BASE_URL = "https://www.runninghub.cn"
+CODEX_CLI_DEFAULT_IMAGE_MODELS = ["codex-cli/gpt-image"]
 JIMENG_DEFAULT_IMAGE_MODELS = [
     "5.0",
     "4.6",
@@ -757,11 +758,12 @@ def default_api_providers():
             "image_edit_endpoint": "",
             "enabled": True,
             "primary": False,
-            "image_models": ["codex-cli/gpt-image"],
+            "image_models": CODEX_CLI_DEFAULT_IMAGE_MODELS,
             "chat_models": [],
             "video_models": [],
             "ms_loras": [],
             "ms_defaults_version": 0,
+            "local_auth_configured": False,
         },
         {
             "id": "lovart",
@@ -1208,6 +1210,9 @@ def normalize_provider(item):
     if provider_id == "jimeng":
         protocol = "jimeng"
         base_url = ""
+    if provider_id == "codex_cli":
+        protocol = "codex_cli"
+        base_url = ""
     if provider_id == "lovart":
         protocol = "lovart"
         base_url = base_url or LOVART_DEFAULT_BASE_URL
@@ -1231,6 +1236,7 @@ def normalize_provider(item):
         "rh_workflows": normalize_runninghub_entries(item.get("rh_workflows") or [], "workflow"),
         "volcengine_project_name": volc_project,
         "volcengine_region": volc_region,
+        "local_auth_configured": bool(item.get("local_auth_configured", False)),
     }
 
 def load_api_providers():
@@ -1297,6 +1303,15 @@ def public_provider(provider):
             "lovart_secret_key_env": lovart_secret_key_env(),
             "lovart_base_url_env": lovart_base_url_env(),
             "model_metadata": lovart_models_payload({}).get("model_metadata") or {},
+        })
+    if provider.get("id") == "codex_cli":
+        auth_cache = codex_cli_auth_cache_status()
+        configured = bool(provider.get("local_auth_configured") or codex_cli_local_auth_configured())
+        item.update({
+            "local_auth_configured": configured,
+            "codex_cli_installed": bool(codex_cli_command_path()),
+            "codex_cli_logged_in": bool(auth_cache.get("has_openai_api_key") or auth_cache.get("has_access_token") or auth_cache.get("has_refresh_token")),
+            "codex_cli_command_path": codex_cli_command_path(),
         })
     return item
 
@@ -2553,6 +2568,7 @@ class ApiProviderPayload(BaseModel):
     volcengine_secret_access_key: Optional[str] = None
     lovart_access_key: Optional[str] = None
     lovart_secret_key: Optional[str] = None
+    local_auth_configured: bool = False
     api_key: Optional[str] = None
     wallet_api_key: Optional[str] = None
     clear_key: bool = False
@@ -3462,6 +3478,8 @@ def log_net_error(context, exc, url=""):
 
 def api_headers(json_body=True, provider=None, model=""):
     if provider:
+        if provider.get("id") == "codex_cli" or provider_protocol(provider) == "codex_cli":
+            raise HTTPException(status_code=400, detail="Codex CLI 本机生图不使用 API Key，请先在 API 设置里点击“一键同步本机 Codex”并测试连通性。")
         key_env = provider_key_env(provider["id"])
         api_key = os.getenv(key_env, "")
         provider_name = provider.get("name") or provider["id"]
@@ -7239,11 +7257,12 @@ def runninghub_local_asset_path(url):
         return None
     return path
 
+RUNNINGHUB_OUTPUT_EXTENSIONS = {"png","jpg","jpeg","webp","gif","bmp","mp4","webm","mov","m4v","mkv","mp3","wav","ogg","m4a","flac","aac"}
+
 def runninghub_output_ext(remote, content_type=""):
     tail = str(remote or "").split("?", 1)[0].split("#", 1)[0]
     ext = os.path.splitext(tail)[1].lower().strip(".")
-    allowed = {"png","jpg","jpeg","webp","gif","bmp","mp4","webm","mov","m4v","mkv","mp3","wav","ogg","m4a","flac","aac"}
-    if ext in allowed:
+    if ext in RUNNINGHUB_OUTPUT_EXTENSIONS:
         return ext
     ct = str(content_type or "").lower()
     if "mp4" in ct:
@@ -7263,6 +7282,30 @@ def runninghub_output_ext(remote, content_type=""):
     if "jpeg" in ct:
         return "jpg"
     return "png"
+
+def runninghub_remote_cache_key(remote):
+    value = str(remote or "").strip()
+    try:
+        parsed = urllib.parse.urlsplit(value)
+        if parsed.scheme and parsed.netloc:
+            value = urllib.parse.urlunsplit((parsed.scheme.lower(), parsed.netloc.lower(), parsed.path, "", ""))
+        else:
+            value = value.split("?", 1)[0].split("#", 1)[0]
+    except Exception:
+        value = value.split("?", 1)[0].split("#", 1)[0]
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
+
+def runninghub_cached_output_url(cache_key):
+    if not cache_key:
+        return ""
+    prefix = f"rh_{cache_key}."
+    try:
+        for filename in os.listdir(OUTPUT_OUTPUT_DIR):
+            if filename.startswith(prefix):
+                return output_url_for(filename, "output")
+    except OSError:
+        return ""
+    return ""
 
 def runninghub_extract_outputs(data):
     arr = []
@@ -7291,14 +7334,19 @@ def runninghub_extract_outputs(data):
 async def runninghub_store_remote_output(client, remote):
     if not str(remote or "").startswith(("http://", "https://")):
         return remote
+    cache_key = runninghub_remote_cache_key(remote)
+    cached = runninghub_cached_output_url(cache_key)
+    if cached:
+        return cached
     response = await client.get(remote, follow_redirects=True)
     if not response.is_success:
         return remote
     ext = runninghub_output_ext(remote, response.headers.get("content-type", ""))
-    filename = f"rh_{uuid.uuid4().hex[:12]}.{ext}"
+    filename = f"rh_{cache_key}.{ext}"
     path = output_path_for(filename, "output")
-    with open(path, "wb") as f:
-        f.write(response.content)
+    if not os.path.exists(path):
+        with open(path, "wb") as f:
+            f.write(response.content)
     return output_url_for(filename, "output")
 
 def runninghub_fail_reason(raw):
@@ -7838,6 +7886,49 @@ async def generate_runninghub_provider_image(prompt, size, model, reference_imag
         result = await wait_for_runninghub_image_task(client, provider, task_id)
         return runninghub_extract_image(result), result
 
+async def generate_codex_cli_provider_image(prompt, size, model, reference_images=None, provider=None):
+    status = codex_cli_status_payload()
+    if not status.get("connected"):
+        raise HTTPException(status_code=400, detail=codex_cli_not_ready_detail(status))
+
+    refs = [ref for ref in image_references(reference_images or []) if ref.get("url")]
+    start_payload = CodexCliImageStartRequest(
+        prompt=prompt,
+        aspect_ratio=codex_cli_online_aspect_ratio(size),
+        batch_size=1,
+        mode="image2image" if refs else "text2image",
+        reference_images=[ref.get("url") for ref in refs if ref.get("url")],
+        timeout_ms=max(30000, min(1800000, int(IMAGE_TASK_TIMEOUT or 300) * 1000)),
+    )
+    start = await codex_cli_imagegen_start(start_payload)
+    task_id = str(start.get("task_id") or "")
+    if not task_id:
+        raise HTTPException(status_code=502, detail="Codex CLI 未返回任务 ID")
+
+    deadline = time.monotonic() + max(60, min(1800, int(IMAGE_TASK_TIMEOUT or 300) + 30))
+    last_status: Dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        await asyncio.sleep(2.0)
+        last_status = await codex_cli_imagegen_status(task_id)
+        state = str(last_status.get("status") or "").lower()
+        if state == "succeeded":
+            images = [
+                item for item in (last_status.get("images") or [])
+                if isinstance(item, dict) and item.get("url")
+            ]
+            if not images:
+                raise HTTPException(status_code=502, detail="Codex CLI 已完成，但未返回图片文件。")
+            return {"type": "url", "value": str(images[0].get("url") or "")}, {
+                "id": task_id,
+                "provider": "codex_cli",
+                "model": model,
+                "images": images,
+                "raw": last_status,
+            }
+        if state == "failed":
+            raise HTTPException(status_code=502, detail=last_status.get("error") or "Codex CLI 生图失败")
+    raise HTTPException(status_code=504, detail=f"Codex CLI 生图超时：{last_status.get('error') or task_id}")
+
 async def generate_ai_image(prompt, size, quality, model, reference_images=None, provider_id="comfly"):
     provider = get_api_provider(provider_id)
     if provider["id"] == "modelscope":
@@ -7846,6 +7937,8 @@ async def generate_ai_image(prompt, size, quality, model, reference_images=None,
         return await generate_jimeng_provider_image(prompt, size, model, reference_images, provider)
     if is_runninghub_provider(provider):
         return await generate_runninghub_provider_image(prompt, size, model, reference_images, provider)
+    if provider.get("id") == "codex_cli" or provider_protocol(provider) == "codex_cli":
+        return await generate_codex_cli_provider_image(prompt, size, model, reference_images, provider)
     if effective_protocol(provider, model) == "gemini":
         return await generate_gemini_provider_image(prompt, size, model, reference_images, provider)
     if is_volcengine_provider(provider):
@@ -9337,6 +9430,13 @@ async def save_providers(payload: List[ApiProviderPayload]):
         if provider["id"] == "lovart":
             provider["protocol"] = "lovart"
             provider["base_url"] = provider.get("base_url") or LOVART_DEFAULT_BASE_URL
+        if provider["id"] == "codex_cli":
+            provider["protocol"] = "codex_cli"
+            provider["base_url"] = ""
+            provider["local_auth_configured"] = bool(item.local_auth_configured or provider.get("local_auth_configured"))
+            provider["image_models"] = model_list_from_values([*(provider.get("image_models") or []), *CODEX_CLI_DEFAULT_IMAGE_MODELS])
+            provider["chat_models"] = []
+            provider["video_models"] = []
     if not providers:
         raise HTTPException(status_code=400, detail="至少保留一个 API 平台")
     # 强制最多一个 primary（取最后被标记的；都没标记则保持原样不强制）
@@ -9387,6 +9487,8 @@ def protocol_from_payload(payload):
         return "runninghub"
     if provider_id == "jimeng":
         return "jimeng"
+    if provider_id == "codex_cli":
+        return "codex_cli"
     if provider_id == "lovart":
         return "lovart"
     protocol = str(getattr(payload, "protocol", "") or "openai").strip().lower()
@@ -9664,6 +9766,34 @@ async def test_provider_connection(payload: TestConnectionPayload):
             "video_models": JIMENG_DEFAULT_VIDEO_MODELS,
             "all": [*JIMENG_DEFAULT_IMAGE_MODELS, *JIMENG_DEFAULT_VIDEO_MODELS],
             "raw": status.get("raw"),
+        }
+    if protocol == "codex_cli":
+        status = codex_cli_status_payload()
+        checks = status.get("checks") or {}
+        ok = bool(status.get("configured") and status.get("ready") and checks.get("loggedIn"))
+        message = "Codex CLI 连通性通过，已同步本机登录态。" if ok else "Codex CLI 未就绪：请先一键同步本机 Codex，或运行 codex login。"
+        if not status.get("available"):
+            message = "没有找到 codex 命令，请先安装 Codex CLI。"
+        elif not status.get("configured"):
+            message = "尚未同步本机 Codex，请点击“一键同步本机 Codex”。"
+        elif not checks.get("loggedIn"):
+            message = "Codex CLI 尚未登录，请运行 codex login 后再同步。"
+        elif not checks.get("supportsExec"):
+            message = "当前 Codex CLI 不支持 codex exec，请升级 Codex CLI。"
+        elif not checks.get("workspaceWritable"):
+            message = "当前项目目录不可写，无法保存 Codex 生图结果。"
+        return {
+            "ok": ok,
+            "protocol": "codex_cli",
+            "status": 200 if ok else 0,
+            "message": message,
+            "configured": bool(status.get("configured")),
+            "model_count": len(CODEX_CLI_DEFAULT_IMAGE_MODELS),
+            "image_models": CODEX_CLI_DEFAULT_IMAGE_MODELS,
+            "chat_models": [],
+            "video_models": [],
+            "all": CODEX_CLI_DEFAULT_IMAGE_MODELS,
+            "raw": status,
         }
     base_url = (payload.base_url or "").strip().rstrip("/")
     if not base_url:
@@ -9971,6 +10101,16 @@ async def fetch_upstream_models_from_payload(payload: TestConnectionPayload):
         except HTTPException:
             mode_data = {}
         return lovart_models_payload(mode_data)
+    if protocol == "codex_cli":
+        return {
+            "total": len(CODEX_CLI_DEFAULT_IMAGE_MODELS),
+            "protocol": "codex_cli",
+            "image_models": CODEX_CLI_DEFAULT_IMAGE_MODELS,
+            "chat_models": [],
+            "video_models": [],
+            "all": CODEX_CLI_DEFAULT_IMAGE_MODELS,
+            "message": "Codex CLI 使用固定本机生图模型，无需远端模型列表。",
+        }
     api_key = api_key_from_payload(payload, protocol)
     return await fetch_models_from_upstream(payload.base_url, api_key, protocol, payload.image_request_mode)
 
@@ -9985,6 +10125,16 @@ async def fetch_upstream_models(provider_id: str):
         except HTTPException:
             mode_data = {}
         return lovart_models_payload(mode_data)
+    if provider.get("id") == "codex_cli" or provider_protocol(provider) == "codex_cli":
+        return {
+            "total": len(CODEX_CLI_DEFAULT_IMAGE_MODELS),
+            "protocol": "codex_cli",
+            "image_models": CODEX_CLI_DEFAULT_IMAGE_MODELS,
+            "chat_models": [],
+            "video_models": [],
+            "all": CODEX_CLI_DEFAULT_IMAGE_MODELS,
+            "message": "Codex CLI 使用固定本机生图模型，无需远端模型列表。",
+        }
     api_key = os.getenv(runninghub_wallet_key_env(), "") if provider["id"] == "runninghub" else ""
     if not api_key:
         api_key = os.getenv(provider_key_env(provider["id"]), "")
@@ -10259,12 +10409,100 @@ async def build_lovart_image_result(payload: OnlineImageRequest, provider: Dict[
         raise lovart_http_exception(exc) from exc
     return await lovart_finalize_image_result(payload, provider, model, result, task_id)
 
+def codex_cli_online_aspect_ratio(size: str) -> str:
+    width, height = parse_size_pair(size)
+    if width and height:
+        if width == height:
+            return "1:1"
+        return f"{max(1, width)}:{max(1, height)}"
+    return "1:1"
+
+def codex_cli_not_ready_detail(status: Dict[str, Any]) -> str:
+    checks = status.get("checks") or {}
+    if not status.get("available"):
+        return "没有找到 codex 命令，请先安装 Codex CLI。"
+    if not status.get("configured"):
+        return "Codex CLI 本机生图未配置，请先在 API 设置里点击“一键同步本机 Codex”。"
+    if not checks.get("loggedIn"):
+        return "Codex CLI 尚未登录，请在终端运行 codex login 后重新同步。"
+    if not checks.get("supportsExec"):
+        return "当前 Codex CLI 不支持 codex exec，请升级 Codex CLI。"
+    if not checks.get("workspaceWritable"):
+        return "当前项目目录不可写，无法保存 Codex CLI 生图结果。"
+    missing = status.get("missing") or []
+    return "Codex CLI 本机生图未就绪：" + ("；".join(map(str, missing)) if missing else "请在 API 设置里测试连通性。")
+
+async def build_codex_cli_online_image_result(payload: OnlineImageRequest, provider: Dict[str, Any], model: str, task_id: str = ""):
+    status = codex_cli_status_payload()
+    if not status.get("connected"):
+        raise HTTPException(status_code=400, detail=codex_cli_not_ready_detail(status))
+
+    refs = [ref.dict() for ref in payload.reference_images if ref.url]
+    reference_urls = [ref.get("url") for ref in image_references(refs) if ref.get("url")]
+    count = max(1, min(4, int(payload.n or 1)))
+    start_payload = CodexCliImageStartRequest(
+        prompt=payload.prompt,
+        aspect_ratio=codex_cli_online_aspect_ratio(payload.size),
+        batch_size=count,
+        mode="image2image" if reference_urls else "text2image",
+        reference_images=reference_urls,
+        timeout_ms=max(30000, min(1800000, int(IMAGE_TASK_TIMEOUT or 300) * 1000)),
+    )
+    start = await codex_cli_imagegen_start(start_payload)
+    codex_task_id = str(start.get("task_id") or task_id or "")
+    if not codex_task_id:
+        raise HTTPException(status_code=502, detail="Codex CLI 未返回任务 ID")
+
+    deadline = time.monotonic() + max(60, min(1800, int(IMAGE_TASK_TIMEOUT or 300) + 30))
+    last_status: Dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        await asyncio.sleep(2.0)
+        last_status = await codex_cli_imagegen_status(codex_task_id)
+        state = str(last_status.get("status") or "").lower()
+        if state == "succeeded":
+            local_urls = [
+                str(item.get("url") or "")
+                for item in (last_status.get("images") or [])
+                if isinstance(item, dict) and item.get("url")
+            ]
+            if not local_urls:
+                raise HTTPException(status_code=502, detail="Codex CLI 已完成，但未返回图片文件。")
+            result = {
+                "prompt": payload.prompt,
+                "images": local_urls,
+                "timestamp": time.time(),
+                "type": "online",
+                "model": model,
+                "provider_id": provider["id"],
+                "provider_name": provider.get("name") or provider["id"],
+                "task_id": codex_task_id,
+                "request_id": codex_task_id,
+                "params": {
+                    "provider_id": provider["id"],
+                    "model": model,
+                    "size": payload.size,
+                    "quality": payload.quality,
+                    "n": count,
+                    "reference_images": refs,
+                },
+                "raw": last_status,
+            }
+            save_to_history(result)
+            if GLOBAL_LOOP:
+                asyncio.run_coroutine_threadsafe(manager.broadcast_new_image(result), GLOBAL_LOOP)
+            return result
+        if state == "failed":
+            raise HTTPException(status_code=502, detail=last_status.get("error") or "Codex CLI 生图失败")
+    raise HTTPException(status_code=504, detail=f"Codex CLI 生图超时：{last_status.get('error') or codex_task_id}")
+
 async def build_online_image_result(payload: OnlineImageRequest, task_id: str = ""):
     provider = get_api_provider(payload.provider_id)
     default_model = (provider.get("image_models") or [IMAGE_MODEL])[0]
     model = selected_model(payload.model, default_model)
     if is_lovart_provider(provider):
         return await build_lovart_image_result(payload, provider, model, task_id)
+    if provider.get("id") == "codex_cli" or provider_protocol(provider) == "codex_cli":
+        return await build_codex_cli_online_image_result(payload, provider, model, task_id)
     refs = [ref.dict() for ref in payload.reference_images if ref.url]
     image_refs = image_references(refs)
     count = max(1, min(8, int(payload.n or 1)))
@@ -11958,13 +12196,54 @@ async def scene_detection_analyze(payload: SceneDetectionRequest):
 CODEX_CLI_TASKS: Dict[str, Dict[str, Any]] = {}
 CODEX_CLI_TASK_LOCK = Lock()
 
+def codex_cli_env_flag(key: str) -> str:
+    return (os.getenv(key, "") or read_api_env_value(key)).strip()
+
+def codex_cli_local_auth_configured() -> bool:
+    value = codex_cli_env_flag("CODEX_CLI_USE_LOCAL_AUTH") or codex_cli_env_flag("CODEX_CLI_AUTH_CONFIGURED")
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+def codex_cli_expand_path(path: str) -> str:
+    return os.path.abspath(os.path.expandvars(os.path.expanduser(path or ""))) if path else ""
+
+def codex_cli_auth_file_path() -> Tuple[str, str]:
+    explicit = codex_cli_env_flag("CODEX_CLI_AUTH_FILE")
+    if explicit:
+        return codex_cli_expand_path(explicit), "CODEX_CLI_AUTH_FILE"
+    cli_home = codex_cli_env_flag("CODEX_CLI_HOME")
+    if cli_home:
+        return os.path.join(codex_cli_expand_path(cli_home), "auth.json"), "CODEX_CLI_HOME"
+    codex_home = codex_cli_env_flag("CODEX_HOME")
+    if codex_home:
+        return os.path.join(codex_cli_expand_path(codex_home), "auth.json"), "CODEX_HOME"
+    return os.path.expanduser("~/.codex/auth.json"), "default"
+
+def codex_cli_process_env() -> Dict[str, str]:
+    env = os.environ.copy()
+    codex_home = codex_cli_env_flag("CODEX_CLI_HOME") or codex_cli_env_flag("CODEX_HOME")
+    if codex_home:
+        env["CODEX_HOME"] = codex_cli_expand_path(codex_home)
+    auth_file = codex_cli_env_flag("CODEX_CLI_AUTH_FILE")
+    if auth_file and not env.get("CODEX_HOME"):
+        auth_path = codex_cli_expand_path(auth_file)
+        auth_dir = os.path.dirname(auth_path)
+        if os.path.basename(auth_dir).lower() == ".codex":
+            env["CODEX_HOME"] = auth_dir
+    return env
+
 def codex_cli_command_path() -> str:
+    configured = codex_cli_env_flag("CODEX_CLI_BIN")
+    if configured:
+        resolved = shutil.which(configured) if os.path.basename(configured) == configured else configured
+        if resolved and (os.path.exists(resolved) or shutil.which(resolved)):
+            return resolved
     return shutil.which("codex") or ""
 
 def codex_cli_auth_cache_status() -> Dict[str, Any]:
-    auth_path = os.path.expanduser("~/.codex/auth.json")
+    auth_path, source = codex_cli_auth_file_path()
     status = {
         "path": auth_path,
+        "source": source,
         "exists": os.path.exists(auth_path),
         "readable": False,
         "auth_mode": "",
@@ -11992,11 +12271,13 @@ def codex_cli_auth_cache_status() -> Dict[str, Any]:
 def codex_cli_status_payload() -> Dict[str, Any]:
     cmd = codex_cli_command_path()
     auth_cache = codex_cli_auth_cache_status()
+    configured = codex_cli_local_auth_configured()
     checks = {
         "installed": bool(cmd),
         "supportsExec": False,
         "supportsImage": False,
         "loggedIn": False,
+        "configured": configured,
         "workspaceWritable": os.access(BASE_DIR, os.W_OK),
     }
     missing = []
@@ -12006,18 +12287,18 @@ def codex_cli_status_payload() -> Dict[str, Any]:
         missing.append("没有找到 codex 命令，请先安装 Codex CLI。")
     else:
         try:
-            version = subprocess.run([cmd, "--version"], capture_output=True, text=True, timeout=8).stdout.strip()
+            version = subprocess.run([cmd, "--version"], capture_output=True, text=True, timeout=8, env=codex_cli_process_env()).stdout.strip()
         except Exception:
             version = ""
         try:
-            help_proc = subprocess.run([cmd, "exec", "--help"], capture_output=True, text=True, timeout=8)
+            help_proc = subprocess.run([cmd, "exec", "--help"], capture_output=True, text=True, timeout=8, env=codex_cli_process_env())
             help_text = (help_proc.stdout or "") + (help_proc.stderr or "")
             checks["supportsExec"] = help_proc.returncode == 0 or "Usage" in help_text or "exec" in help_text
             checks["supportsImage"] = "--image" in help_text
         except Exception:
             help_text = ""
         try:
-            auth_proc = subprocess.run([cmd, "login", "status"], capture_output=True, text=True, timeout=8)
+            auth_proc = subprocess.run([cmd, "login", "status"], capture_output=True, text=True, timeout=8, env=codex_cli_process_env())
             auth_text = ((auth_proc.stdout or "") + (auth_proc.stderr or "")).lower()
             checks["loggedIn"] = auth_proc.returncode == 0 and not any(word in auth_text for word in ("not logged", "login required", "unauthorized", "not authenticated"))
         except Exception:
@@ -12030,19 +12311,49 @@ def codex_cli_status_payload() -> Dict[str, Any]:
         missing.append("当前 Codex CLI 未检测到 --image 参数，参考图能力可能不可用。")
     if cmd and not checks["loggedIn"]:
         missing.append("Codex CLI 可能尚未登录，请在终端运行 codex login。")
+    if cmd and checks["loggedIn"] and not configured:
+        missing.append("尚未同步到本项目，请点击“一键同步本机 Codex”。")
     if not checks["workspaceWritable"]:
         missing.append("当前项目目录不可写，无法保存 Codex 生图结果。")
     return {
         "success": True,
         "provider": "codex_cli",
         "available": bool(cmd),
+        "configured": configured,
         "ready": bool(cmd and checks["supportsExec"] and checks["workspaceWritable"]),
+        "connected": bool(cmd and configured and checks["supportsExec"] and checks["loggedIn"] and checks["workspaceWritable"]),
         "commandPath": cmd,
         "version": version,
         "checks": checks,
         "authCache": auth_cache,
+        "scriptPaths": {
+            "windows": os.path.join(BASE_DIR, "同步本机CodexCLI.bat"),
+            "mac": os.path.join(BASE_DIR, "同步本机CodexCLI.command"),
+        },
         "missing": missing,
     }
+
+def codex_cli_mark_provider_configured(status: Dict[str, Any]) -> Dict[str, Any]:
+    providers = load_api_providers()
+    provider = next((item for item in providers if item.get("id") == "codex_cli"), None)
+    if not provider:
+        provider = next((d for d in default_api_providers() if d.get("id") == "codex_cli"), {
+            "id": "codex_cli",
+            "name": "Codex CLI 本机生图",
+            "protocol": "codex_cli",
+        })
+        providers.insert(0, dict(provider))
+    provider["id"] = "codex_cli"
+    provider["name"] = provider.get("name") or "Codex CLI 本机生图"
+    provider["base_url"] = ""
+    provider["protocol"] = "codex_cli"
+    provider["local_auth_configured"] = True
+    provider["enabled"] = provider.get("enabled", True)
+    provider["image_models"] = model_list_from_values([*(provider.get("image_models") or []), *CODEX_CLI_DEFAULT_IMAGE_MODELS])
+    provider["chat_models"] = []
+    provider["video_models"] = []
+    save_api_providers([normalize_provider(item) for item in providers])
+    return public_provider(provider)
 
 def codex_cli_task_dir(task_id: str) -> str:
     return os.path.join(OUTPUT_DIR, "codex-imagegen", task_id)
@@ -12227,7 +12538,7 @@ def run_codex_cli_image_task(task_id: str, payload: Dict[str, Any]):
         CODEX_CLI_TASKS[task_id].update({"status": "running", "started_at": now_ms(), "command": command})
     try:
         with open(stdout_path, "w", encoding="utf-8") as out, open(stderr_path, "w", encoding="utf-8") as err:
-            proc = subprocess.Popen(command, cwd=BASE_DIR, stdout=out, stderr=err, text=True)
+            proc = subprocess.Popen(command, cwd=BASE_DIR, stdout=out, stderr=err, text=True, env=codex_cli_process_env())
             with CODEX_CLI_TASK_LOCK:
                 CODEX_CLI_TASKS[task_id]["pid"] = proc.pid
             timeout = max(30, min(1800, int(payload.get("timeout_ms") or 1200000) // 1000))
@@ -12272,11 +12583,22 @@ async def codex_cli_configure_local_auth():
         if not status.get("available"):
             detail = "没有找到 codex 命令，请先安装 Codex CLI。"
         raise HTTPException(status_code=400, detail=detail)
+    update_env_values({
+        "CODEX_CLI_USE_LOCAL_AUTH": "1",
+        "CODEX_CLI_AUTH_CONFIGURED": "1",
+        "CODEX_CLI_BIN": status.get("commandPath") or "",
+        "CODEX_CLI_AUTH_FILE": (status.get("authCache") or {}).get("path") or "",
+        "CODEX_CLI_HOME": os.path.dirname((status.get("authCache") or {}).get("path") or "") if (status.get("authCache") or {}).get("path") else "",
+    })
+    reload_env_globals()
+    status = codex_cli_status_payload()
+    provider = codex_cli_mark_provider_configured(status)
     return {
         "success": True,
         "configured": True,
         "message": "已使用本机 Codex CLI 登录态。画布生成时会由 codex exec 直接读取本机 auth 缓存，项目不会保存 token 明文。",
         "status": status,
+        "provider": provider,
     }
 
 @app.post("/api/codex-cli/imagegen/start")

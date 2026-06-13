@@ -124,16 +124,27 @@ body.studio-theme-dark .canvas-meta-pop .emoji-option:hover { background:#263449
 .theme-dark .canvas-owner-chip { background:rgba(99,102,241,.16); color:#c7d2fe; border-color:rgba(99,102,241,.3); }
 .theme-dark .canvas-pin-btn { background:rgba(255,255,255,.06); color:var(--muted); border-color:var(--line); }
 .theme-dark .canvas-item.pinned { border-color:rgba(217,119,6,.5); }
-.toolbar { padding:6px; display:flex; gap:6px; align-items:center; border-radius:18px; }
-.toolbar-items { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+.toolbar { width:max-content; max-width:calc(100vw - 48px); padding:6px; display:flex; gap:6px; align-items:center; border-radius:18px; overflow:hidden; }
+.toolbar-items { min-width:0; display:flex; gap:8px; align-items:center; flex-wrap:nowrap; justify-content:flex-end; overflow-x:auto; scrollbar-width:none; }
+.toolbar-items::-webkit-scrollbar { display:none; }
 .toolbar.collapsed .toolbar-items { display:none; }
-.toolbar-fixed { display:flex; gap:6px; align-items:center; }
+.toolbar.collapsed .toolbar-command-label { display:none; }
+.toolbar-fixed,
+.toolbar-view,
+.toolbar-panels { display:flex; gap:6px; align-items:center; }
+.toolbar-fixed { flex:0 0 auto; min-width:0; }
+.toolbar-view,
+.toolbar-panels { flex:0 0 auto; }
 .toolbar-toggle i { transition:transform .18s var(--ease); }
 .toolbar.collapsed .toolbar-toggle i { transform:rotate(180deg); }
 .toolbar .toolbar-toggle { width:24px; height:25px; min-width:24px; padding:0; border-radius:10px; }
+.toolbar .toolbar-icon-btn { width:38px; min-width:38px; padding:0; }
+.toolbar .toolbar-zoom-label { width:54px; min-width:54px; padding:0 8px; font-variant-numeric:tabular-nums; }
 .toolbar .toolbar-log,
-.toolbar .toolbar-asset { width:auto; height:38px; min-width:38px; padding:0 12px; }
-.toolbar.collapsed { padding:5px; }
+.toolbar .toolbar-asset,
+.toolbar .toolbar-workflow { width:auto; height:38px; min-width:38px; padding:0 12px; }
+.toolbar.collapsed { width:max-content; min-width:0; padding:5px; }
+.toolbar.collapsed .toolbar-fixed { padding-left:0; border-left:0; }
 .tool-btn { height:38px; min-width:38px; padding:0 12px; border-radius:999px; display:flex; align-items:center; justify-content:center; gap:7px; color:var(--muted); background:var(--card-solid); border:1px solid var(--line); font-size:11px; font-weight:700; transition:all .2s var(--ease); pointer-events:auto; }
 .tool-btn:hover { background:var(--soft-2); color:var(--text); }
 .theme-toggle.active { background:var(--strong); color:var(--strong-text); border-color:var(--strong); }

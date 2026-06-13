@@ -375,7 +375,11 @@ const MANAGED_CHAT_MODELS_KEY = 'canvas_chat_models_ordered';
 const CANVAS_THEME_KEY = 'canvas_theme';
 const QUICK_TOOLBAR_COLLAPSED_KEY = 'canvas_quick_toolbar_collapsed';
 const CANVAS_SESSION_VIEWPORTS_KEY = 'canvas_session_viewports_v1';
+const CANVAS_SESSION_DRAFTS_KEY = 'canvas_session_drafts_v1';
+const CANVAS_LAST_OPEN_ID_KEY = 'canvas_last_open_id_v1';
+const CANVAS_DRAFT_MAX_CHARS = 4_000_000;
 let canvasSessionViewportFallback = {};
+let canvasSessionDraftFallback = {};
 const DEFAULT_VIDEO_MODELS = [
     // Veo
     'veo2', 'veo2-fast', 'veo2-pro',
@@ -430,6 +434,70 @@ function saveLocalViewport(){
         sessionStorage.setItem(CANVAS_SESSION_VIEWPORTS_KEY, JSON.stringify(map));
     } catch(e) {}
 }
+function rememberOpenCanvas(id){
+    try {
+        if(id) localStorage.setItem(CANVAS_LAST_OPEN_ID_KEY, id);
+        else localStorage.removeItem(CANVAS_LAST_OPEN_ID_KEY);
+    } catch(e) {}
+}
+function loadCanvasDraftMap(){
+    try {
+        const data = JSON.parse(sessionStorage.getItem(CANVAS_SESSION_DRAFTS_KEY) || '{}');
+        return data && typeof data === 'object' ? data : {};
+    } catch(e) {
+        return canvasSessionDraftFallback;
+    }
+}
+function saveCanvasDraftMap(map){
+    canvasSessionDraftFallback = map || {};
+    try {
+        const text = JSON.stringify(canvasSessionDraftFallback);
+        if(text.length <= CANVAS_DRAFT_MAX_CHARS) sessionStorage.setItem(CANVAS_SESSION_DRAFTS_KEY, text);
+    } catch(e) {}
+}
+function persistCanvasDraftSnapshot(){
+    if(!canvas?.id) return;
+    try {
+        const map = loadCanvasDraftMap();
+        const draft = {
+            canvasId:canvas.id,
+            title:canvas.title,
+            icon:canvas.icon || 'layers',
+            nodes:serializableCanvasNodes(),
+            connections:(connections || []).map(c => ({...c})),
+            viewport:{...viewport},
+            baseUpdatedAt:Number(lastCanvasUpdatedAt || canvas.updated_at || 0),
+            updatedAt:Date.now()
+        };
+        const text = JSON.stringify(draft);
+        if(text.length > CANVAS_DRAFT_MAX_CHARS) return;
+        map[canvas.id] = draft;
+        saveCanvasDraftMap(map);
+    } catch(e) {}
+}
+function clearCanvasDraftSnapshot(id=canvas?.id){
+    if(!id) return;
+    const map = loadCanvasDraftMap();
+    if(!map[id]) return;
+    delete map[id];
+    saveCanvasDraftMap(map);
+}
+function restoreCanvasDraftIfNewer(remoteUpdatedAt=0){
+    if(!canvas?.id) return false;
+    const draft = loadCanvasDraftMap()[canvas.id];
+    if(!draft || !Array.isArray(draft.nodes) || !Array.isArray(draft.connections)) return false;
+    const draftUpdatedAt = Number(draft.updatedAt || 0);
+    if(!draftUpdatedAt || draftUpdatedAt <= Number(remoteUpdatedAt || 0)) {
+        clearCanvasDraftSnapshot(canvas.id);
+        return false;
+    }
+    canvas.title = draft.title || canvas.title;
+    canvas.icon = draft.icon || canvas.icon;
+    canvas.nodes = draft.nodes;
+    canvas.connections = draft.connections;
+    canvas.viewport = draft.viewport || canvas.viewport;
+    return true;
+}
 function applyTheme(theme){
     const dark = theme === 'dark';
     document.documentElement.classList.toggle('studio-theme-dark', dark);
@@ -443,10 +511,12 @@ function applyQuickToolbarState(){
     if(!toolbar) return;
     const collapsed = localStorage.getItem(QUICK_TOOLBAR_COLLAPSED_KEY) === '1';
     toolbar.classList.toggle('collapsed', collapsed);
+    toolbar.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     const btn = toolbar.querySelector('.toolbar-toggle');
     if(btn){
         btn.title = collapsed ? '展开快捷菜单' : '折叠快捷菜单';
         btn.setAttribute('aria-label', btn.title);
+        btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     }
     refreshIcons();
 }
@@ -1027,7 +1097,45 @@ function screenToWorld(clientX, clientY){
 }
 function applyViewport(){
     world.style.transform = `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
+    refreshCanvasZoomLabel();
     scheduleMinimapRender();
+}
+function refreshCanvasZoomLabel(){
+    const label = document.getElementById('canvasZoomLabel');
+    if(!label) return;
+    const scale = safeViewportScale(viewport?.scale || 1);
+    label.textContent = `${Math.round(scale * 100)}%`;
+}
+function applyZoomAtScreenPoint(clientX, clientY, nextScale){
+    if(!board) return;
+    const before = screenToWorld(clientX, clientY);
+    const rect = board.getBoundingClientRect();
+    viewport.scale = Math.max(0.08, Math.min(8, Number(nextScale) || safeViewportScale(viewport.scale)));
+    viewport.x = clientX - rect.left - before.x * viewport.scale;
+    viewport.y = clientY - rect.top - before.y * viewport.scale;
+    applyViewport();
+    renderLinks();
+    renderSelectionHub();
+    scheduleViewportSave();
+}
+function adjustCanvasZoom(factor){
+    if(!canvas || !board) return;
+    const rect = board.getBoundingClientRect();
+    applyZoomAtScreenPoint(rect.left + rect.width / 2, rect.top + rect.height / 2, safeViewportScale(viewport.scale) * (Number(factor) || 1));
+}
+function resetCanvasZoom(){
+    if(!canvas || !board) return;
+    const view = currentWorldViewRect();
+    const rect = board.getBoundingClientRect();
+    const cx = view.x + view.w / 2;
+    const cy = view.y + view.h / 2;
+    viewport.scale = 1;
+    viewport.x = rect.width / 2 - cx * viewport.scale;
+    viewport.y = rect.height / 2 - cy * viewport.scale;
+    applyViewport();
+    renderLinks();
+    renderSelectionHub();
+    scheduleViewportSave();
 }
 function estimatedNodeRect(n){
     const el = nodesEl?.querySelector?.(`.node[data-id="${CSS.escape(n.id)}"]`);
@@ -1223,6 +1331,7 @@ function refreshGeometryAfterLayout(){
 function scheduleSave(){
     if(!canvas || applyingRemoteCanvas) return;
     localCanvasDirty = true;
+    persistCanvasDraftSnapshot();
     setStatus('Saving...');
     clearTimeout(saveTimer);
     if(savingCanvasNow){
@@ -1272,29 +1381,33 @@ function serializableCanvasNode(node){
 function serializableCanvasNodes(list=nodes){
     return (list || []).map(serializableCanvasNode);
 }
+function canvasSavePayload(){
+    sanitizeConnections();
+    return {
+        title:canvas.title,
+        icon:canvas.icon || '🧩',
+        nodes:serializableCanvasNodes(),
+        connections,
+        viewport,
+        logs:canvas.logs || [],
+        client_id:CLIENT_ID,
+        base_updated_at:Number(lastCanvasUpdatedAt || canvas.updated_at || 0)
+    };
+}
 async function saveCanvas(){
     if(!canvas || applyingRemoteCanvas) return;
     if(savingCanvasNow){
         saveCanvasAgain = true;
+        persistCanvasDraftSnapshot();
         return;
     }
-    sanitizeConnections();
     savingCanvasNow = true;
     saveCanvasAgain = false;
     try {
         const res = await fetch(`/api/canvases/${canvas.id}`, {
             method:'PUT',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-                title:canvas.title,
-                icon:canvas.icon || '🧩',
-                nodes:serializableCanvasNodes(),
-                connections,
-                viewport,
-                logs:canvas.logs || [],
-                client_id:CLIENT_ID,
-                base_updated_at:Number(lastCanvasUpdatedAt || canvas.updated_at || 0)
-            })
+            body:JSON.stringify(canvasSavePayload())
         });
         if(res.status === 409){
             const data = await res.json().catch(() => ({}));
@@ -1317,6 +1430,8 @@ async function saveCanvas(){
         canvas.updated_at = Number(canvas.updated_at || Date.now());
         lastCanvasUpdatedAt = canvas.updated_at;
         localCanvasDirty = Boolean(saveCanvasAgain);
+        if(localCanvasDirty) persistCanvasDraftSnapshot();
+        else clearCanvasDraftSnapshot(canvas.id);
         if(currentCanvasTime) currentCanvasTime.textContent = formatCanvasTime(canvas.updated_at);
         setStatus('Saved');
         loadCanvasList(false);
@@ -1331,6 +1446,25 @@ async function saveCanvas(){
             setTimeout(saveCanvas, 0);
         }
     }
+}
+
+function flushCanvasBeforeUnload(){
+    if(!canvas || applyingRemoteCanvas) return;
+    if(saveTimer){
+        clearTimeout(saveTimer);
+        saveTimer = null;
+    }
+    persistCanvasDraftSnapshot();
+    if(!localCanvasDirty && !saveCanvasAgain) return;
+    try {
+        const body = JSON.stringify(canvasSavePayload());
+        fetch(`/api/canvases/${canvas.id}`, {
+            method:'PUT',
+            headers:{'Content-Type':'application/json'},
+            body,
+            keepalive:true
+        }).catch(() => {});
+    } catch(e) {}
 }
 
 async function loadConfig(){
@@ -1400,6 +1534,21 @@ async function loadCanvasList(openFirst=true){
         setStatus(tr('canvas.canvasListFailed'));
         console.error(e);
     }
+}
+async function restoreLastOpenCanvasOnBoot(){
+    const params = new URLSearchParams(location.search || '');
+    const requestedId = params.get('id') || '';
+    let rememberedId = '';
+    try { rememberedId = localStorage.getItem(CANVAS_LAST_OPEN_ID_KEY) || ''; } catch(e) {}
+    const id = requestedId || rememberedId;
+    if(!id || canvas) return Boolean(canvas);
+    const item = canvases.find(entry => entry.id === id);
+    if(!item || (item.kind || 'classic') === 'smart') {
+        if(!requestedId) rememberOpenCanvas('');
+        return false;
+    }
+    await openCanvas(id);
+    return Boolean(canvas?.id === id);
 }
 async function loadTrashList(){
     try {
@@ -1745,6 +1894,7 @@ async function createCanvas(){
         connections = canvas.connections || [];
         viewport = localViewportForCanvas(canvas.id, canvas.viewport || {x:0, y:0, scale:1});
         canvas.viewport = {...viewport};
+        rememberOpenCanvas(canvas.id);
         resetTransientRunState(nodes);
         sanitizeConnections();
         selected.clear();
@@ -1880,19 +2030,24 @@ async function openCanvas(id){
         const data = await res.json();
         resetCascadeRuntimeState();
         canvas = data.canvas;
-        const touched = await touchCanvasOpened(canvas.id);
-        if(touched?.updated_at) canvas.updated_at = Number(touched.updated_at);
+        const remoteUpdatedAt = Number(canvas.updated_at || 0);
         if((canvas.kind || 'classic') === 'smart'){
             openSmartCanvasPage(canvas.id);
             return;
+        }
+        const restoredDraft = restoreCanvasDraftIfNewer(remoteUpdatedAt);
+        if(!restoredDraft){
+            const touched = await touchCanvasOpened(canvas.id);
+            if(touched?.updated_at) canvas.updated_at = Number(touched.updated_at);
         }
         canvas.logs = canvas.logs || [];
         nodes = canvas.nodes || [];
         connections = canvas.connections || [];
         viewport = localViewportForCanvas(canvas.id, canvas.viewport || {x:0, y:0, scale:1});
         canvas.viewport = {...viewport};
-        lastCanvasUpdatedAt = Number(canvas.updated_at || 0);
-        localCanvasDirty = false;
+        lastCanvasUpdatedAt = restoredDraft ? remoteUpdatedAt : Number(canvas.updated_at || 0);
+        localCanvasDirty = restoredDraft;
+        rememberOpenCanvas(canvas.id);
         resetTransientRunState(nodes);
         sanitizeConnections();
         pruneMissingComfyWorkflows();
@@ -1903,7 +2058,12 @@ async function openCanvas(id){
         render();
         resumeCanvasImageTasks();
         startCanvasRemotePolling();
-        setStatus('Ready');
+        if(restoredDraft){
+            setStatus('Restored unsaved changes');
+            scheduleSave();
+        } else {
+            setStatus('Ready');
+        }
     } catch(e) {
         setStatus(tr('canvas.openFailed'));
         console.error(e);
@@ -2051,6 +2211,7 @@ function handleCanvasUpdatedMessage(data){
 async function returnToCanvasManager(){
     clearTimeout(saveTimer);
     if(canvas && localCanvasDirty) await saveCanvas();
+    rememberOpenCanvas('');
     stopCanvasRemotePolling();
     canvas = null;
     nodes = [];
@@ -2098,6 +2259,8 @@ async function deleteCanvas(id, event){
         pendingDeleteCanvasId = null;
         canvases = canvases.filter(item => item.id !== id);
         if(deletingCurrent){
+            clearCanvasDraftSnapshot(id);
+            rememberOpenCanvas('');
             canvas = null;
             nodes = [];
             connections = [];
@@ -9917,6 +10080,7 @@ async function runRhNode(nodeId, opts={}){
     if(out) out._pending = [...(out._pending || []), makePendingForRun(pendingId, run, node, {refs:media.refs, cascadeTargetId})];
     if(!opts.cascade) node.running = true;
     refreshRunNodes(node, out);
+    let runningHubTaskId = '';
     try {
         const nodeInfoList = await rhBuildNodeInfoList(node, media);
         const workflowExtras = mode === 'workflow' ? await rhBuildWorkflowRequestExtras(node, media, nodeInfoList) : {};
@@ -9935,7 +10099,16 @@ async function runRhNode(nodeId, opts={}){
         });
         const taskId = submit.taskId;
         if(!taskId) throw new Error(tr('canvas.rhNoTaskId'));
+        runningHubTaskId = taskId;
         run.request = {task_id:taskId, webappId:node.webappId, workflowId:node.workflowId, backend:'runninghub', mode};
+        const pending = pendingById(out, pendingId);
+        if(pending){
+            pending.canvasTaskType = 'runninghub';
+            pending.canvasTaskId = taskId;
+            pending.recoverTaskId = taskId;
+            pending.providerId = 'runninghub';
+        }
+        scheduleSave();
         let result = null;
         for(let i = 0; i < 720; i++){
             if(cascadeTargetId) ensureCascadeActive(cascadeTargetId);
@@ -9956,7 +10129,7 @@ async function runRhNode(nodeId, opts={}){
         if(!outputs.length) throw new Error(tr('canvas.rhOutputsEmpty'));
         const meta = collectRunMeta(out, pendingId);
         if(out) out._pending = (out._pending || []).filter(p => p.id !== pendingId);
-        appendOutputImages(out, outputs, media.refs[0], [meta]);
+        appendOutputImagesForRun(out, outputs, media.refs[0], [meta]);
         mergeGeneratedOutputs(node, outputs, Boolean(opts.cascade));
         addGenerationLog({run, outputs, runMs:meta.runMs || 0});
         node.runStatus = 'done';
@@ -9966,14 +10139,27 @@ async function runRhNode(nodeId, opts={}){
     } catch(err) {
         const meta = collectRunMeta(out, pendingId);
         addGenerationLog({run, outputs:[], runMs:meta.runMs || 0, error:err.message || String(err)});
-        if(out) out._pending = (out._pending || []).filter(p => p.id !== pendingId);
         if(isCascadeAbortError(err)){
+            if(out) out._pending = (out._pending || []).filter(p => p.id !== pendingId);
             if(opts.cascade) throw err;
             return;
+        }
+        const pending = pendingById(out, pendingId);
+        if(out && pending && runningHubTaskId){
+            pending.canvasTaskType = 'runninghub';
+            pending.canvasTaskId = runningHubTaskId;
+            pending.recoverTaskId = runningHubTaskId;
+            pending.providerId = 'runninghub';
+            pending.failed = true;
+            pending.querying = false;
+            pending.error = err.message || String(err) || tr('canvas.rhFailed');
+        } else if(out) {
+            out._pending = (out._pending || []).filter(p => p.id !== pendingId);
         }
         node.runStatus = 'failed';
         node.runError = err.message || String(err);
         refreshRunNodes(node, out);
+        scheduleSave();
         if(opts.cascade) throw err;
         alert(err.message || tr('canvas.rhFailed'));
     } finally {
@@ -10196,6 +10382,21 @@ function latestGeneratedOutputItem(node){
 function outputHasUrl(out, url){
     return Boolean(url && (out?.images || []).some(item => outputUrlValue(item) === url));
 }
+function outputRunTaskId(item){
+    const req = item && typeof item === 'object' ? item.run?.request || {} : {};
+    return req.task_id || req.taskId || '';
+}
+function outputRunBackend(item){
+    const run = item && typeof item === 'object' ? item.run || {} : {};
+    return run.request?.backend || (run.taskLabel === 'RunningHub' ? 'runninghub' : '');
+}
+function outputHasRunTask(out, taskId, backend=''){
+    return Boolean(taskId && (out?.images || []).some(item => {
+        if(outputRunTaskId(item) !== taskId) return false;
+        const itemBackend = outputRunBackend(item);
+        return !backend || !itemBackend || itemBackend === backend;
+    }));
+}
 function appendOutputImagesWithoutDuplicates(out, images, compareRef=null, metas=[], layout=null){
     const unique = (images || []).filter(item => {
         const url = outputUrlValue(item);
@@ -10203,6 +10404,14 @@ function appendOutputImagesWithoutDuplicates(out, images, compareRef=null, metas
     });
     appendOutputImages(out, unique, compareRef, metas, layout);
     return unique.length;
+}
+function appendOutputImagesForRun(out, images, compareRef=null, metas=[], layout=null){
+    const meta = (metas || []).find(item => item?.run) || {};
+    const run = meta.run || {};
+    const taskId = run.request?.task_id || run.request?.taskId || '';
+    const backend = run.request?.backend || (run.taskLabel === 'RunningHub' ? 'runninghub' : '');
+    if(taskId && backend === 'runninghub' && outputHasRunTask(out, taskId, backend)) return 0;
+    return appendOutputImagesWithoutDuplicates(out, images, compareRef, metas, layout);
 }
 function syncLatestGeneratedOutputToConnection(fromId, toId){
     const source = nodes.find(n => n.id === fromId);
@@ -12744,6 +12953,25 @@ function findPendingTask(taskId){
     }
     return null;
 }
+function runningHubTaskIdForPending(pending){
+    return pending?.canvasTaskId || pending?.recoverTaskId || pending?.run?.request?.task_id || '';
+}
+function isRunningHubPending(pending){
+    return pending?.canvasTaskType === 'runninghub'
+        || pending?.providerId === 'runninghub'
+        || pending?.run?.request?.backend === 'runninghub';
+}
+function findRunningHubPendingTask(taskId){
+    if(!taskId) return null;
+    for(const out of nodes.filter(n => n.type === 'output')){
+        const pending = (out._pending || []).find(p => {
+            if(!isRunningHubPending(p)) return false;
+            return runningHubTaskIdForPending(p) === taskId;
+        });
+        if(pending) return {out, pending};
+    }
+    return null;
+}
 async function createCanvasImageTask(payload, options={}){
     const res = await cascadeFetch('/api/canvas-image-tasks', {
         method:'POST',
@@ -12835,6 +13063,29 @@ async function queryRecoverPendingOutput(pendingId){
     pending.recoverTaskId = taskId;
     refreshNodes([out.id]);
     try {
+        if(isRunningHubPending(pending)){
+            pending.canvasTaskType = 'runninghub';
+            pending.canvasTaskId = taskId;
+            pending.providerId = 'runninghub';
+            const cascadeTargetId = String(pending.cascadeTargetId || '');
+            const res = await cascadeFetch(`/api/runninghub/query?taskId=${encodeURIComponent(taskId)}`, {}, {cascadeTargetId});
+            if(!res.ok) throw new Error(await responseErrorMessage(res, tr('canvas.rhFailed')));
+            const json = await res.json();
+            if(json.success === false) throw new Error(json.detail || json.error || tr('canvas.rhFailed'));
+            const data = json.data || json;
+            if(data.status === 'SUCCESS'){
+                completeRunningHubTask(taskId, data);
+                return;
+            }
+            if(data.status === 'FAILED'){
+                pending.error = data.failReason || tr('canvas.rhFailed');
+                showErrorModal(pending.error, tr('canvas.apiFailed'));
+            } else {
+                pending.error = `RunningHub 状态：${data.status || '处理中'}，请稍后再查询`;
+                setStatus(pending.error);
+            }
+            return;
+        }
         const res = await fetch('/api/image-task-query', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
@@ -12950,6 +13201,88 @@ async function pollCanvasVideoTask(taskId, options={}){
         const message = normalizeCanvasTaskError(err, tr('canvas.videoFailed'));
         if(isCascadeAbortError(err)) return 'aborted';
         failCanvasImageTask(taskId, message);
+        return 'failed';
+    } finally {
+        activeCanvasTaskPolls.delete(pollKey);
+    }
+}
+function completeRunningHubTask(taskId, result){
+    const found = findRunningHubPendingTask(taskId);
+    if(!found) return;
+    const {out, pending} = found;
+    const run = pending.run || {};
+    run.request = {...(run.request || {}), task_id:(run.request?.task_id || taskId), backend:'runninghub'};
+    const runMs = nowMs() - Number(pending.startedAt || nowMs());
+    const outputs = (result?.urls || []).map(url => isVideoUrl(outputUrlValue(url)) ? {url:outputUrlValue(url), kind:'video'} : outputUrlValue(url)).filter(Boolean);
+    if(!outputs.length){
+        failRunningHubTask(taskId, tr('canvas.rhOutputsEmpty'));
+        return;
+    }
+    const alreadyCompleted = outputHasRunTask(out, taskId, 'runninghub');
+    out._pending = (out._pending || []).filter(p => p.id !== pending.id);
+    const added = appendOutputImagesForRun(out, outputs, run?.refs?.[0], [{runMs, run}]);
+    const node = nodes.find(n => n.id === run?.node?.id);
+    if(node){
+        mergeGeneratedOutputs(node, outputs, Boolean(pending.appendGenerated));
+        node.runStatus = 'done';
+        node.runError = '';
+        node.running = false;
+    }
+    if(!alreadyCompleted || added) addGenerationLog({run, outputs, runMs});
+    refreshRunNodes(node, out);
+    scheduleSave();
+}
+function failRunningHubTask(taskId, message){
+    const found = findRunningHubPendingTask(taskId);
+    if(!found) return;
+    const {out, pending} = found;
+    const run = pending.run || {};
+    const node = nodes.find(n => n.id === run?.node?.id);
+    pending.failed = true;
+    pending.querying = false;
+    pending.error = message || tr('canvas.rhFailed');
+    pending.recoverTaskId = taskId;
+    pending.providerId = 'runninghub';
+    pending.canvasTaskType = 'runninghub';
+    pending.canvasTaskId = taskId;
+    if(node){
+        node.runStatus = 'failed';
+        node.runError = pending.error;
+        node.running = false;
+    }
+    addGenerationLog({run, outputs:[], runMs:nowMs() - Number(pending.startedAt || nowMs()), error:pending.error});
+    refreshRunNodes(node, out);
+    scheduleSave();
+}
+async function pollRunningHubTask(taskId, options={}){
+    const pollKey = `runninghub:${taskId}`;
+    if(!taskId) return 'failed';
+    if(activeCanvasTaskPolls.has(pollKey)) return 'running';
+    activeCanvasTaskPolls.add(pollKey);
+    try {
+        while(true){
+            const found = findRunningHubPendingTask(taskId);
+            if(!found) return 'missing';
+            const cascadeTargetId = String(options?.cascadeTargetId || found?.pending?.cascadeTargetId || '');
+            if(cascadeTargetId) ensureCascadeActive(cascadeTargetId);
+            const res = await cascadeFetch(`/api/runninghub/query?taskId=${encodeURIComponent(taskId)}`, {}, {cascadeTargetId});
+            if(!res.ok) throw new Error(await responseErrorMessage(res, tr('canvas.rhFailed')));
+            const json = await res.json();
+            if(json.success === false) throw new Error(json.detail || json.error || tr('canvas.rhFailed'));
+            const data = json.data || json;
+            if(data.status === 'SUCCESS'){
+                completeRunningHubTask(taskId, data);
+                return 'succeeded';
+            }
+            if(data.status === 'FAILED'){
+                failRunningHubTask(taskId, data.failReason || tr('canvas.rhFailed'));
+                return 'failed';
+            }
+            await sleep(2500);
+        }
+    } catch(err) {
+        if(isCascadeAbortError(err)) return 'aborted';
+        failRunningHubTask(taskId, err.message || tr('canvas.rhFailed'));
         return 'failed';
     } finally {
         activeCanvasTaskPolls.delete(pollKey);
@@ -13108,6 +13441,9 @@ function resumeCanvasImageTasks(){
             if(p.canvasTaskType === 'online-image' && p.canvasTaskId && !p.failed) pollCanvasImageTask(p.canvasTaskId, {cascadeTargetId:p.cascadeTargetId || ''});
             if(p.canvasTaskType === 'lovart-video' && p.canvasTaskId && !p.failed) pollCanvasVideoTask(p.canvasTaskId, {cascadeTargetId:p.cascadeTargetId || ''});
             if(p.canvasTaskType === 'codex-cli-image' && p.canvasTaskId && !p.failed) pollCodexCliPendingTask(p.id, p.canvasTaskId, {cascadeTargetId:p.cascadeTargetId || ''});
+            if((p.canvasTaskType === 'runninghub' || p.run?.request?.backend === 'runninghub') && runningHubTaskIdForPending(p) && !p.failed) {
+                pollRunningHubTask(runningHubTaskIdForPending(p), {cascadeTargetId:p.cascadeTargetId || ''});
+            }
         });
     });
 }
@@ -14868,8 +15204,15 @@ function canConnect(fromId, toId){
     if(from.type === 'llm' || from.type === 'ai-text' || from.type === 'storyboard-script' || from.type === 'storyboard' || from.type === 'scene-detection') return CANVAS_GENERATOR_TYPES.includes(to.type) || to.type === 'llm' || to.type === 'ai-text' || to.type === 'storyboard-script' || to.type === 'storyboard' || to.type === 'scene-detection';
     return CANVAS_GENERATOR_TYPES.includes(to.type) && ['image','prompt','source-text','comment-note','loop','group','promptGroup','output','llm','ai-text','storyboard-script','storyboard','scene-detection'].includes(from.type);
 }
-function sanitizeConnections(){
-    connections = (connections || []).filter(c => canConnect(c.from, c.to));
+function sanitizeConnections(options={}){
+    const strict = Boolean(options.strict);
+    const nodeIds = new Set((nodes || []).map(n => n.id));
+    connections = (connections || []).filter(c => {
+        if(!c || !c.from || !c.to || c.from === c.to) return false;
+        if(!nodeIds.has(c.from) || !nodeIds.has(c.to)) return false;
+        if(!c.id) c.id = uid('c');
+        return strict ? canConnect(c.from, c.to) : true;
+    });
 }
 function endDrag(event=null){
     const hadContentDrag = Boolean(dragNode || resizeNode || llmPaneDrag || knifeChanged || tempLink);
@@ -15532,5 +15875,8 @@ window.onload = async () => {
     await loadConfig();
     pruneMissingComfyWorkflows();
     await loadCanvasList(false);
-    setCanvasMode(false);
+    const restoredCanvas = await restoreLastOpenCanvasOnBoot();
+    if(!restoredCanvas) setCanvasMode(false);
 };
+window.addEventListener('pagehide', flushCanvasBeforeUnload);
+window.addEventListener('beforeunload', flushCanvasBeforeUnload);

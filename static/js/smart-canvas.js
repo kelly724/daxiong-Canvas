@@ -77,6 +77,7 @@ let selectionJustFinished = false;
 let resizeState = null;
 let llmInstructionResizeState = null;
 let thumbDragState = null;
+let thumbReorderSelection = null;
 let uploadTargetId = '';
 let pendingGroupUploadPoint = null;
 let mentionRange = null;
@@ -956,6 +957,7 @@ function clearSelection(){
     selectedId = '';
     selectedIds = [];
     selectedImage = {nodeId:'', index:-1};
+    clearThumbReorderSelection();
 }
 function clearImageClickTimer(){
     if(imageClickTimer){
@@ -5688,7 +5690,7 @@ function nodeBodyHtml(node, layout){
     if(imgs.length > 1){
         const visibleRows = Math.max(1, Math.min(MEDIA_GROUP_MAX_VISIBLE_ROWS, Number(layout.visibleRows || layout.rows || 1)));
         const maxHeight = visibleRows * Number(layout.thumb || 96) + Math.max(0, visibleRows - 1) * 8;
-        return `<div class="thumb-grid" data-thumb-scroll="1" style="--thumb-cols:${layout.cols}; --thumb-size:${layout.thumb}px; --thumb-max-height:${maxHeight}px">${imgs.map((img, i) => `<div class="thumb-item ${selectedImage.nodeId === node.id && selectedImage.index === i ? 'image-selected' : ''}" data-image-index="${i}" data-media-signature="${escapeAttr(`${mediaKindForItem(img)}:${img?.url || ''}`)}">${thumbMediaHtml(img)}${imageResolutionBadgeHtml(img)}<button class="mini-x image-delete" type="button" data-image-index="${i}" title="${escapeHtml(tr('smart.deleteImage'))}"><i data-lucide="trash-2"></i></button></div>`).join('')}</div>`;
+        return `<div class="thumb-grid" data-thumb-scroll="1" style="--thumb-cols:${layout.cols}; --thumb-size:${layout.thumb}px; --thumb-max-height:${maxHeight}px">${imgs.map((img, i) => `<div class="thumb-item ${selectedImage.nodeId === node.id && selectedImage.index === i ? 'image-selected' : ''} ${thumbReorderSelection?.nodeId === node.id && thumbReorderSelection.index === i ? 'thumb-reorder-selected' : ''}" data-image-index="${i}" data-media-signature="${escapeAttr(`${mediaKindForItem(img)}:${img?.url || ''}`)}">${thumbMediaHtml(img)}${imageResolutionBadgeHtml(img)}<button class="mini-x image-delete" type="button" data-image-index="${i}" title="${escapeHtml(tr('smart.deleteImage'))}"><i data-lucide="trash-2"></i></button></div>`).join('')}</div>`;
     }
     if(imgs[0]) return `<div class="image-wrap ${selectedImage.nodeId === node.id && selectedImage.index === 0 ? 'image-selected' : ''}" data-image-index="0" data-media-signature="${escapeAttr(`${mediaKindForItem(imgs[0])}:${imgs[0]?.url || ''}`)}" style="--node-img-w:${layout.width}px;--node-img-h:${layout.height}px">${singleMediaHtml(imgs[0], layout.width, layout.height)}${imageResolutionBadgeHtml(imgs[0])}<button class="mini-x image-delete" type="button" data-image-index="0" title="${escapeHtml(tr('smart.deleteImage'))}"><i data-lucide="trash-2"></i></button></div>`;
     return `<div class="node-drop" data-upload-action="files">
@@ -6540,6 +6542,7 @@ function bindNodeEvents(){
                 suppressImageClickUntil = Date.now() + 260;
                 const imageIndex = Number(item.dataset.imageIndex || 0);
                 const owner = nodes.find(n => n.id === id);
+                if(smartGridSplitLayout(owner)) return;
                 if(mediaKindForItem(owner?.images?.[imageIndex] || {}) === 'video'){
                     smartActivateVideoPreview(item);
                     return;
@@ -6558,6 +6561,11 @@ function bindNodeEvents(){
                 if(Date.now() < suppressImageClickUntil) return;
                 const imageIndex = Number(item.dataset.imageIndex || 0);
                 const owner = nodes.find(n => n.id === id);
+                if(smartGridSplitLayout(owner)){
+                    clearImageClickTimer();
+                    if(e.detail < 2) handleSmartGridThumbClick(item, owner);
+                    return;
+                }
                 if(mediaKindForItem(owner?.images?.[imageIndex] || {}) === 'video'){
                     clearImageClickTimer();
                     suppressImageClickUntil = Date.now() + 260;
@@ -6600,6 +6608,7 @@ function bindNodeEvents(){
             suppressImageClickUntil = Date.now() + 260;
             const imageIndex = Number(item.dataset.imageIndex || 0);
             const owner = nodes.find(n => n.id === id);
+            if(smartGridSplitLayout(owner)) return;
             if(mediaKindForItem(owner?.images?.[imageIndex] || {}) === 'video'){
                 smartActivateVideoPreview(item);
                 return;
@@ -6618,7 +6627,7 @@ function bindNodeEvents(){
                 const node = nodes.find(n => n.id === id);
                 if(!node || (node.images || []).length <= 1) return;
                 e.preventDefault(); e.stopPropagation();
-                thumbDragState = {nodeId:id, imgIndex:Number(item.dataset.imageIndex || 0), startX:e.clientX, startY:e.clientY, detached:false};
+                thumbDragState = {nodeId:id, imgIndex:Number(item.dataset.imageIndex || 0), startX:e.clientX, startY:e.clientY, detached:false, reorder:Boolean(smartGridSplitLayout(node)), targetIndex:Number(item.dataset.imageIndex || 0), started:false};
                 capturePendingUndo();
             });
         });
@@ -6855,6 +6864,210 @@ function deleteImage(id, imageIndex){
     if(selectedImage.index < 0) selectedImage = {nodeId:'', index:-1};
     render();
     scheduleSave();
+}
+function smartGridSplitLayout(node){
+    const images = node?.images || [];
+    if(images.length <= 1) return null;
+    const grids = images
+        .map(img => img?.grid)
+        .filter(grid => grid?.type === 'grid-split' && grid.groupId);
+    if(grids.length < 2) return null;
+    const groupCounts = grids.reduce((acc, grid) => {
+        acc.set(grid.groupId, (acc.get(grid.groupId) || 0) + 1);
+        return acc;
+    }, new Map());
+    const primaryGroupId = [...groupCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || grids[0].groupId;
+    const primaryGrids = grids.filter(grid => grid.groupId === primaryGroupId);
+    const grid = primaryGrids[0] || grids[0];
+    return {
+        type:'grid-split',
+        groupId:primaryGroupId,
+        rows:Math.max(1, ...primaryGrids.map(item => Number(item.rows || 1) || 1)),
+        cols:Math.max(1, ...primaryGrids.map(item => Number(item.cols || 1) || 1), Number(grid.cols || 1) || 1)
+    };
+}
+function smartGridSlotForIndex(layout, index){
+    const cols = Math.max(1, Number(layout?.cols || 1));
+    return {
+        type:'grid-split',
+        groupId:layout?.groupId || '',
+        rows:Math.max(1, Number(layout?.rows || 1)),
+        cols,
+        row:Math.floor(Math.max(0, index) / cols),
+        col:Math.max(0, index) % cols,
+        w:1,
+        h:1
+    };
+}
+function smartGridSlots(node, layout){
+    return (node?.images || []).map((item, index) => {
+        const grid = item?.grid || {};
+        const fallback = smartGridSlotForIndex(layout, index);
+        return {
+            ...fallback,
+            ...grid,
+            type:'grid-split',
+            groupId:layout?.groupId || grid.groupId || fallback.groupId,
+            rows:Math.max(1, Number(layout?.rows || grid.rows || fallback.rows)),
+            cols:Math.max(1, Number(layout?.cols || grid.cols || fallback.cols)),
+            row:Number.isFinite(Number(grid.row)) ? Number(grid.row) : fallback.row,
+            col:Number.isFinite(Number(grid.col)) ? Number(grid.col) : fallback.col,
+            w:Math.max(1, Number(grid.w || fallback.w || 1)),
+            h:Math.max(1, Number(grid.h || fallback.h || 1))
+        };
+    }).sort((a, b) => (Number(a.row || 0) - Number(b.row || 0)) || (Number(a.col || 0) - Number(b.col || 0)));
+}
+function syncSmartGridImagesToSlots(node, slots, layout){
+    if(!node || !layout) return;
+    node.images = (node.images || []).map((item, index) => {
+        const slot = slots[index] || smartGridSlotForIndex(layout, index);
+        return {
+            ...item,
+            grid:{
+                ...slot,
+                type:'grid-split',
+                groupId:layout.groupId,
+                rows:Math.max(1, Number(layout.rows || slot.rows || 1)),
+                cols:Math.max(1, Number(layout.cols || slot.cols || 1))
+            }
+        };
+    });
+}
+function clearThumbReorderSelection(nodeId=''){
+    world.querySelectorAll('.thumb-reorder-selected').forEach(el => {
+        if(!nodeId || el.closest(`.image-node[data-id="${CSS.escape(nodeId)}"]`)) el.classList.remove('thumb-reorder-selected');
+    });
+    if(!nodeId || thumbReorderSelection?.nodeId === nodeId) thumbReorderSelection = null;
+}
+function setThumbReorderSelection(nodeId, index){
+    clearThumbReorderSelection();
+    thumbReorderSelection = {nodeId, index};
+    const item = world.querySelector(`.image-node[data-id="${CSS.escape(nodeId)}"] .thumb-item[data-image-index="${CSS.escape(String(index))}"]`);
+    item?.classList.add('thumb-reorder-selected');
+}
+function clearThumbReorderPreview(){
+    world.querySelectorAll('.thumb-reorder-source,.thumb-reorder-target').forEach(el => el.classList.remove('thumb-reorder-source', 'thumb-reorder-target'));
+    document.body.classList.remove('smart-thumb-reorder');
+}
+function setThumbReorderPreview(nodeId, sourceIndex, targetIndex){
+    const nodeEl = world.querySelector(`.image-node[data-id="${CSS.escape(nodeId)}"]`);
+    if(!nodeEl) return;
+    clearThumbReorderPreview();
+    document.body.classList.add('smart-thumb-reorder');
+    nodeEl.querySelectorAll('.thumb-item[data-image-index]').forEach(item => {
+        const index = Number(item.dataset.imageIndex);
+        item.classList.toggle('thumb-reorder-source', index === sourceIndex);
+        item.classList.toggle('thumb-reorder-target', index === targetIndex && targetIndex !== sourceIndex);
+    });
+}
+function thumbItemFromPoint(nodeId, x, y){
+    const direct = document.elementFromPoint(x, y)?.closest?.(`.image-node[data-id="${CSS.escape(nodeId)}"] .thumb-item[data-image-index]`);
+    if(direct) return direct;
+    const nodeEl = world.querySelector(`.image-node[data-id="${CSS.escape(nodeId)}"]`);
+    const nodeRect = nodeEl?.getBoundingClientRect();
+    if(!nodeRect || x < nodeRect.left || x > nodeRect.right || y < nodeRect.top || y > nodeRect.bottom) return null;
+    let best = null;
+    let bestDistance = Infinity;
+    nodeEl.querySelectorAll('.thumb-item[data-image-index]').forEach(item => {
+        const rect = item.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = x - cx;
+        const dy = y - cy;
+        const distance = dx * dx + dy * dy;
+        if(distance < bestDistance){
+            bestDistance = distance;
+            best = item;
+        }
+    });
+    return best;
+}
+function removeThumbReorderGhost(state=thumbDragState){
+    state?.ghost?.remove?.();
+    if(state) state.ghost = null;
+}
+function moveThumbReorderGhost(state, event){
+    if(!state?.ghost) return;
+    state.ghost.style.transform = `translate(${Math.round(event.clientX + 12)}px, ${Math.round(event.clientY + 12)}px)`;
+}
+function createThumbReorderGhost(state, event){
+    if(state?.ghost) return;
+    const ghost = document.createElement('div');
+    ghost.className = 'thumb-reorder-ghost';
+    ghost.textContent = String(Number(state.imgIndex || 0) + 1);
+    document.body.appendChild(ghost);
+    state.ghost = ghost;
+    moveThumbReorderGhost(state, event);
+}
+function swapSmartGridImages(node, fromIndex, toIndex, options={}){
+    const images = node?.images || [];
+    if(!node || !Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) return false;
+    if(fromIndex < 0 || toIndex < 0 || fromIndex >= images.length || toIndex >= images.length || fromIndex === toIndex) return false;
+    const layout = smartGridSplitLayout(node);
+    if(!layout) return false;
+    if(options.pending) commitPendingUndo(); else pushUndo();
+    [images[fromIndex], images[toIndex]] = [images[toIndex], images[fromIndex]];
+    clearThumbReorderSelection(node.id);
+    selectedId = node.id;
+    selectedIds = [];
+    selectedImage = {nodeId:'', index:-1};
+    render();
+    scheduleSave();
+    toast('九宫格已重新排序');
+    return true;
+}
+function handleSmartGridThumbClick(item, node){
+    if(!node || !smartGridSplitLayout(node)) return false;
+    const index = Number(item?.dataset?.imageIndex || 0);
+    const selected = thumbReorderSelection;
+    if(selected?.nodeId === node.id && selected.index !== index){
+        clearThumbReorderSelection(node.id);
+        swapSmartGridImages(node, Number(selected.index), index);
+        return true;
+    }
+    if(selected?.nodeId === node.id && selected.index === index){
+        clearThumbReorderSelection(node.id);
+        toast('已取消选择');
+        return true;
+    }
+    setThumbReorderSelection(node.id, index);
+    selectedId = node.id;
+    selectedIds = [];
+    selectedImage = {nodeId:'', index:-1};
+    syncSelectionUi();
+    toast(`已选择第 ${index + 1} 格，点击另一个格子交换`);
+    return true;
+}
+function moveSmartThumbReorder(event){
+    const state = thumbDragState;
+    if(!state?.reorder) return;
+    const source = nodes.find(n => n.id === state.nodeId);
+    if(!source || !smartGridSplitLayout(source)) return;
+    if(!state.started){
+        state.started = true;
+        clearThumbReorderSelection(state.nodeId);
+        createThumbReorderGhost(state, event);
+        setThumbReorderPreview(state.nodeId, state.imgIndex, state.imgIndex);
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    moveThumbReorderGhost(state, event);
+    const target = thumbItemFromPoint(state.nodeId, event.clientX, event.clientY);
+    const targetIndex = target ? Number(target.dataset.imageIndex || 0) : state.imgIndex;
+    state.targetIndex = Number.isInteger(targetIndex) ? targetIndex : state.imgIndex;
+    setThumbReorderPreview(state.nodeId, state.imgIndex, state.targetIndex);
+}
+function finishSmartThumbReorder(event){
+    const state = thumbDragState;
+    if(!state?.reorder) return false;
+    const node = nodes.find(n => n.id === state.nodeId);
+    const changed = state.started && node && Number.isInteger(state.targetIndex) && state.targetIndex !== state.imgIndex;
+    if(changed) swapSmartGridImages(node, state.imgIndex, state.targetIndex, {pending:true});
+    else discardPendingUndo();
+    removeThumbReorderGhost(state);
+    clearThumbReorderPreview();
+    thumbDragState = null;
+    return true;
 }
 function currentEditImage(){
     const node = nodes.find(n => n.id === cropState?.nodeId);
@@ -13276,6 +13489,16 @@ window.onmousemove = e => {
         const dx = e.clientX - thumbDragState.startX;
         const dy = e.clientY - thumbDragState.startY;
         const source = nodes.find(n => n.id === thumbDragState.nodeId);
+        if(thumbDragState.reorder && Math.abs(dx) + Math.abs(dy) > 6){
+            const sourceEl = world.querySelector(`.image-node[data-id="${CSS.escape(thumbDragState.nodeId)}"]`);
+            const rect = sourceEl?.getBoundingClientRect();
+            const inside = rect && e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+            if(inside || thumbDragState.started){
+                moveSmartThumbReorder(e);
+                return;
+            }
+            thumbDragState.reorder = false;
+        }
         if(!thumbDragState.detached && Math.abs(dx) + Math.abs(dy) > 6){
             if(source && (source.images || []).length > 1){
                 const img = source.images[thumbDragState.imgIndex];
@@ -13392,6 +13615,10 @@ window.onmouseup = e => {
         scheduleSave();
     }
     if(thumbDragState){
+        if(thumbDragState.reorder){
+            finishSmartThumbReorder(e);
+            return;
+        }
         if(!thumbDragState.detached) discardPendingUndo();
         thumbDragState = null;
     }

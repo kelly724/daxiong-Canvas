@@ -28,6 +28,28 @@ https://openai.com/zh-Hans-CN/codex/
 GPT账号免费和plus都有额度可以用，如果要开发大型应用，可以使用性价比的中转站：https://www.fhl.mom/register?aff=86L574B4T2N9
 API使用教程：https://xcnk45dd0a92.feishu.cn/wiki/DRuEwOd8mi9d0sknkxPcCzTjn1b
 
+===Codex CLI 本机生图/打包必读=====
+
+Codex CLI 本机生图使用的是“当前电脑自己的 Codex CLI 登录态”，不是项目内置账号，也不会把 token 明文保存到项目里。
+
+首次使用步骤：
+1. 先在这台电脑安装 Codex CLI，并完成 codex login。
+2. 打开左侧“设置 - API 设置”，选择“Codex CLI 本机生图”。
+3. 点击“一键同步本机 Codex”，再点击“测试连通性”。
+4. 显示已配置/连通性通过后，画布里就可以选择 Codex CLI 本机生图。
+
+如果把这个项目打包给其他电脑使用，其他电脑也可以用这个功能，但必须在那台电脑上重新执行“一键同步本机 Codex”。
+原因是同步会写入本机绝对路径，例如 codex 命令路径、.codex/auth.json 路径、CODEX_HOME 路径，这些路径只对当前电脑有效。
+
+打包分发前不要把自己电脑的 API/.env 里的这些行原样带给别人：
+CODEX_CLI_USE_LOCAL_AUTH
+CODEX_CLI_AUTH_CONFIGURED
+CODEX_CLI_BIN
+CODEX_CLI_AUTH_FILE
+CODEX_CLI_HOME
+
+正确做法：打包前清掉以上 CODEX_CLI_* 行，让每个使用者在自己的电脑上重新点击“一键同步本机 Codex”。
+
 
 ===非网盘会员====
 
