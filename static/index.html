@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/static/images/logo.png" type="image/png">
-    <title>AI Studio</title>
+    <title>汉堡甜甜圈</title>
     <style>
         html.studio-route-booting body {
             visibility: hidden !important;
@@ -14,7 +14,7 @@
     <script>
         (function(){
             try {
-                var theme = localStorage.getItem('studio_theme') || localStorage.getItem('canvas_theme') || 'light';
+                var theme = localStorage.getItem('studio_theme') || localStorage.getItem('canvas_theme') || 'dark';
                 if(theme === 'dark') {
                     document.documentElement.classList.add('studio-theme-dark');
                     document.documentElement.classList.add('theme-dark');
@@ -1433,6 +1433,1212 @@
         .sidebar.is-collapsing:hover .update-now-text {
             max-width: 42px;
         }
+
+        /* 汉堡甜甜圈首页工作台：只覆盖外观，不改变导航与 iframe 结构。 */
+        :root {
+            --accent: #7dd3fc;
+            --bg: #080a0f;
+            --sidebar-bg: rgba(10, 13, 19, .92);
+            --stage-bg: #0c111a;
+            --border: rgba(148, 163, 184, .14);
+            --stage-border: rgba(125, 211, 252, .22);
+            --text: #edf4ff;
+            --muted: #8190a7;
+            --nav-hover-bg: rgba(125, 211, 252, .08);
+            --monitor-bg: rgba(11, 15, 23, .74);
+            --monitor-border: rgba(125, 211, 252, .22);
+            --monitor-shadow: rgba(0, 0, 0, .38);
+            --divider: rgba(148, 163, 184, .18);
+            --scrollbar: rgba(125, 211, 252, .32);
+            --scrollbar-hover: rgba(125, 211, 252, .52);
+            --author-name: #dbeafe;
+            --social-icon: #6f7d93;
+        }
+
+        html.theme-dark,
+        body.theme-dark {
+            --bg: #080a0f;
+            --sidebar-bg: rgba(10, 13, 19, .92);
+            --stage-bg: #0c111a;
+            --border: rgba(148, 163, 184, .14);
+            --stage-border: rgba(125, 211, 252, .22);
+            --text: #edf4ff;
+            --muted: #8190a7;
+            --nav-hover-bg: rgba(125, 211, 252, .08);
+            --monitor-bg: rgba(11, 15, 23, .74);
+            --monitor-border: rgba(125, 211, 252, .22);
+            --monitor-shadow: rgba(0, 0, 0, .38);
+            --divider: rgba(148, 163, 184, .18);
+            --scrollbar: rgba(125, 211, 252, .32);
+            --scrollbar-hover: rgba(125, 211, 252, .52);
+            --author-name: #dbeafe;
+            --social-icon: #6f7d93;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 18% 12%, rgba(125, 211, 252, .16), transparent 30%),
+                radial-gradient(circle at 86% 18%, rgba(248, 113, 113, .10), transparent 28%),
+                var(--bg);
+            letter-spacing: 0;
+        }
+
+        .app-shell {
+            background:
+                linear-gradient(90deg, rgba(125, 211, 252, .06), transparent 36%),
+                radial-gradient(circle at 72% 86%, rgba(34, 197, 94, .08), transparent 30%),
+                var(--bg);
+        }
+
+        .sidebar {
+            width: 76px;
+            min-width: 76px;
+            padding: 18px 12px 16px;
+            align-items: stretch;
+            border-right: 1px solid rgba(148, 163, 184, .13);
+            box-shadow: 18px 0 50px rgba(0, 0, 0, .22);
+            backdrop-filter: blur(20px);
+        }
+
+        .sidebar:hover,
+        .sidebar.is-pinned {
+            width: 252px;
+        }
+
+        .logo-ring {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 10px !important;
+            border: 1px solid rgba(125, 211, 252, .42);
+            border-radius: 14px;
+            background:
+                linear-gradient(135deg, rgba(125, 211, 252, .22), rgba(248, 113, 113, .10)),
+                rgba(15, 23, 42, .84);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 14px 34px rgba(0, 0, 0, .28);
+        }
+
+        .sidebar:hover .logo-ring,
+        .sidebar.is-pinned .logo-ring {
+            transform: none;
+            border-radius: 14px;
+        }
+
+        .logo-ring:active,
+        .sidebar:hover .logo-ring:active {
+            transform: scale(.96);
+        }
+
+        #logo-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 5px;
+            background: #7dd3fc !important;
+            box-shadow: 9px 7px 0 #f87171, 0 0 20px rgba(125, 211, 252, .45);
+        }
+
+        .brand-lockup {
+            min-height: 54px;
+            margin: 0 0 12px;
+            padding: 0 10px;
+            display: grid;
+            align-content: center;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateX(-8px);
+            pointer-events: none;
+            transition: opacity .24s ease, transform .28s var(--fluid-ease);
+        }
+
+        .sidebar:hover .brand-lockup,
+        .sidebar.is-pinned .brand-lockup {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .brand-name {
+            color: #f8fbff;
+            font-size: 20px;
+            font-weight: 900;
+            line-height: 1.05;
+            white-space: nowrap;
+        }
+
+        .brand-sub {
+            margin-top: 6px;
+            color: #7dd3fc;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .sidebar nav {
+            align-items: stretch;
+            padding: 4px 0;
+            gap: 4px;
+        }
+
+        .nav-fold-group {
+            align-items: stretch;
+            gap: 4px;
+        }
+
+        .nav-item,
+        .nav-fold-toggle {
+            width: 52px;
+            margin: 0 auto;
+            border-radius: 14px;
+            padding-left: 16px;
+            color: var(--muted);
+        }
+
+        .sidebar:hover .nav-item,
+        .sidebar:hover .nav-fold-toggle,
+        .sidebar.is-pinned .nav-item,
+        .sidebar.is-pinned .nav-fold-toggle {
+            width: 220px;
+        }
+
+        .nav-item::before,
+        .side-pill::before {
+            content: "";
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            width: 3px;
+            height: 0;
+            border-radius: 999px;
+            background: #7dd3fc;
+            transform: translateY(-50%);
+            transition: height .18s ease;
+        }
+
+        .nav-item:hover,
+        .nav-fold-toggle:hover,
+        .side-pill:hover {
+            background: rgba(125, 211, 252, .08);
+            color: #f8fbff;
+            border-color: rgba(125, 211, 252, .22);
+        }
+
+        .nav-item.active,
+        html.theme-dark .nav-item.active,
+        body.theme-dark .nav-item.active {
+            background: rgba(125, 211, 252, .14);
+            color: #f8fbff;
+            box-shadow: inset 0 0 0 1px rgba(125, 211, 252, .26), 0 12px 26px rgba(0, 0, 0, .18);
+        }
+
+        .nav-item.active::before,
+        .side-pill.active::before {
+            height: 20px;
+        }
+
+        .nav-text,
+        .side-pill-text {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .stage {
+            margin: 12px 12px 12px 0;
+            border-radius: 26px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 18%),
+                var(--stage-bg);
+            border-color: var(--stage-border);
+            box-shadow: 0 28px 90px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .05);
+        }
+
+        iframe {
+            transform: translateY(8px) scale(1.005);
+            filter: none;
+            transition: opacity .32s ease, transform .42s var(--fluid-ease);
+        }
+
+        iframe.active {
+            transform: translateY(0) scale(1);
+            filter: none;
+        }
+
+        .nano-monitor {
+            left: 18px;
+            bottom: 18px;
+            border-radius: 14px;
+            padding: 8px 12px;
+            background: var(--monitor-bg);
+            border-color: var(--monitor-border);
+            box-shadow: 0 16px 40px var(--monitor-shadow);
+        }
+
+        .nano-monitor.is-busy {
+            background: rgba(14, 21, 32, .92);
+            color: #f8fbff;
+            border-color: rgba(125, 211, 252, .26);
+        }
+
+        .side-actions {
+            margin: 10px 0 0;
+            padding-top: 10px;
+            border-top: 1px solid rgba(148, 163, 184, .12);
+            gap: 7px;
+        }
+
+        .side-pill,
+        .project-version-badge,
+        .update-now-btn.show {
+            border-radius: 13px;
+            border-color: rgba(148, 163, 184, .16);
+            background: rgba(15, 23, 42, .34);
+        }
+
+        .side-pill {
+            position: relative;
+            width: 48px;
+        }
+
+        .sidebar:hover .side-pill,
+        .sidebar.is-pinned .side-pill,
+        .sidebar:hover .project-version-badge,
+        .sidebar.is-pinned .project-version-badge,
+        .sidebar:hover .update-now-btn.show,
+        .sidebar.is-pinned .update-now-btn.show {
+            width: 220px;
+        }
+
+        .author-box {
+            height: 42px;
+            flex-basis: 42px;
+            opacity: .62;
+        }
+
+        .sidebar:hover .letter-d,
+        .sidebar:hover .letter-x,
+        .sidebar.is-pinned .letter-d,
+        .sidebar.is-pinned .letter-x {
+            opacity: 0;
+        }
+
+        .sidebar:hover .author-content-wrap,
+        .sidebar.is-pinned .author-content-wrap {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar,
+            .sidebar:hover,
+            .sidebar.is-pinned {
+                width: 68px;
+                min-width: 68px;
+                padding-inline: 8px;
+            }
+            .brand-lockup,
+            .sidebar:hover .brand-lockup,
+            .sidebar.is-pinned .brand-lockup {
+                display: none;
+            }
+            .nav-item,
+            .nav-fold-toggle,
+            .side-pill {
+                width: 48px !important;
+            }
+            .stage {
+                margin: 8px 8px 8px 0;
+                border-radius: 20px;
+            }
+        }
+
+        /* 首页工作台：按参考图重建首屏，不影响既有 iframe 功能页。 */
+        :root {
+            --dash-bg: #050b11;
+            --dash-panel: rgba(12, 20, 29, .78);
+            --dash-panel-2: rgba(14, 24, 35, .9);
+            --dash-line: rgba(141, 166, 190, .18);
+            --dash-line-strong: rgba(46, 178, 226, .54);
+            --dash-text: #f4f8fb;
+            --dash-muted: #7e8d9d;
+            --dash-cyan: #2db8ee;
+            --dash-green: #21d48e;
+            --dash-purple: #b56cff;
+            --dash-yellow: #f7c84f;
+            --dash-orange: #ff844f;
+        }
+
+        .app-shell {
+            background:
+                radial-gradient(circle at 52% -10%, rgba(45, 184, 238, .12), transparent 32%),
+                radial-gradient(circle at 88% 22%, rgba(45, 184, 238, .09), transparent 24%),
+                #050b11;
+        }
+
+        .sidebar,
+        .sidebar:hover,
+        .sidebar.is-pinned {
+            width: 272px;
+            min-width: 272px;
+            padding: 22px 14px 14px;
+            align-items: stretch;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(8, 15, 23, .98), rgba(5, 10, 16, .98));
+            border-right: 1px solid rgba(141, 166, 190, .18);
+            box-shadow: none;
+            transition: none;
+        }
+
+        .logo-ring,
+        .sidebar:hover .logo-ring,
+        .sidebar.is-pinned .logo-ring {
+            position: absolute;
+            left: 18px;
+            top: 30px;
+            width: 30px;
+            height: 30px;
+            margin: 0 !important;
+            border-radius: 7px;
+            border-color: rgba(45, 184, 238, .7);
+            background: linear-gradient(135deg, #49a8ff, #6b6dff 54%, #1ed6d0);
+            transform: none;
+        }
+
+        #logo-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            background: #07111b !important;
+            box-shadow: 8px 6px 0 rgba(255, 255, 255, .36);
+        }
+
+        .brand-lockup,
+        .sidebar:hover .brand-lockup,
+        .sidebar.is-pinned .brand-lockup {
+            min-height: 46px;
+            margin: 0 0 22px 42px;
+            padding: 0;
+            opacity: 1;
+            transform: none;
+            display: grid;
+            align-content: center;
+            pointer-events: auto;
+        }
+
+        .brand-name {
+            font-size: 16px;
+            line-height: 1;
+            font-weight: 900;
+            color: var(--dash-text);
+        }
+
+        .brand-sub {
+            display: none;
+        }
+
+        .dashboard-nav {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            padding-bottom: 12px;
+            gap: 0;
+            scrollbar-width: none;
+        }
+
+        .dashboard-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .legacy-nav {
+            display: none !important;
+        }
+
+        .nav-section-label,
+        .nav-fold-toggle.nav-section-label {
+            width: 100%;
+            height: 30px;
+            margin: 16px 0 6px;
+            padding: 0 8px;
+            border: 0;
+            background: transparent;
+            color: #738393;
+            font-size: 13px;
+            font-weight: 850;
+            letter-spacing: 0;
+            display: flex;
+            align-items: center;
+            cursor: default;
+        }
+
+        .nav-section-label .nav-fold-icon {
+            display: none;
+        }
+
+        .nav-fold-group {
+            max-height: none;
+            opacity: 1;
+            gap: 4px;
+        }
+
+        .nav-item,
+        .sidebar:hover .nav-item,
+        .sidebar.is-pinned .nav-item,
+        .nav-fold-toggle,
+        .sidebar:hover .nav-fold-toggle,
+        .sidebar.is-pinned .nav-fold-toggle {
+            width: 244px;
+            height: 42px;
+            flex-basis: 42px;
+            margin: 0;
+            padding: 0 12px;
+            border-radius: 8px;
+            color: #92a0ad;
+            gap: 12px;
+        }
+
+        .nav-item svg,
+        .side-pill svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .nav-text,
+        .sidebar:hover .nav-text,
+        .sidebar.is-pinned .nav-text,
+        .side-pill-text,
+        .sidebar:hover .side-pill-text,
+        .sidebar.is-pinned .side-pill-text {
+            opacity: 1;
+            max-width: 170px;
+            margin-left: 0;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .nav-item.active,
+        html.theme-dark .nav-item.active,
+        body.theme-dark .nav-item.active {
+            background: linear-gradient(90deg, rgba(45, 184, 238, .18), rgba(45, 184, 238, .05));
+            color: #e9f8ff;
+            box-shadow: inset 3px 0 0 var(--dash-cyan), inset 0 0 0 1px rgba(45, 184, 238, .08);
+        }
+
+        .nav-item:hover {
+            background: rgba(45, 184, 238, .08);
+            color: var(--dash-text);
+        }
+
+        .side-actions {
+            display: none;
+        }
+
+        .side-pill,
+        .sidebar:hover .side-pill,
+        .sidebar.is-pinned .side-pill,
+        .project-version-badge,
+        .sidebar:hover .project-version-badge,
+        .sidebar.is-pinned .project-version-badge,
+        .update-now-btn.show,
+        .sidebar:hover .update-now-btn.show,
+        .sidebar.is-pinned .update-now-btn.show {
+            width: 244px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(8, 16, 24, .72);
+            border-color: rgba(141, 166, 190, .13);
+            justify-content: flex-start;
+            padding: 0 12px;
+            gap: 10px;
+        }
+
+        .project-version-badge,
+        .update-now-btn.show {
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .author-box {
+            display: none;
+        }
+
+        .sidebar-status-card {
+            flex: 0 0 auto;
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(141, 166, 190, .16);
+            background: rgba(9, 18, 27, .86);
+            color: var(--dash-text);
+        }
+
+        .sidebar-status-card strong {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-status-card strong span {
+            color: var(--dash-green);
+            font-size: 11px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            color: #8796a5;
+            font-size: 12px;
+            line-height: 1.9;
+            font-weight: 750;
+        }
+
+        .status-row b {
+            color: #e6eef5;
+        }
+
+        .status-spark {
+            width: 100%;
+            height: 34px;
+            margin-top: 10px;
+            overflow: visible;
+        }
+
+        .status-spark polyline {
+            fill: none;
+            stroke: var(--dash-cyan);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 180;
+            animation: dashDraw 2.4s ease both;
+        }
+
+        .stage {
+            margin: 0;
+            border-radius: 0;
+            border: 0;
+            background: var(--dash-bg);
+            box-shadow: none;
+        }
+
+        .dashboard-home {
+            position: absolute;
+            inset: 0;
+            z-index: 8;
+            display: flex;
+            flex-direction: column;
+            padding: 17px 20px 20px 34px;
+            overflow: hidden;
+            visibility: visible;
+            background:
+                radial-gradient(circle at 54% 8%, rgba(45, 184, 238, .13), transparent 32%),
+                radial-gradient(circle at 84% 24%, rgba(59, 130, 246, .14), transparent 24%),
+                linear-gradient(145deg, #061018 0%, #04080d 62%, #07111a 100%);
+            color: var(--dash-text);
+            transition: opacity .22s ease, transform .22s ease, visibility .22s ease;
+        }
+
+        .dashboard-home::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(141,166,190,.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(141,166,190,.045) 1px, transparent 1px);
+            background-size: 46px 46px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,.78), rgba(0,0,0,.1));
+        }
+
+        .dashboard-home.is-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            visibility: hidden;
+        }
+
+        .dash-topbar,
+        .dash-hero,
+        .dash-grid {
+            position: relative;
+            z-index: 1;
+        }
+
+        .dash-topbar {
+            display: grid;
+            grid-template-columns: minmax(280px, 420px) auto 1fr auto;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            animation: dashUp .7s cubic-bezier(.2,.8,.2,1) .05s forwards;
+        }
+
+        .dash-search {
+            height: 52px;
+            border: 1px solid rgba(141, 166, 190, .26);
+            border-radius: 7px;
+            background: rgba(4, 10, 16, .72);
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            padding: 0 18px;
+            color: #8090a0;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 16px 34px rgba(0,0,0,.22);
+        }
+
+        .dash-search kbd {
+            margin-left: auto;
+            color: #97a6b4;
+            font: 700 12px/1 "JetBrains Mono", monospace;
+        }
+
+        .dash-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .dash-command,
+        .dash-icon-btn {
+            flex: 0 0 auto;
+            height: 52px;
+            border-radius: 6px;
+            border: 1px solid rgba(141, 166, 190, .18);
+            background: rgba(12, 20, 29, .72);
+            color: #cbd7e2;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 20px;
+            font-size: 14px;
+            font-weight: 850;
+            white-space: nowrap;
+            transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+        }
+
+        .dash-command.primary {
+            border-color: rgba(45, 184, 238, .8);
+            color: #f5fbff;
+            box-shadow: 0 0 0 1px rgba(45,184,238,.14), 0 0 28px rgba(45,184,238,.12);
+        }
+
+        .dash-command:hover,
+        .dash-icon-btn:hover {
+            transform: translateY(-1px);
+            border-color: rgba(45, 184, 238, .48);
+            background: rgba(22, 35, 48, .9);
+            color: #fff;
+        }
+
+        .dash-icon-btn {
+            width: 60px;
+            padding: 0;
+        }
+
+        .dash-user {
+            justify-self: end;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .dash-bell {
+            position: relative;
+            color: #c9d3dc;
+        }
+
+        .dash-bell::after {
+            content: "";
+            position: absolute;
+            right: -2px;
+            top: -3px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--dash-cyan);
+            box-shadow: 0 0 12px rgba(45,184,238,.85);
+        }
+
+        .dash-avatar {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: 2px solid rgba(141, 166, 190, .34);
+            display: grid;
+            place-items: center;
+            color: #94a3b8;
+            background: rgba(5, 11, 17, .66);
+        }
+
+        .dash-hero {
+            min-height: clamp(360px, 41vh, 430px);
+            display: grid;
+            grid-template-columns: minmax(430px, 43vw) 1fr;
+            gap: 34px;
+            align-items: center;
+        }
+
+        .dash-copy {
+            padding-left: 12px;
+            opacity: 0;
+            animation: dashUp .82s cubic-bezier(.2,.8,.2,1) .12s forwards;
+        }
+
+        .dash-copy h1 {
+            margin: 0;
+            max-width: 650px;
+            font-size: clamp(62px, 5.8vw, 98px);
+            line-height: 1.08;
+            letter-spacing: 0;
+            font-weight: 950;
+        }
+
+        .dash-title-line {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+        }
+
+        .dash-title-media {
+            width: 290px;
+            height: 68px;
+            border-radius: 999px;
+            border: 1px solid rgba(141,166,190,.36);
+            overflow: hidden;
+            background: linear-gradient(135deg, #263543, #64748b);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+        }
+
+        .dash-title-media::before {
+            content: "";
+            display: block;
+            width: 130%;
+            height: 100%;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,.18), transparent 28%),
+                url('/assets/output/lovart_image_b60a32cccc41.png') center/cover;
+            filter: saturate(.75) contrast(1.08);
+            animation: mediaDrift 10s ease-in-out infinite alternate;
+        }
+
+        .dash-copy p {
+            margin: 22px 0 28px;
+            color: #8ea0af;
+            font-size: 17px;
+            font-weight: 650;
+        }
+
+        .dash-quick {
+            color: var(--dash-cyan);
+            font-size: 15px;
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dash-showcase {
+            position: relative;
+            height: 360px;
+            opacity: 0;
+            animation: dashFade .85s ease .24s forwards;
+        }
+
+        .showcase-card {
+            position: absolute;
+            width: 370px;
+            border-radius: 7px;
+            border: 1px solid rgba(141,166,190,.24);
+            background: rgba(16, 23, 31, .72);
+            box-shadow: 0 28px 70px rgba(0,0,0,.44);
+            overflow: hidden;
+            transform-style: preserve-3d;
+            animation: floatCard 6s ease-in-out infinite;
+            transition: border-color .18s ease, box-shadow .18s ease, filter .18s ease;
+        }
+
+        .showcase-card:hover {
+            border-color: rgba(45, 184, 238, .38);
+            box-shadow: 0 34px 86px rgba(0,0,0,.52), 0 0 34px rgba(45,184,238,.1);
+            filter: brightness(1.08);
+        }
+
+        .showcase-card img {
+            display: block;
+            width: 100%;
+            height: 170px;
+            object-fit: cover;
+            opacity: .86;
+            filter: saturate(.72) contrast(1.05);
+        }
+
+        .showcase-card .card-meta {
+            padding: 14px 18px 16px;
+            background: linear-gradient(180deg, rgba(14,20,27,.72), rgba(10,16,23,.92));
+        }
+
+        .showcase-card strong {
+            display: block;
+            color: #eff7ff;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .showcase-card span {
+            color: #8d9aa7;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .showcase-card .status-pill {
+            float: right;
+            margin-top: -2px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(45,184,238,.32);
+            color: var(--dash-cyan);
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .showcase-card.one { left: 5%; top: 120px; z-index: 4; transform: rotate(2deg); }
+        .showcase-card.two { right: 18%; top: 86px; z-index: 3; transform: rotate(-1deg); animation-delay: .45s; }
+        .showcase-card.three { right: 0; top: 32px; z-index: 2; width: 330px; transform: rotate(.5deg); animation-delay: .8s; }
+
+        .dash-grid {
+            display: grid;
+            grid-template-columns: 1.05fr 1.05fr 1.3fr .78fr 1.05fr 1.15fr;
+            gap: 6px;
+            min-height: clamp(300px, 34vh, 340px);
+            opacity: 0;
+            animation: dashUp .75s cubic-bezier(.2,.8,.2,1) .32s forwards;
+        }
+
+        .dash-card {
+            min-height: 0;
+            border-radius: 6px;
+            border: 1px solid rgba(141, 166, 190, .16);
+            background: rgba(10, 18, 27, .78);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+            padding: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            animation: dashCardIn .62s cubic-bezier(.2,.8,.2,1) forwards;
+            transition: transform .18s ease, border-color .18s ease, background .18s ease;
+        }
+
+        .dash-card:nth-child(1) { animation-delay: .32s; }
+        .dash-card:nth-child(2) { animation-delay: .38s; }
+        .dash-card:nth-child(3) { animation-delay: .44s; }
+        .dash-card:nth-child(4) { animation-delay: .5s; }
+        .dash-card:nth-child(5) { animation-delay: .56s; }
+        .dash-card:nth-child(6) { animation-delay: .62s; }
+
+        .dash-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(45, 184, 238, .32);
+            background: rgba(13, 23, 34, .9);
+        }
+
+        .dash-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #ecf6ff;
+            font-size: 15px;
+            font-weight: 900;
+            margin-bottom: 14px;
+        }
+
+        .recent-list,
+        .workflow-list,
+        .output-list,
+        .node-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .recent-item,
+        .workflow-item,
+        .output-item,
+        .node-item {
+            border-radius: 6px;
+            background: rgba(18, 29, 40, .88);
+            border: 1px solid rgba(141,166,190,.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            color: #dbe6ef;
+            transition: transform .16s ease, border-color .16s ease, background .16s ease;
+        }
+
+        .recent-item:hover,
+        .workflow-item:hover,
+        .output-item:hover,
+        .node-item:hover {
+            transform: translateX(3px);
+            border-color: rgba(45,184,238,.2);
+            background: rgba(23, 37, 51, .92);
+        }
+
+        .recent-item img,
+        .output-item img {
+            width: 64px;
+            height: 48px;
+            border-radius: 4px;
+            object-fit: cover;
+            filter: saturate(.78);
+        }
+
+        .recent-item small,
+        .workflow-item small,
+        .output-item small {
+            display: block;
+            margin-top: 5px;
+            color: #7f91a2;
+            font-size: 11px;
+            font-weight: 750;
+        }
+
+        .smart-card {
+            position: relative;
+            justify-content: center;
+            text-align: center;
+            background:
+                linear-gradient(180deg, rgba(5, 16, 23, .1), rgba(5, 16, 23, .82)),
+                radial-gradient(circle at 50% 45%, rgba(45,184,238,.22), transparent 40%),
+                linear-gradient(135deg, #06202a, #0a1720);
+        }
+
+        .smart-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: conic-gradient(from 90deg, transparent, rgba(45,184,238,.16), transparent, rgba(33,212,142,.14), transparent);
+            animation: slowSpin 16s linear infinite;
+            opacity: .65;
+        }
+
+        .smart-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .smart-card p {
+            margin: 0 auto 20px;
+            color: #bfd2df;
+            max-width: 240px;
+            line-height: 1.5;
+            font-weight: 750;
+        }
+
+        .dash-mini-btn {
+            align-self: center;
+            height: 42px;
+            padding: 0 18px;
+            border-radius: 5px;
+            border: 1px solid rgba(45,184,238,.35);
+            color: #dff8ff;
+            background: rgba(45,184,238,.09);
+            font-weight: 900;
+        }
+
+        .asset-tabs {
+            display: flex;
+            gap: 22px;
+            color: #718394;
+            font-size: 12px;
+            font-weight: 850;
+            margin-bottom: 12px;
+        }
+
+        .asset-tabs span:first-child {
+            color: var(--dash-cyan);
+            border-bottom: 2px solid var(--dash-cyan);
+            padding-bottom: 6px;
+        }
+
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .asset-grid img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid rgba(141,166,190,.16);
+            filter: saturate(.78) contrast(1.02);
+        }
+
+        .dash-card-foot {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #8da0b2;
+            font-size: 13px;
+            font-weight: 800;
+            padding-top: 14px;
+        }
+
+        .workflow-icon,
+        .node-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            background: rgba(45,184,238,.12);
+            color: var(--dash-cyan);
+        }
+
+        .workflow-item:nth-child(2) .workflow-icon,
+        .node-item.image .node-icon { color: var(--dash-green); background: rgba(33,212,142,.12); }
+        .workflow-item:nth-child(3) .workflow-icon,
+        .node-item.video .node-icon { color: var(--dash-purple); background: rgba(181,108,255,.12); }
+        .workflow-item:nth-child(4) .workflow-icon,
+        .node-item.flow .node-icon { color: var(--dash-yellow); background: rgba(247,200,79,.12); }
+        .node-item.output .node-icon { color: var(--dash-orange); background: rgba(255,132,79,.12); }
+
+        .node-item {
+            justify-content: space-between;
+            min-height: 58px;
+        }
+
+        .node-count {
+            margin-left: auto;
+            padding: 4px 9px;
+            border: 1px solid rgba(141,166,190,.12);
+            border-radius: 6px;
+            color: #8b9aaa;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .dash-view-toggle {
+            position: absolute;
+            right: 20px;
+            bottom: 14px;
+            display: flex;
+            padding: 6px;
+            border-radius: 7px;
+            border: 1px solid rgba(141,166,190,.18);
+            background: rgba(10,18,27,.82);
+            z-index: 2;
+        }
+
+        .dash-view-toggle button {
+            width: 56px;
+            height: 42px;
+            border-radius: 5px;
+            color: #8191a0;
+        }
+
+        .dash-view-toggle button.active {
+            background: rgba(141,166,190,.12);
+            color: #e8f3fb;
+        }
+
+        @keyframes dashUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes dashFade {
+            from { opacity: 0; transform: translateX(24px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes dashCardIn {
+            from { opacity: 0; transform: translateY(20px) scale(.985); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes floatCard {
+            0%, 100% { translate: 0 0; }
+            50% { translate: 0 -12px; }
+        }
+
+        @keyframes mediaDrift {
+            from { transform: translateX(-8%); }
+            to { transform: translateX(0); }
+        }
+
+        @keyframes slowSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes dashDraw {
+            from { stroke-dashoffset: 180; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        @media (max-width: 980px) {
+            .dash-grid { grid-template-columns: repeat(3, 1fr); overflow: auto; }
+            .dash-hero { grid-template-columns: 1fr; min-height: 520px; }
+            .dash-showcase { display: none; }
+        }
+
+        @media (min-width: 981px) and (max-width: 1380px) {
+            .dash-topbar { grid-template-columns: minmax(260px, 390px) 1fr auto; }
+            .dash-topbar > div:nth-child(3) { display: none; }
+            .dash-command { padding: 0 14px; }
+            .dash-grid {
+                grid-template-columns: repeat(6, minmax(210px, 1fr));
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+        }
+
+        @media (max-height: 900px) and (min-width: 981px) {
+            .dashboard-home { padding-top: 14px; overflow: auto; }
+            .dash-topbar, .dash-hero, .dash-grid { flex-shrink: 0; }
+            .dash-hero { min-height: 340px; }
+            .dash-copy h1 { font-size: clamp(54px, 5.2vw, 82px); }
+            .dash-showcase { height: 310px; }
+            .showcase-card { width: 330px; }
+            .showcase-card.three { width: 300px; }
+            .showcase-card img { height: 146px; }
+            .dash-grid { min-height: 300px; }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar,
+            .sidebar:hover,
+            .sidebar.is-pinned {
+                width: 74px;
+                min-width: 74px;
+            }
+            .brand-lockup,
+            .sidebar-status-card,
+            .nav-section-label,
+            .nav-text,
+            .side-pill-text,
+            .project-version-badge,
+            .update-now-btn.show { display: none !important; }
+            .nav-item,
+            .side-pill,
+            .sidebar:hover .nav-item,
+            .sidebar:hover .side-pill {
+                width: 46px !important;
+                justify-content: center;
+                padding: 0;
+            }
+            .dashboard-home { padding: 16px; overflow: auto; }
+            .dash-topbar { grid-template-columns: 1fr; }
+            .dash-actions, .dash-user { justify-self: stretch; }
+            .dash-grid { grid-template-columns: 1fr; }
+            .dash-copy h1 { font-size: 48px; }
+            .dash-title-media { display: none; }
+        }
     </style>
 </head>
 
@@ -1443,8 +2649,66 @@
             <button class="logo-ring mb-12" id="sidebarLogoToggle" type="button" onclick="toggleSidebarPinned(event)" aria-pressed="false" title="固定导航栏">
                 <div class="w-1.5 h-1.5 rounded-full transition-colors" id="logo-dot" style="background:var(--text)"></div>
             </button>
+            <div class="brand-lockup" aria-hidden="true">
+                <span class="brand-name">汉堡甜甜圈</span>
+                <span class="brand-sub">AI Canvas OS</span>
+            </div>
 
-            <nav>
+            <nav class="dashboard-nav">
+                <div class="nav-section-label">工作台</div>
+                <div class="nav-item active" data-page-id="dashboard" onclick="switchUI(this, 'dashboard')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h6v6H4z"></path><path d="M14 4h6v6h-6z"></path><path d="M14 14h6v6h-6z"></path><path d="M4 17h6"></path><path d="M7 14v6"></path></svg>
+                    <span class="nav-text">首页</span>
+                </div>
+
+                <div class="nav-section-label">本地功能</div>
+                <div class="nav-item" data-page-id="zimage" onclick="switchUI(this, 'zimage')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"></path><path d="m4 15 4-4 4 4 3-3 5 5"></path></svg>
+                    <span class="nav-text">文生图</span>
+                </div>
+                <div class="nav-item" data-page-id="enhance" onclick="switchUI(this, 'enhance')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span class="nav-text">细节增强</span>
+                </div>
+                <div class="nav-item" data-page-id="klein" onclick="switchUI(this, 'klein')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5"></path><path d="m18.5 2.5 3 3L12 15H9v-3z"></path></svg>
+                    <span class="nav-text">图片编辑</span>
+                </div>
+                <div class="nav-item" data-page-id="angle" onclick="switchUI(this, 'angle')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><path d="m3.27 6.96 8.73 5.05 8.73-5.05"></path><path d="M12 22.08V12"></path></svg>
+                    <span class="nav-text">角度控制</span>
+                </div>
+
+                <div class="nav-section-label">创作</div>
+                <div class="nav-item" data-page-id="online" onclick="switchUI(this, 'online')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"></path><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path></svg>
+                    <span class="nav-text">在线生图</span>
+                </div>
+                <div class="nav-item" data-page-id="gpt-chat" onclick="switchUI(this, 'gpt-chat')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span class="nav-text">GPT 对话</span>
+                </div>
+                <div class="nav-item" data-page-id="canvas" onclick="switchUI(this, 'canvas')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span class="nav-text">无限画布</span>
+                </div>
+                <div class="nav-item" data-page-id="asset-manager" onclick="switchUI(this, 'asset-manager')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V6.8A2.8 2.8 0 0 1 6.8 4h10.4A2.8 2.8 0 0 1 20 6.8v12.7"></path><path d="M7 8h10"></path><path d="M7 12h10"></path><path d="M7 16h6"></path></svg>
+                    <span class="nav-text">素材库</span>
+                </div>
+
+                <div class="nav-section-label">设置</div>
+                <div class="nav-item" data-page-id="api-settings" onclick="switchUI(this, 'api-settings')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4"></path><path d="M4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6"></path></svg>
+                    <span class="nav-text">API 设置</span>
+                </div>
+                <div class="nav-item" data-page-id="comfyui-settings" onclick="switchUI(this, 'comfyui-settings')">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4z"></path><path d="M14 4h6v6h-6z"></path><path d="M4 14h6v6H4z"></path><path d="M14 14h6v6h-6z"></path></svg>
+                    <span class="nav-text">工作流设置</span>
+                </div>
+            </nav>
+
+            <nav class="legacy-nav" aria-hidden="true">
                 <button class="nav-fold-toggle" id="local-nav-toggle" type="button" onclick="toggleLocalNav()" aria-expanded="true" title="折叠本地功能">
                     <svg class="nav-fold-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -1574,12 +2838,6 @@
                         <span class="side-pill-text" data-i18n="common.comfyuiSettings">工作流设置</span>
                     </button>
                 </div>
-                <button id="github-entry-btn" class="side-pill" onclick="openProjectPage()" type="button" title="GitHub">
-                    <svg fill="currentColor" stroke="none" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.05c-3.34.73-4.04-1.42-4.04-1.42-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.74.08-.74 1.21.09 1.85 1.25 1.85 1.25 1.07 1.83 2.81 1.3 3.5.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.53.12-3.18 0 0 1.01-.32 3.3 1.23a11.45 11.45 0 0 1 6.01 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.49 5.93.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57A12 12 0 0 0 12 .5Z"></path>
-                    </svg>
-                    <span class="side-pill-text" data-i18n="common.project">项目主页</span>
-                </button>
                 <button id="update-now-btn" class="update-now-btn" onclick="runProjectUpdate()" type="button" title="一键更新">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
@@ -1590,12 +2848,22 @@
                 <div id="project-version-badge" class="project-version-badge" title="点击检测更新" role="button" tabindex="0" onclick="checkForUpdates(true)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();checkForUpdates(true);}">v-</div>
             </div>
 
+            <div class="sidebar-status-card" aria-label="系统状态">
+                <strong>系统状态 <span>ONLINE</span></strong>
+                <div class="status-row"><span>队列任务</span><b>3</b></div>
+                <div class="status-row"><span>运行中</span><b>2</b></div>
+                <div class="status-row"><span>GPU 占用</span><b>48%</b></div>
+                <svg class="status-spark" viewBox="0 0 210 34" aria-hidden="true">
+                    <polyline points="0,25 10,20 20,22 30,19 40,24 50,21 60,23 70,18 80,20 90,14 100,25 110,22 120,24 130,19 140,21 150,17 160,23 170,20 180,22 190,18 210,21"></polyline>
+                </svg>
+            </div>
+
             <div class="author-box">
                 <span class="dx-letter letter-d">D</span>
                 <span class="dx-letter letter-x">X</span>
 
                 <div class="author-content-wrap">
-                    <div class="author-name-lite">wuli大雄</div>
+                    <div class="author-name-lite">汉堡甜甜圈</div>
                     <div class="social-row-lite">
                         <a href="https://space.bilibili.com/78652351" target="_blank" class="social-icon-lite">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -1625,8 +2893,10 @@
             /* 在侧栏 DOM 解析完后立即把 active 类移到当前页对应的入口，避免首屏先在文生图上闪一下 */
             (function(){
                 try {
-                    var pageId = localStorage.getItem('studio_active_page');
-                    if(pageId && pageId !== 'zimage') {
+                    var requestedPage = new URLSearchParams(location.search).get('page');
+                    var validPages = ['dashboard','zimage','enhance','klein','angle','online','gpt-chat','canvas','asset-manager','api-settings','comfyui-settings'];
+                    var pageId = validPages.indexOf(requestedPage) > -1 ? requestedPage : 'dashboard';
+                    if(pageId && pageId !== 'dashboard') {
                         document.querySelectorAll('.nav-item.active, .side-pill.active').forEach(function(n){
                             n.classList.remove('active');
                         });
@@ -1638,7 +2908,142 @@
         </script>
 
         <main class="stage">
-            <iframe id="frame-zimage" data-src="/static/zimage.html?v=2026.06.11.1781323423" class="active" scrolling="yes"></iframe>
+            <section id="dashboardHome" class="dashboard-home" aria-label="首页工作台">
+                <div class="dash-topbar">
+                    <button class="dash-search" type="button" onclick="openStudioPage('gpt-chat')">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+                        <span>Search / Command</span>
+                        <kbd>⌘ K</kbd>
+                    </button>
+                    <div class="dash-actions">
+                        <button class="dash-command primary" type="button" onclick="openStudioPage('canvas')">
+                            <span>新建画布</span>
+                            <svg width="21" height="21" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                        </button>
+                        <button class="dash-command" type="button" onclick="openStudioPage('asset-manager')">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 6h7l2 2h7v10H4z"></path></svg>
+                            <span>打开素材库</span>
+                        </button>
+                        <button class="dash-command" type="button" onclick="openStudioPage('comfyui-settings')">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M8 5v14l11-7z"></path></svg>
+                            <span>运行工作流</span>
+                        </button>
+                        <button class="dash-icon-btn" type="button" onclick="openStudioPage('api-settings')" aria-label="系统设置">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 7h10"></path><path d="M18 7h2"></path><path d="M4 17h2"></path><path d="M10 17h10"></path><circle cx="16" cy="7" r="2"></circle><circle cx="8" cy="17" r="2"></circle></svg>
+                        </button>
+                    </div>
+                    <div></div>
+                    <div class="dash-user">
+                        <button class="dash-bell" type="button" aria-label="通知">
+                            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+                        </button>
+                        <button class="dash-avatar" type="button" onclick="openStudioPage('api-settings')" aria-label="账户">
+                            <svg width="26" height="26" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path d="M12 3 3 8l9 5 9-5z"></path><path d="m3 13 9 5 9-5"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dash-hero">
+                    <div class="dash-copy">
+                        <h1>
+                            <span class="dash-title-line">把想法 <span class="dash-title-media" aria-hidden="true"></span></span>
+                            <span>铺成画布</span>
+                        </h1>
+                        <p>无限连接，AI 驱动，创作你的下一件作品。</p>
+                        <button class="dash-quick" type="button" onclick="openStudioPage('canvas')">快速开始
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="dash-showcase" aria-label="画布示例">
+                        <article class="showcase-card one">
+                            <img src="/assets/output/lovart_image_b60a32cccc41.png" alt="AI 科幻短片工作流">
+                            <div class="card-meta"><strong>AI 科幻短片工作流</strong><span>2024-12-18 10:42</span><span class="status-pill">运行中</span></div>
+                        </article>
+                        <article class="showcase-card two">
+                            <img src="/assets/output/jimeng_288267a3db.png" alt="概念视觉探索">
+                            <div class="card-meta"><strong>概念视觉探索</strong><span>2024-12-16 16:21</span></div>
+                        </article>
+                        <article class="showcase-card three">
+                            <img src="/assets/output/jimeng_b70037f2a6.png" alt="故事板草稿">
+                            <div class="card-meta"><strong>故事板草稿</strong><span>2024-12-10 09:33</span></div>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="dash-grid">
+                    <article class="dash-card">
+                        <div class="dash-card-head"><span>最近画布</span><span>↗</span></div>
+                        <div class="recent-list">
+                            <button class="recent-item" type="button" onclick="openStudioPage('canvas')"><img src="/assets/output/lovart_image_b60a32cccc41.png" alt=""><span>AI 科幻短片工作流<small>10 分钟前</small></span></button>
+                            <button class="recent-item" type="button" onclick="openStudioPage('canvas')"><img src="/assets/output/jimeng_288267a3db.png" alt=""><span>概念视觉探索<small>2 天前</small></span></button>
+                            <button class="recent-item" type="button" onclick="openStudioPage('online')"><img src="/assets/output/jimeng_b70037f2a6.png" alt=""><span>产品演示动画<small>5 天前</small></span></button>
+                            <button class="recent-item" type="button" onclick="openStudioPage('zimage')"><img src="/assets/output/jimeng_b9c678ada5.png" alt=""><span>品牌视觉延展<small>8 天前</small></span></button>
+                        </div>
+                        <div class="dash-card-foot"><span>查看全部</span><span>→</span></div>
+                    </article>
+
+                    <article class="dash-card smart-card">
+                        <div class="dash-card-head"><span>智能画布</span></div>
+                        <p>AI 驱动的创作起点<br>输入一句话，AI 帮你搭建画布</p>
+                        <button class="dash-mini-btn" type="button" onclick="openStudioPage('canvas')">生成画布 +</button>
+                    </article>
+
+                    <article class="dash-card">
+                        <div class="dash-card-head"><span>素材库</span><span>＋</span></div>
+                        <div class="asset-tabs"><span>全部</span><span>图像</span><span>视频</span><span>音频</span><span>模型</span></div>
+                        <div class="asset-grid">
+                            <img src="/assets/output/lovart_image_b60a32cccc41.png" alt="素材预览">
+                            <img src="/assets/output/jimeng_288267a3db.png" alt="素材预览">
+                            <img src="/assets/output/jimeng_b70037f2a6.png" alt="素材预览">
+                            <img src="/assets/output/jimeng_b9c678ada5.png" alt="素材预览">
+                            <img src="/assets/output/lovart_image_39c843cf1142.png" alt="素材预览">
+                            <img src="/static/images/logo.png" alt="素材预览">
+                        </div>
+                        <div class="dash-card-foot"><span>共 1,248 个素材</span><button type="button" onclick="openStudioPage('asset-manager')">前往素材库 →</button></div>
+                    </article>
+
+                    <article class="dash-card">
+                        <div class="dash-card-head"><span>工作流</span></div>
+                        <div class="workflow-list">
+                            <button class="workflow-item" type="button" onclick="openStudioPage('comfyui-settings')"><span class="workflow-icon">↔</span><span>文生图工作流<small>更新于 1 天前</small></span></button>
+                            <button class="workflow-item" type="button" onclick="openStudioPage('comfyui-settings')"><span class="workflow-icon">◎</span><span>图生视频工作流<small>更新于 3 天前</small></span></button>
+                            <button class="workflow-item" type="button" onclick="openStudioPage('comfyui-settings')"><span class="workflow-icon">⌘</span><span>智能剪辑工作流<small>更新于 6 天前</small></span></button>
+                            <button class="workflow-item" type="button" onclick="openStudioPage('comfyui-settings')"><span class="workflow-icon">◇</span><span>角色一致性工作流<small>更新于 8 天前</small></span></button>
+                        </div>
+                        <div class="dash-card-foot"><span>管理工作流</span><span>→</span></div>
+                    </article>
+
+                    <article class="dash-card">
+                        <div class="dash-card-head"><span>输出记录</span></div>
+                        <div class="output-list">
+                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/lovart_image_b60a32cccc41.png" alt=""><span>科幻短片_最终版.mp4<small>4K　00:45　3 分钟前</small></span></button>
+                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/jimeng_288267a3db.png" alt=""><span>概念图_组合_03.png<small>2K　12 分钟前</small></span></button>
+                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/jimeng_b70037f2a6.png" alt=""><span>产品动画_演示.mov<small>4K　00:30　1 小时前</small></span></button>
+                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/jimeng_b9c678ada5.png" alt=""><span>品牌KV_最终版.png<small>2K　2 小时前</small></span></button>
+                        </div>
+                        <div class="dash-card-foot"><span>查看全部</span><span>→</span></div>
+                    </article>
+
+                    <article class="dash-card">
+                        <div class="dash-card-head"><span>添加节点</span><span>＋</span></div>
+                        <div class="node-list">
+                            <button class="node-item text" type="button" onclick="openStudioPage('canvas')"><span class="node-icon">T</span><span>文本</span><span class="node-count">12</span></button>
+                            <button class="node-item image" type="button" onclick="openStudioPage('canvas')"><span class="node-icon">▧</span><span>图像</span><span class="node-count">18</span></button>
+                            <button class="node-item video" type="button" onclick="openStudioPage('canvas')"><span class="node-icon">▷</span><span>视频</span><span class="node-count">16</span></button>
+                            <button class="node-item flow" type="button" onclick="openStudioPage('canvas')"><span class="node-icon">⌘</span><span>流程</span><span class="node-count">10</span></button>
+                            <button class="node-item output" type="button" onclick="openStudioPage('canvas')"><span class="node-icon">▷</span><span>输出</span><span class="node-count">8</span></button>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="dash-view-toggle" aria-label="首页视图">
+                    <button type="button" class="active" aria-label="网格视图">▦</button>
+                    <button type="button" aria-label="列表视图">☰</button>
+                </div>
+            </section>
+
+            <iframe id="frame-zimage" data-src="/static/zimage.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
             <iframe id="frame-enhance" data-src="/static/enhance.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
             <iframe id="frame-klein" data-src="/static/klein.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
             <iframe id="frame-angle" data-src="/static/angle.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
@@ -1767,8 +3172,8 @@
         const LOCAL_NAV_COLLAPSED_KEY = 'studio_local_nav_collapsed';
         const SIDEBAR_SETTINGS_COLLAPSED_KEY = 'studio_sidebar_settings_collapsed';
         const SIDEBAR_PINNED_KEY = 'studio_sidebar_pinned';
-        const DEFAULT_PAGE_ID = 'zimage';
-        const PAGE_IDS = ['zimage','enhance','klein','angle','online','gpt-chat','canvas','asset-manager','api-settings','comfyui-settings'];
+        const DEFAULT_PAGE_ID = 'dashboard';
+        const PAGE_IDS = ['dashboard','zimage','enhance','klein','angle','online','gpt-chat','canvas','asset-manager','api-settings','comfyui-settings'];
         const LOCAL_PAGE_IDS = ['zimage','enhance','klein','angle'];
         const PROJECT_URL = 'https://github.com/hero8152/Infinite-Canvas';
         let appInfo = { version:'', repo_url:PROJECT_URL, version_url:'https://raw.githubusercontent.com/hero8152/Infinite-Canvas/main/VERSION' };
@@ -1862,8 +3267,25 @@
             if(!PAGE_IDS.includes(id)) id = DEFAULT_PAGE_ID;
             document.querySelectorAll('.nav-item,.side-pill').forEach(n => n.classList.remove('active'));
             if(el) el.classList.add('active');
+            const dashboard = document.getElementById('dashboardHome');
             document.querySelectorAll('iframe').forEach(f => f.classList.remove('active'));
+            if(id === 'dashboard') {
+                if(dashboard) {
+                    dashboard.classList.remove('is-hidden');
+                    dashboard.setAttribute('aria-hidden', 'false');
+                }
+                if(!options.skipRemember) localStorage.setItem(ACTIVE_PAGE_KEY, id);
+                setLocalNavCollapsed(localStorage.getItem(LOCAL_NAV_COLLAPSED_KEY) === '1', { skipRemember:true });
+                setSidebarSettingsCollapsed(localStorage.getItem(SIDEBAR_SETTINGS_COLLAPSED_KEY) !== '0', { skipRemember:true });
+                resetStudioRootScroll();
+                return;
+            }
+            if(dashboard) {
+                dashboard.classList.add('is-hidden');
+                dashboard.setAttribute('aria-hidden', 'true');
+            }
             const target = document.getElementById('frame-' + id);
+            if(!target) return switchUI(document.querySelector('[data-page-id="dashboard"]'), DEFAULT_PAGE_ID, options);
             target.classList.add('active');
             if (!target.src) target.src = target.dataset.src;
             if(!options.skipRemember) localStorage.setItem(ACTIVE_PAGE_KEY, id);
@@ -1883,6 +3305,11 @@
                 try { target.contentWindow?.postMessage({ type: 'canvas-focus' }, '*'); } catch(e) {}
             }
             resetStudioRootScroll();
+        }
+
+        function openStudioPage(id) {
+            const trigger = document.querySelector(`[data-page-id="${id}"]`) || document.querySelector(`[onclick*="'${id}'"],[onclick*='"${id}"']`);
+            switchUI(trigger, id);
         }
 
         function forwardStudioApiChange(data) {
@@ -1906,7 +3333,8 @@
 
         function restoreActivePage() {
             restoreSidebarPinned();
-            const id = PAGE_IDS.includes(localStorage.getItem(ACTIVE_PAGE_KEY)) ? localStorage.getItem(ACTIVE_PAGE_KEY) : DEFAULT_PAGE_ID;
+            const requestedPage = new URLSearchParams(location.search).get('page');
+            const id = PAGE_IDS.includes(requestedPage) ? requestedPage : DEFAULT_PAGE_ID;
             restoreLocalNav(id);
             restoreSidebarSettings(id);
             const trigger = document.querySelector(`[onclick*="'${id}'"],[onclick*='"${id}"']`);
@@ -2045,10 +3473,6 @@
             });
         });
 
-        function openProjectPage() {
-            window.open(appInfo.repo_url || PROJECT_URL, '_blank', 'noopener');
-        }
-
         function versionParts(value) {
             return String(value || '').match(/\d+/g)?.map(Number) || [];
         }
@@ -2098,11 +3522,30 @@
                 : `当前版本：${full} · 点击检测更新`;
         }
 
+        function getProjectUpdateState() {
+            const btn = document.getElementById('update-now-btn');
+            const badge = document.getElementById('project-version-badge');
+            return {
+                localVersion: btn?.dataset.localVersion || badge?.dataset.localVersion || appInfo.version || '',
+                remoteVersion: btn?.dataset.remoteVersion || badge?.dataset.remoteVersion || '',
+                hasUpdate: !!(btn?.classList.contains('show') || badge?.classList.contains('update-available')),
+            };
+        }
+
+        function setProjectUpdateState(localVersion = '', remoteVersion = '', hasUpdate = false) {
+            [document.getElementById('update-now-btn'), document.getElementById('project-version-badge')].forEach(el => {
+                if(!el) return;
+                el.dataset.localVersion = localVersion || '';
+                el.dataset.remoteVersion = remoteVersion || '';
+                el.classList.toggle('update-available', !!hasUpdate);
+            });
+        }
+
         function refreshUpdateButtonText() {
             const btn = document.getElementById('update-now-btn');
             const text = document.getElementById('update-now-text');
             if(!btn || !text || !btn.classList.contains('show')) return;
-            const remoteVersion = document.getElementById('github-entry-btn')?.dataset.remoteVersion || '';
+            const remoteVersion = getProjectUpdateState().remoteVersion;
             const isEn = window.StudioI18n?.lang?.() === 'en';
             text.removeAttribute('data-i18n');
             if(remoteVersion) {
@@ -2126,14 +3569,11 @@
         }
 
         function updateProjectUpdateTitle() {
-            const gitBtn = document.getElementById('github-entry-btn');
-            setProjectVersionBadge(appInfo.version || gitBtn?.dataset.localVersion || '');
-            if(!gitBtn?.classList.contains('update-available')) return;
-            const remoteVersion = gitBtn.dataset.remoteVersion || '';
+            const state = getProjectUpdateState();
+            setProjectVersionBadge(appInfo.version || state.localVersion || '');
+            if(!state.hasUpdate) return;
+            const remoteVersion = state.remoteVersion || '';
             const isEn = window.StudioI18n?.lang?.() === 'en';
-            gitBtn.title = isEn
-                ? `Current ${versionLabel(gitBtn.dataset.localVersion || appInfo.version)} · latest ${versionLabel(remoteVersion)}`
-                : `当前 ${versionLabel(gitBtn.dataset.localVersion || appInfo.version)} · 最新 ${versionLabel(remoteVersion)}`;
             const updateBtn = document.getElementById('update-now-btn');
             if(updateBtn) updateBtn.title = remoteVersion
                 ? (isEn ? `Update to ${versionLabel(remoteVersion)}` : `更新到 ${versionLabel(remoteVersion)}`)
@@ -2142,11 +3582,7 @@
         }
 
         function showUpdateNotice(localVersion, remoteVersion) {
-            const gitBtn = document.getElementById('github-entry-btn');
-            if(!gitBtn) return;
-            gitBtn.classList.add('update-available');
-            gitBtn.dataset.localVersion = localVersion || '';
-            gitBtn.dataset.remoteVersion = remoteVersion || '';
+            setProjectUpdateState(localVersion, remoteVersion, true);
             document.getElementById('update-now-btn')?.classList.add('show');
             updateProjectUpdateTitle();
         }
@@ -2319,9 +3755,9 @@
         }
 
         function refreshProjectUpdateModalText() {
-            const gitBtn = document.getElementById('github-entry-btn');
-            const remoteVersion = gitBtn?.dataset.remoteVersion || '';
-            const localVersion = gitBtn?.dataset.localVersion || appInfo.version || '';
+            const state = getProjectUpdateState();
+            const remoteVersion = state.remoteVersion || '';
+            const localVersion = state.localVersion || appInfo.version || '';
             const sourceName = updateSourceLabel();
             const title = remoteVersion
                 ? updateUiText(`更新到 ${versionLabel(remoteVersion)}`, `Update to ${versionLabel(remoteVersion)}`)
@@ -2607,9 +4043,10 @@
                             ? `Updated ${data.count || 0} files. Please restart the backend, then refresh this page.`
                             : `已更新 ${data.count || 0} 个文件。请重启后端，然后刷新页面。`)) + fallbackNote
                 );
-                document.getElementById('github-entry-btn')?.classList.remove('update-available');
+                const updateState = getProjectUpdateState();
+                setProjectUpdateState('', '', false);
                 btn?.classList.remove('show');
-                setProjectVersionBadge(data.version || document.getElementById('github-entry-btn')?.dataset.remoteVersion || appInfo.version);
+                setProjectVersionBadge(data.version || updateState.remoteVersion || appInfo.version);
                 if(restarting) waitForBackendAndReload();
             } catch(e) {
                 const msg = (e && e.name === 'AbortError')

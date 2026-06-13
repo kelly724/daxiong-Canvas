@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/static/images/logo.png" type="image/png">
-    <title>无限画布</title>
+    <title>汉堡甜甜圈画布</title>
     <script>
         (function(){
             try {
-                var theme = localStorage.getItem('studio_theme') || localStorage.getItem('canvas_theme') || 'light';
+                var theme = localStorage.getItem('studio_theme') || localStorage.getItem('canvas_theme') || 'dark';
                 if(theme === 'dark') {
                     document.documentElement.classList.add('studio-theme-dark');
                     document.documentElement.classList.add('theme-dark');
@@ -34,9 +34,13 @@
                 </div>
                 <p id="saveState" style="display:none" data-i18n="canvas.chooseFirst">请选择或新建画布</p>
             </div>
-            <div id="quickToolbar" class="panel toolbar editor-only">
+            <div id="quickToolbar" class="panel toolbar editor-only command-toolbar">
                 <button class="tool-btn toolbar-toggle" type="button" onclick="toggleQuickToolbar()" title="折叠快捷菜单" aria-label="折叠快捷菜单"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                <div class="toolbar-items">
+                <div class="toolbar-command-label" aria-hidden="true">
+                    <span>Add Node</span>
+                    <small>节点库</small>
+                </div>
+                <div class="toolbar-items node-accordion">
                     <button class="tool-btn" onclick="addImageNode()"><i data-lucide="image-plus" class="w-4 h-4"></i><span data-i18n="canvas.image">图片</span></button>
                     <button class="tool-btn" onclick="addPromptNode()"><i data-lucide="text-cursor-input" class="w-4 h-4"></i><span data-i18n="canvas.prompt">提示词</span></button>
                     <button class="tool-btn" onclick="addSourceTextNode()"><i data-lucide="file-text" class="w-4 h-4"></i><span>源文本</span></button>

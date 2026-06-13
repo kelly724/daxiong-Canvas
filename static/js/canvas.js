@@ -2219,7 +2219,7 @@ document.addEventListener('mousedown', e => {
 });
 gateCanvasList?.addEventListener('scroll', () => requestAnimationFrame(positionCanvasMetaPopover), {passive:true});
 window.addEventListener('resize', () => requestAnimationFrame(positionCanvasMetaPopover));
-window.addEventListener('studio-theme-change', event => applyTheme(event.detail?.theme || 'light'));
+window.addEventListener('studio-theme-change', event => applyTheme(event.detail?.theme || 'dark'));
 document.getElementById('cropBox').addEventListener('mousedown', event => beginCropDrag(event, 'move'));
 document.getElementById('cropHandle').addEventListener('mousedown', event => beginCropDrag(event, 'resize'));
 document.getElementById('outpaintFrame')?.addEventListener('mousedown', event => {
@@ -15576,7 +15576,7 @@ function escapeHtml(str){ return String(str == null ? '' : str).replace(/[&<>"']
 function escapeAttr(str){ return escapeHtml(str); }
 
 window.onload = async () => {
-    applyTheme(localStorage.getItem('studio_theme') || localStorage.getItem(CANVAS_THEME_KEY) || 'light');
+    applyTheme(localStorage.getItem('studio_theme') || localStorage.getItem(CANVAS_THEME_KEY) || 'dark');
     applyQuickToolbarState();
     if(window.StudioI18n) StudioI18n.apply();
     document.title = tr('canvas.title');
