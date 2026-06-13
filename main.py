@@ -43,12 +43,16 @@ from services.lovart_service import (
     LOVART_DEFAULT_BASE_URL,
     LOVART_IMAGE_MODEL_IDS,
     LOVART_VIDEO_MODEL_IDS,
+    LovartClient,
     LovartError,
     confirm_and_poll as lovart_confirm_and_poll,
     download_artifacts as lovart_download_artifacts,
+    load_state as lovart_load_state,
+    mark_generation_success as lovart_mark_generation_success,
     models_payload as lovart_models_payload,
     pending_cost as lovart_pending_cost,
     query_mode_with_keys as lovart_query_mode_with_keys,
+    record_task as lovart_record_task,
     set_mode_with_keys as lovart_set_mode_with_keys,
     submit_and_poll as lovart_submit_and_poll,
 )
@@ -10050,6 +10054,14 @@ def lovart_reference_values(refs) -> List[str]:
             values.append(url)
     return values
 
+def lovart_url_references(urls) -> List[Dict[str, str]]:
+    refs = []
+    for url in urls or []:
+        text = str(url or "").strip()
+        if text:
+            refs.append({"url": text})
+    return refs
+
 UNRESOLVED_PROMPT_PLACEHOLDER_RE = re.compile(r"\[[^\]\n]{1,80}\]")
 PROMPT_TEMPLATE_PLACEHOLDER_KEYWORDS = (
     "主体",
@@ -10105,14 +10117,33 @@ def lovart_image_prompt(prompt: str, size: str = "", quality: str = "") -> str:
         hints.append(f"Quality preference: {quality}.")
     return "\n\n".join([str(prompt or "").strip(), *hints]).strip()
 
+def lovart_video_resolution_preference(value: str = "") -> str:
+    text = str(value or "").strip()
+    lower = text.lower()
+    aliases = {
+        "480": "480p",
+        "480p": "480p",
+        "720": "720p",
+        "720p": "720p",
+        "780p": "720p",
+        "1080": "1080p",
+        "1080p": "1080p",
+    }
+    return aliases.get(lower, text)
+
 def lovart_video_prompt(payload: CanvasVideoRequest) -> str:
     hints = []
     if payload.aspect_ratio:
         hints.append(f"Target aspect ratio preference: {payload.aspect_ratio}.")
     if payload.duration:
         hints.append(f"Target duration preference: {payload.duration} seconds.")
-    if payload.resolution:
-        hints.append(f"Target resolution preference: {payload.resolution}.")
+    resolution = lovart_video_resolution_preference(payload.resolution)
+    if resolution.lower() == "480p":
+        hints.append(
+            "Use the 480P low-cost video tier/resolution. Do not generate 720P or 1080P unless the 480P tier is unavailable."
+        )
+    elif resolution:
+        hints.append(f"Target resolution preference: {resolution}.")
     role_notes = []
     for index, ref in enumerate(payload.images or [], start=1):
         role = str(getattr(ref, "role", "") or "").strip()
@@ -10120,6 +10151,12 @@ def lovart_video_prompt(payload: CanvasVideoRequest) -> str:
             role_notes.append(f"Reference image {index} role: {role}.")
     if role_notes:
         hints.extend(role_notes)
+    video_count = len([url for url in payload.videos if str(url or "").strip()])
+    audio_count = len([url for url in payload.audios if str(url or "").strip()])
+    if video_count:
+        hints.append(f"Reference videos attached: {video_count}. Use them as motion/style/scene references when relevant.")
+    if audio_count:
+        hints.append(f"Reference audio files attached: {audio_count}. Use them as voice/music/timing references when relevant.")
     return "\n\n".join([str(payload.prompt or "").strip(), *hints]).strip()
 
 def lovart_status_payload(result: Dict[str, Any], model: str, kind: str, task_id: str) -> Dict[str, Any]:
@@ -10967,6 +11004,9 @@ async def lovart_finalize_video_result(payload: CanvasVideoRequest, provider: Di
             "duration": payload.duration,
             "aspect_ratio": payload.aspect_ratio,
             "resolution": payload.resolution,
+            "reference_images": [ref.dict() for ref in payload.images if ref.url],
+            "reference_videos": [url for url in payload.videos if str(url or "").strip()],
+            "reference_audios": [url for url in payload.audios if str(url or "").strip()],
             "unlimited": bool(payload.unlimited),
         },
         "raw": result,
@@ -10974,8 +11014,11 @@ async def lovart_finalize_video_result(payload: CanvasVideoRequest, provider: Di
 
 async def build_lovart_video_result(payload: CanvasVideoRequest, provider: Dict[str, Any], model: str, task_id: str = ""):
     assert_no_lovart_template_placeholders(payload.prompt)
+    payload.resolution = lovart_video_resolution_preference(payload.resolution)
     refs = [ref.dict() for ref in payload.images if ref.url]
-    attachments = lovart_reference_values(refs)
+    video_refs = lovart_url_references(payload.videos)
+    audio_refs = lovart_url_references(payload.audios)
+    attachments = lovart_reference_values([*refs, *video_refs, *audio_refs])
     prompt = lovart_video_prompt(payload)
     try:
         result = await asyncio.to_thread(
@@ -11031,12 +11074,107 @@ async def run_canvas_video_task(task_id: str, payload: CanvasVideoRequest):
                 "updated_at": time.time(),
             })
 
+async def recover_lovart_video_task(task_id: str) -> Optional[Dict[str, Any]]:
+    try:
+        state = await asyncio.to_thread(lovart_load_state, LOVART_STATE_FILE)
+    except Exception:
+        return None
+    saved = ((state or {}).get("tasks") or {}).get(task_id) or {}
+    if str(saved.get("kind") or "").lower() != "video":
+        return None
+    thread_id = str(saved.get("thread_id") or "").strip()
+    if not thread_id:
+        return None
+    model = selected_model(str(saved.get("model") or ""), LOVART_VIDEO_MODEL_IDS[0])
+    base_task = {
+        "id": task_id,
+        "type": "online-video",
+        "provider_id": "lovart",
+        "model": model,
+        "thread_id": thread_id,
+        "created_at": saved.get("created_at") or saved.get("updated_at") or time.time(),
+        "updated_at": time.time(),
+        "payload": {},
+    }
+    try:
+        client = LovartClient(
+            base_url=lovart_base_url_value(),
+            access_key=lovart_access_key_value(),
+            secret_key=lovart_secret_key_value(),
+            timeout=60,
+        )
+        status_info = await asyncio.to_thread(client.status, thread_id)
+        status = str((status_info or {}).get("status") or "running").lower()
+        if status == "running":
+            task = {**base_task, "status": "running", "result": None, "error": "", "message": "Lovart task is still running"}
+            with CANVAS_TASK_LOCK:
+                CANVAS_TASKS[task_id] = task
+            return dict(task)
+        if status == "abort":
+            task = {**base_task, "status": "failed", "result": None, "error": "Lovart Agent aborted the task"}
+            lovart_record_task(LOVART_STATE_FILE, task_id, {"status": "failed", "final_status": "abort"})
+            with CANVAS_TASK_LOCK:
+                CANVAS_TASKS[task_id] = task
+            return dict(task)
+        result = await asyncio.to_thread(client.result, thread_id)
+        result["final_status"] = status
+        result["thread_id"] = thread_id
+        result["project_id"] = saved.get("project_id") or (state or {}).get("project_id") or ""
+        lovart_mark_generation_success(result)
+        if result.get("pending_confirmation"):
+            final = lovart_status_payload(result, model, "video", task_id)
+        else:
+            provider = get_api_provider_exact("lovart")
+            saved_payload = saved.get("payload") if isinstance(saved.get("payload"), dict) else {}
+            try:
+                payload = CanvasVideoRequest(**saved_payload) if saved_payload else CanvasVideoRequest(
+                    prompt="Recovered Lovart video task",
+                    provider_id="lovart",
+                    model=model,
+                )
+            except Exception:
+                payload = CanvasVideoRequest(prompt="Recovered Lovart video task", provider_id="lovart", model=model)
+            final = await lovart_finalize_video_result(payload, provider, model, result, task_id)
+        task = {
+            **base_task,
+            "status": str((final or {}).get("status") or "succeeded"),
+            "result": final,
+            "error": "",
+            "thread_id": final.get("thread_id") or thread_id,
+            "estimated_cost": final.get("estimated_cost"),
+            "pending_confirmation": final.get("pending_confirmation"),
+            "message": final.get("message") or "",
+            "updated_at": time.time(),
+        }
+        lovart_record_task(LOVART_STATE_FILE, task_id, {
+            "status": task["status"],
+            "final_status": result.get("final_status"),
+            "generation_succeeded": result.get("generation_succeeded"),
+            "pending_confirmation": result.get("pending_confirmation"),
+        })
+        with CANVAS_TASK_LOCK:
+            CANVAS_TASKS[task_id] = task
+        return dict(task)
+    except Exception as exc:
+        detail = getattr(exc, "detail", None) or str(exc)
+        task = {
+            **base_task,
+            "status": "failed",
+            "result": None,
+            "error": str(detail),
+            "status_code": getattr(exc, "status_code", 500),
+        }
+        with CANVAS_TASK_LOCK:
+            CANVAS_TASKS[task_id] = task
+        return dict(task)
+
 @app.post("/api/canvas-video-tasks")
 async def create_canvas_video_task(payload: CanvasVideoRequest):
     provider = get_api_provider(payload.provider_id)
     if not is_lovart_provider(provider):
         raise HTTPException(status_code=400, detail="/api/canvas-video-tasks 仅支持 Lovart 视频，其他平台请使用 /api/canvas-video")
     assert_no_lovart_template_placeholders(payload.prompt)
+    payload.resolution = lovart_video_resolution_preference(payload.resolution)
     task_id = f"canvas_vid_{uuid.uuid4().hex}"
     with CANVAS_TASK_LOCK:
         CANVAS_TASKS[task_id] = {
@@ -11052,6 +11190,13 @@ async def create_canvas_video_task(payload: CanvasVideoRequest):
             "unlimited": bool(payload.unlimited),
             "payload": payload.dict(),
         }
+    lovart_record_task(LOVART_STATE_FILE, task_id, {
+        "task_id": task_id,
+        "kind": "video",
+        "model": payload.model,
+        "status": "queued",
+        "payload": payload.dict(),
+    })
     asyncio.create_task(run_canvas_video_task(task_id, payload))
     return {"task_id": task_id, "status": "queued"}
 
@@ -11060,6 +11205,9 @@ async def get_canvas_video_task(task_id: str):
     with CANVAS_TASK_LOCK:
         task = dict(CANVAS_TASKS.get(task_id) or {})
     if not task:
+        recovered = await recover_lovart_video_task(task_id)
+        if recovered:
+            return recovered
         raise HTTPException(status_code=404, detail="画布视频任务不存在，可能服务已重启或任务已过期")
     return task
 
@@ -11902,6 +12050,12 @@ def codex_cli_task_dir(task_id: str) -> str:
 def codex_cli_task_url(task_id: str, filename: str) -> str:
     return f"/output/codex-imagegen/{task_id}/{filename}"
 
+CODEX_CLI_IMAGE_EXT_RE = re.compile(r"\.(png|jpe?g|webp)$", re.I)
+CODEX_CLI_SESSION_ID_RE = re.compile(r"session id:\s*([0-9a-fA-F-]{20,})", re.I)
+CODEX_CLI_EXTERNAL_IMAGE_ROOTS = [
+    os.path.join(os.path.expanduser("~"), ".codex", "generated_images"),
+]
+
 def codex_cli_task_images(task_id: str) -> List[Dict[str, str]]:
     task_dir = codex_cli_task_dir(task_id)
     image_files: List[Dict[str, str]] = []
@@ -11909,12 +12063,133 @@ def codex_cli_task_images(task_id: str) -> List[Dict[str, str]]:
         return image_files
     for root, _, files in os.walk(task_dir):
         for name in files:
-            if re.search(r"\.(png|jpe?g|webp)$", name, re.I):
+            if CODEX_CLI_IMAGE_EXT_RE.search(name):
                 abs_path = os.path.join(root, name)
                 rel = os.path.relpath(abs_path, task_dir).replace("\\", "/")
                 image_files.append({"url": codex_cli_task_url(task_id, rel), "localPath": abs_path})
     image_files.sort(key=lambda item: item.get("localPath", ""))
     return image_files
+
+def codex_cli_unique_paths(paths: List[str]) -> List[str]:
+    candidates: List[str] = []
+    seen = set()
+    for path in paths:
+        key = os.path.normcase(os.path.abspath(path))
+        if key not in seen:
+            seen.add(key)
+            candidates.append(path)
+    return candidates
+
+def codex_cli_candidate_image_paths(text: str) -> List[str]:
+    candidates: List[str] = []
+    patterns = [
+        r"file:///([A-Za-z]:/[^\r\n`\"')\]]+\.(?:png|jpe?g|webp))",
+        r"([A-Za-z]:[\\/][^\r\n`\"')\]]+\.(?:png|jpe?g|webp))",
+    ]
+    for pattern in patterns:
+        for match in re.finditer(pattern, text or "", re.I):
+            candidates.append(match.group(1).strip().replace("/", "\\"))
+    return codex_cli_unique_paths(candidates)
+
+def codex_cli_path_is_under(path: str, root: str) -> bool:
+    try:
+        path_abs = os.path.normcase(os.path.realpath(os.path.abspath(path)))
+        root_abs = os.path.normcase(os.path.realpath(os.path.abspath(root)))
+        return os.path.commonpath([root_abs, path_abs]) == root_abs
+    except Exception:
+        return False
+
+def codex_cli_allowed_external_image(path: str) -> bool:
+    roots = globals().get("CODEX_CLI_EXTERNAL_IMAGE_ROOTS", [])
+    return any(codex_cli_path_is_under(path, root) for root in roots if root)
+
+def codex_cli_external_result_text(task_id: str) -> str:
+    task_dir = codex_cli_task_dir(task_id)
+    chunks: List[str] = []
+    for filename in ("result_message.txt", "stdout.log", "stderr.log"):
+        path = os.path.join(task_dir, filename)
+        if os.path.isfile(path):
+            try:
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                    chunks.append(f.read())
+            except Exception:
+                pass
+    if os.path.isdir(task_dir):
+        for root, _, files in os.walk(task_dir):
+            for name in files:
+                if name.lower().endswith(".svg"):
+                    path = os.path.join(root, name)
+                    try:
+                        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                            chunks.append(f.read())
+                    except Exception:
+                        pass
+    return "\n".join(chunks)
+
+def codex_cli_session_image_paths(text: str) -> List[str]:
+    paths: List[str] = []
+    session_ids = []
+    for match in CODEX_CLI_SESSION_ID_RE.finditer(text or ""):
+        session_id = match.group(1).lower()
+        if session_id not in session_ids:
+            session_ids.append(session_id)
+    for root in globals().get("CODEX_CLI_EXTERNAL_IMAGE_ROOTS", []):
+        if not root:
+            continue
+        for session_id in session_ids:
+            session_dir = os.path.join(root, session_id)
+            if not codex_cli_path_is_under(session_dir, root) or not os.path.isdir(session_dir):
+                continue
+            for walk_root, _, files in os.walk(session_dir):
+                for name in files:
+                    if CODEX_CLI_IMAGE_EXT_RE.search(name):
+                        paths.append(os.path.join(walk_root, name))
+    paths.sort(key=lambda path: os.path.getmtime(path) if os.path.exists(path) else 0)
+    return codex_cli_unique_paths(paths)
+
+def codex_cli_harvest_external_images(task_id: str) -> List[Dict[str, str]]:
+    task_dir = codex_cli_task_dir(task_id)
+    message = codex_cli_external_result_text(task_id)
+    if not message:
+        return codex_cli_task_images(task_id)
+
+    os.makedirs(task_dir, exist_ok=True)
+    task_dir_abs = os.path.abspath(task_dir)
+    copied = 0
+    source_paths = codex_cli_candidate_image_paths(message) + codex_cli_session_image_paths(message)
+    for source_path in codex_cli_unique_paths(source_paths):
+        try:
+            source_abs = os.path.abspath(source_path)
+            if not os.path.isfile(source_abs):
+                continue
+            try:
+                is_in_task_dir = os.path.commonpath([task_dir_abs, source_abs]) == task_dir_abs
+            except ValueError:
+                is_in_task_dir = False
+            if is_in_task_dir:
+                continue
+            if not codex_cli_allowed_external_image(source_abs):
+                continue
+            ext = os.path.splitext(source_abs)[1].lower()
+            if not CODEX_CLI_IMAGE_EXT_RE.search(ext):
+                continue
+            copied += 1
+            dest_path = os.path.join(task_dir, f"codex-output-{copied}{ext}")
+            while os.path.exists(dest_path):
+                copied += 1
+                dest_path = os.path.join(task_dir, f"codex-output-{copied}{ext}")
+            shutil.copy2(source_abs, dest_path)
+        except Exception:
+            continue
+    return codex_cli_task_images(task_id)
+
+def codex_cli_stop_process(pid: Any):
+    if not pid:
+        return
+    try:
+        os.kill(int(pid), 15)
+    except Exception:
+        pass
 
 def run_codex_cli_image_task(task_id: str, payload: Dict[str, Any]):
     task_dir = codex_cli_task_dir(task_id)
@@ -11932,7 +12207,9 @@ def run_codex_cli_image_task(task_id: str, payload: Dict[str, Any]):
             CODEX_CLI_TASKS[task_id].update({"status": "failed", "error": "没有找到 codex 命令"})
         return
     instruction = (
-        "请根据下面提示生成图片，并把最终图片文件保存到当前任务目录。"
+        "请根据下面提示生成图片，并把最终 PNG/JPG/WEBP 图片文件保存到当前任务目录。"
+        "如果图片工具只能先保存到 Codex 的 generated_images 缓存目录，请在最终回复中原样写出该 PNG/JPG/WEBP 的本机绝对路径。"
+        "不要只保存 SVG 包装文件。"
         f"\n任务目录：{task_dir}\n"
         f"画幅比例：{payload.get('aspect_ratio') or '1:1'}\n"
         f"数量：{max(1, min(4, int(payload.get('batch_size') or 1)))}\n\n"
@@ -11955,7 +12232,10 @@ def run_codex_cli_image_task(task_id: str, payload: Dict[str, Any]):
                 CODEX_CLI_TASKS[task_id]["pid"] = proc.pid
             timeout = max(30, min(1800, int(payload.get("timeout_ms") or 1200000) // 1000))
             proc.wait(timeout=timeout)
-        image_files = codex_cli_task_images(task_id)
+        image_files = codex_cli_task_images(task_id) or codex_cli_harvest_external_images(task_id)
+        with CODEX_CLI_TASK_LOCK:
+            if CODEX_CLI_TASKS.get(task_id, {}).get("status") == "succeeded":
+                return
         with CODEX_CLI_TASK_LOCK:
             if proc.returncode == 0 and image_files:
                 CODEX_CLI_TASKS[task_id].update({"status": "succeeded", "images": image_files, "completed_at": now_ms()})
@@ -11964,11 +12244,8 @@ def run_codex_cli_image_task(task_id: str, payload: Dict[str, Any]):
             else:
                 CODEX_CLI_TASKS[task_id].update({"status": "failed", "error": f"Codex CLI 退出码 {proc.returncode}", "completed_at": now_ms()})
     except subprocess.TimeoutExpired:
-        try:
-            proc.kill()
-        except Exception:
-            pass
-        image_files = codex_cli_task_images(task_id)
+        codex_cli_stop_process(proc.pid)
+        image_files = codex_cli_task_images(task_id) or codex_cli_harvest_external_images(task_id)
         with CODEX_CLI_TASK_LOCK:
             if image_files:
                 CODEX_CLI_TASKS[task_id].update({"status": "succeeded", "images": image_files, "error": "", "completed_at": now_ms(), "recovered": True})
@@ -12027,7 +12304,7 @@ async def codex_cli_imagegen_status(task_id: str):
     with CODEX_CLI_TASK_LOCK:
         task = dict(CODEX_CLI_TASKS.get(task_id) or {})
     if not task:
-        image_files = codex_cli_task_images(task_id)
+        image_files = codex_cli_task_images(task_id) or codex_cli_harvest_external_images(task_id)
         if not image_files:
             raise HTTPException(status_code=404, detail="Codex CLI 任务不存在")
         task = {
@@ -12039,9 +12316,18 @@ async def codex_cli_imagegen_status(task_id: str):
             "recovered": True,
         }
     elif task.get("status") == "failed" and not task.get("images"):
-        image_files = codex_cli_task_images(task_id)
+        image_files = codex_cli_task_images(task_id) or codex_cli_harvest_external_images(task_id)
         if image_files:
             recovered = {"status": "succeeded", "images": image_files, "error": "", "completed_at": now_ms(), "recovered": True}
+            with CODEX_CLI_TASK_LOCK:
+                if task_id in CODEX_CLI_TASKS:
+                    CODEX_CLI_TASKS[task_id].update(recovered)
+            task.update(recovered)
+    elif task.get("status") == "running" and not task.get("images"):
+        image_files = codex_cli_task_images(task_id) or codex_cli_harvest_external_images(task_id)
+        if image_files:
+            recovered = {"status": "succeeded", "images": image_files, "error": "", "completed_at": now_ms(), "recovered": True}
+            codex_cli_stop_process(task.get("pid"))
             with CODEX_CLI_TASK_LOCK:
                 if task_id in CODEX_CLI_TASKS:
                     CODEX_CLI_TASKS[task_id].update(recovered)
@@ -12059,10 +12345,7 @@ async def codex_cli_imagegen_cancel(task_id: str):
             raise HTTPException(status_code=404, detail="Codex CLI 任务不存在")
         pid = task.get("pid")
     if pid:
-        try:
-            os.kill(int(pid), 15)
-        except Exception:
-            pass
+        codex_cli_stop_process(pid)
     with CODEX_CLI_TASK_LOCK:
         task["status"] = "cancelled"
         task["completed_at"] = now_ms()
@@ -12147,6 +12430,34 @@ async def touch_canvas(canvas_id: str):
     canvas = load_canvas(canvas_id)
     save_canvas(canvas)
     return {"canvas": canvas_record(canvas), "updated_at": canvas.get("updated_at", 0)}
+
+def reconcile_smart_canvas_nodes_for_save(nodes: List[Dict[str, Any]], current_nodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    prior_by_id = {
+        str(node.get("id")): node
+        for node in (current_nodes or [])
+        if isinstance(node, dict) and node.get("id")
+    }
+    for node in nodes or []:
+        if not isinstance(node, dict):
+            continue
+        images = node.get("images") if isinstance(node.get("images"), list) else []
+        generated_media = [
+            item for item in images
+            if isinstance(item, dict) and item.get("url") and item.get("generatedResult")
+        ]
+        pending_tasks = node.get("pendingTasks") if isinstance(node.get("pendingTasks"), list) else []
+        if not generated_media or pending_tasks:
+            continue
+        node["pending"] = 0
+        node["running"] = False
+        node.pop("queued", None)
+        prior = prior_by_id.get(str(node.get("id"))) or {}
+        for key in ("lovartTaskId", "outputKind", "runFinishedAt", "runElapsedMs"):
+            if node.get(key) in (None, "") and prior.get(key) not in (None, ""):
+                node[key] = prior.get(key)
+        if not node.get("outputKind"):
+            node["outputKind"] = str(generated_media[0].get("kind") or "image")
+    return nodes
 
 @app.get("/api/canvas-assets")
 async def list_canvas_assets():
@@ -13262,7 +13573,10 @@ async def update_canvas(canvas_id: str, payload: CanvasSaveRequest):
     canvas["title"] = (payload.title or canvas.get("title") or "未命名画布")[:80]
     canvas["icon"] = (payload.icon or canvas.get("icon") or "layers")[:32]
     canvas["kind"] = normalize_canvas_kind(canvas.get("kind"))
-    canvas["nodes"] = payload.nodes
+    if canvas["kind"] == "smart":
+        canvas["nodes"] = reconcile_smart_canvas_nodes_for_save(payload.nodes, canvas.get("nodes") or [])
+    else:
+        canvas["nodes"] = payload.nodes
     canvas["connections"] = payload.connections
     if canvas["kind"] == "smart":
         canvas["viewport"] = payload.viewport

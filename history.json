@@ -1,6 +1,73 @@
 [
     {
         "status": "succeeded",
+        "prompt": "外城荒骨高地：血红夕阳、灰白骨粉、冷白机械光。",
+        "images": [
+            "/assets/output/lovart_image_5ecf1a75b4f2.png"
+        ],
+        "timestamp": 1781329476.4985342,
+        "type": "online",
+        "model": "generate_image_gpt_image_2_low",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_06c7313813ce4aa9aef9cef9c7076f4d",
+        "thread_id": "79d6ce2a-331a-4573-9d83-c3613c1801ec",
+        "request_id": "79d6ce2a-331a-4573-9d83-c3613c1801ec",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_gpt_image_2_low",
+            "size": "720x1280",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_ea2b51d650f5.png",
+                    "name": "gothic_palace_within_a_dragon_skull.png",
+                    "role": "",
+                    "kind": "image",
+                    "mime": ""
+                }
+            ],
+            "unlimited": true
+        },
+        "raw": {
+            "thread_id": "79d6ce2a-331a-4573-9d83-c3613c1801ec",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "我将为您生成这张\"外城荒骨高地\"的场景图。根据您的描述，这是一个充满末日氛围的场景：血红夕阳、灰白骨粉、冷白机械光。"
+                },
+                {
+                    "type": "assistant",
+                    "text": "\"外城荒骨高地\"已生成完成。\n\n画面呈现出血红夕阳笼罩下的荒芜高地，灰白骨粉覆盖大地，巨型骨骼从地面突起，远处工业废墟中冷白机械光束刺破暮色，营造出末日废土与科技残骸交织的压抑氛围。尺寸：720x1280。"
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/v5q9FS73yP1ZYrHq.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "project_id": "989b2ca7f72d4184b2a79aa76f6ca0c5",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "timestamp": 1781326470.9244177,
+        "prompt": "你好",
+        "images": [
+            "/assets/output/cloud_1781326470.png"
+        ],
+        "type": "cloud"
+    },
+    {
+        "status": "succeeded",
         "prompt": "A 4-panel storyboard sequence in 2x2 grid, showing narrative progression of [事件/场景]: top-left [阶段1描述], top-right [阶段2描述], bottom-left [阶段3描述], bottom-right [阶段4描述]. Consistent character design across all panels, coherent lighting and color palette, uniform light warm gray background color F0EDE8, subjects softly blending with background with natural edge transition, no hard edges no white halo no light bleed, cinematic composition, emotional arc from [情绪A] to [情绪B], film grain texture, clean thin white grid dividers, absolutely no visible numbers text labels frame counters corner marks or annotations anywhere on the image\n\nNegative prompt:\nnumbers, text, letters, labels, frame numbers, corner marks, annotations, captions, watermarks, signatures, logos, readable text, font, typography, grid numbers, sequence markers, page numbers, index, hard edge, glowing edge, white halo, light bleed, overexposed edge, cutout look, pasted on background, floating subject, disconnected shadow, pure white background, stark white, cold gray, bad anatomy, distorted face, extra fingers, deformed hands, inconsistent character design, lighting mismatch between frames, discontinuous action, jump cut feel, blurry, low quality, cropped, out of frame\n\nParams:\nMidjourney: `--ar 1:1 --style raw --s 75`\n即梦/可灵: 直接粘贴，建议分镜时先写情绪词再填场景\nFlux: 配合 `film grain` LoRA 增强故事板质感",
         "images": [
             "/assets/output/lovart_image_b60a32cccc41.png"

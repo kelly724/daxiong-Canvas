@@ -10809,6 +10809,7 @@ function finalizePendingNode(pendingNode, urls, meta, kind='image'){
     }).filter(img => img.url);
     pendingNode.images = imgs;
     pendingNode.pending = 0;
+    delete pendingNode.pendingTasks;
     pendingNode.runFinishedAt = nowMs();
     if(!pendingNode.runStartedAt) pendingNode.runStartedAt = meta?.createdAt || pendingNode.runFinishedAt;
     pendingNode.runElapsedMs = Math.max(0, pendingNode.runFinishedAt - Number(pendingNode.runStartedAt || pendingNode.runFinishedAt));
@@ -12117,7 +12118,17 @@ async function runGeneration(){
             return;
         }
         if(isApiLikeEngine(settings.engine) && settings.apiKind === 'video'){
-            const outVideos = await runApiVideoGeneration(prompt, refs);
+            const outVideos = await runApiVideoGeneration(prompt, refs, settings, task => {
+                if(!task?.taskId) return;
+                pendingNode.pendingTasks = [{taskId:task.taskId, kind:'video', providerId:task.providerId, model:task.model}];
+                pendingNode.pending = Math.max(1, Number(pendingNode.pending || 0) || 1);
+                pendingNode.runStartedAt = nowMs();
+                pendingNode.runTimerHidden = false;
+                pendingNode.running = false;
+                render();
+                scheduleSave();
+                saveCanvas().catch(() => {});
+            });
             if(!outVideos.length) throw new Error(tr('smart.errNoOutVideos'));
             finalizePendingNode(pendingNode, outVideos, pendingMeta, 'video');
             if(sourceVisualState) restoreSourceVisualState(node, sourceVisualState);
@@ -12302,7 +12313,7 @@ async function runRunningHubGeneration(prompt, refs, runSettings=settings){
     }
     throw new Error(tr('smart.rhTimeout'));
 }
-async function runApiVideoGeneration(prompt, refs, runSettings=settings){
+async function runApiVideoGeneration(prompt, refs, runSettings=settings, onTaskCreated=null){
     if(!runSettings.videoModel) throw new Error(tr('smart.errNoVideoModel'));
     try {
         const uploadedRefs = applyUploadedUrlsToSmartRefs(refs, runSettings);
@@ -12361,6 +12372,9 @@ async function runApiVideoGeneration(prompt, refs, runSettings=settings){
                 if(!r.ok) throw new Error(await smartResponseErrorMessage(r, tr('smart.errRunFailed')));
                 return r.json();
             });
+            if(typeof onTaskCreated === 'function'){
+                onTaskCreated({taskId:task.task_id, kind:'video', providerId:payload.provider_id, model:payload.model});
+            }
             const result = await pollSmartCanvasTask(task.task_id, 'video');
             return resultMediaUrls(result);
         }
@@ -12869,8 +12883,9 @@ async function resumeSmartPendingNode(node){
     await Promise.all(tasks.map(async task => {
         if(task.failed && task.recoverTaskId) return;
         try {
-            const result = await pollSmartCanvasTask(task.taskId);
-            finalizeSmartPendingTask(node, task.taskId, result?.images || [], task.kind || 'image');
+            const kind = task.kind || 'image';
+            const result = await pollSmartCanvasTask(task.taskId, kind);
+            finalizeSmartPendingTask(node, task.taskId, resultMediaUrls(result), kind);
             render();
             scheduleSave();
         } catch(e) {

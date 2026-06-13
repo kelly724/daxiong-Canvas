@@ -574,6 +574,41 @@ function isLovartProviderId(providerId){
     const name = String(provider?.name || '').trim().toLowerCase();
     return id === 'lovart' || protocol === 'lovart' || name === 'lovart';
 }
+const VIDEO_RESOLUTION_OPTIONS = [
+    ['', 'Auto'],
+    ['480p', '480p'],
+    ['720p', '720p'],
+    ['1080p', '1080p'],
+    ['780P', '780P'],
+];
+const LOVART_VIDEO_RESOLUTION_OPTIONS = [
+    ['', 'Auto'],
+    ['480p', '480p'],
+    ['720p', '720p'],
+    ['1080p', '1080p'],
+];
+function normalizeVideoResolutionForProvider(providerId, resolution){
+    const value = String(resolution || '').trim();
+    const lower = value.toLowerCase();
+    if(isLovartProviderId(providerId)){
+        if(lower === '480' || lower === '480p') return '480p';
+        if(lower === '720' || lower === '720p' || lower === '780p') return '720p';
+        if(lower === '1080' || lower === '1080p') return '1080p';
+    }
+    return value;
+}
+function videoResolutionOptions(selectedResolution, providerId){
+    const options = isLovartProviderId(providerId) ? LOVART_VIDEO_RESOLUTION_OPTIONS : VIDEO_RESOLUTION_OPTIONS;
+    const selected = normalizeVideoResolutionForProvider(providerId, selectedResolution);
+    return options.map(([value, label]) => `<option value="${escapeHtml(value)}" ${value === selected ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
+}
+function refreshVideoResolutionSelect(select, node){
+    if(!select || !node) return;
+    const normalized = normalizeVideoResolutionForProvider(node.apiProvider, node.resolution);
+    if(node.resolution !== normalized) node.resolution = normalized;
+    select.innerHTML = videoResolutionOptions(node.resolution, node.apiProvider);
+    select.value = node.resolution || '';
+}
 function lovartModelMeta(providerId, model){
     const provider = exactApiProvider(providerId);
     const meta = provider?.model_metadata || provider?.modelMetadata || {};
@@ -633,6 +668,7 @@ function bindLovartBillingControl(wrap, node, providerIdGetter, modelGetter){
 function sanitizeVideoNodeProviderModel(node){
     if(!node || node.type !== 'video') return;
     node.apiProvider = resolveVideoProviderId(node.apiProvider || 'comfly');
+    node.resolution = normalizeVideoResolutionForProvider(node.apiProvider, node.resolution);
     const models = providerVideoModels(node.apiProvider);
     if(!models.length) node.model = '';
     else if(!models.includes(node.model)) node.model = models[0] || '';
@@ -1934,9 +1970,9 @@ function canvasLocalAssetUrls(){
         });
     });
     (canvas?.logs || []).forEach(log => {
-        (log.outputs || []).forEach(add);
-        (log.refs || []).forEach(add);
-        (log.run?.refs || []).forEach(add);
+        outputListValue(log.outputs).forEach(add);
+        outputListValue(log.refs).forEach(add);
+        outputListValue(log.run?.refs).forEach(add);
     });
     return [...urls];
 }
@@ -6420,6 +6456,7 @@ function bindOutputWrap(wrap, node){
     const audio = wrap.querySelector('audio');
     const fileCard = wrap.querySelector('.output-file-card');
     const playBtn = wrap.querySelector('.canvas-video-play');
+    const downloadBtn = wrap.querySelector('.output-download');
     const del = wrap.querySelector('.output-del');
     const recoverQuery = wrap.querySelector('.output-recover-query');
     const gridLayout = !!outputGridLayout(node);
@@ -6510,6 +6547,19 @@ function bindOutputWrap(wrap, node){
         fileCard.onclick = e => {
             e.stopPropagation();
             const url = wrap.dataset.outputUrl;
+            if(url) downloadUrl(url, outputDownloadName(url)).catch(err => alert(err.message || '下载失败'));
+        };
+    }
+    if(downloadBtn){
+        downloadBtn.onpointerdown = e => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        downloadBtn.onmousedown = e => e.stopPropagation();
+        downloadBtn.onclick = e => {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = wrap.dataset.outputUrl || video?.dataset.url || '';
             if(url) downloadUrl(url, outputDownloadName(url)).catch(err => alert(err.message || '下载失败'));
         };
     }
@@ -8734,11 +8784,7 @@ function renderVideoBody(node){
                 <label class="field" style="flex:1">
                     <div class="setting-title">${tr('canvas.videoResolution')}</div>
                     <select class="select-lite video-resolution compact-select">
-                        <option value="">Auto</option>
-                        <option value="480p">480p</option>
-                        <option value="720p">720p</option>
-                        <option value="1080p">1080p</option>
-                        <option value="780P">780P</option>
+                        ${videoResolutionOptions(node.resolution, node.apiProvider)}
                     </select>
                 </label>
             </div>
@@ -8766,7 +8812,7 @@ function renderVideoBody(node){
     providerSelect.value = node.apiProvider;
     durationSelect.value = String(node.duration || 5);
     aspectSelect.value = node.aspectRatio || '16:9';
-    resolutionSelect.value = node.resolution || '';
+    refreshVideoResolutionSelect(resolutionSelect, node);
     [providerSelect, modelSelect, durationSelect, aspectSelect, resolutionSelect].forEach(input => {
         input.onmousedown = e => e.stopPropagation();
         input.onclick = e => e.stopPropagation();
@@ -8777,6 +8823,7 @@ function renderVideoBody(node){
         const models = providerVideoModels(node.apiProvider);
         if(!models.includes(node.model)) node.model = models[0] || node.model;
         modelSelect.innerHTML = videoModelOptions(node.model, node.apiProvider);
+        refreshVideoResolutionSelect(resolutionSelect, node);
         syncLovartBillingControl(wrap, node, node.apiProvider, node.model);
         scheduleSave();
     };
@@ -8789,7 +8836,12 @@ function renderVideoBody(node){
     durationSelect.oninput = e => { e.stopPropagation(); node.duration = Math.max(1, Math.min(60, Number(e.target.value || 5))); scheduleSave(); };
     durationSelect.onblur = e => { e.target.value = String(Math.max(1, Math.min(60, Number(node.duration || 5)))); };
     aspectSelect.onchange = e => { e.stopPropagation(); node.aspectRatio = e.target.value; scheduleSave(); };
-    resolutionSelect.onchange = e => { e.stopPropagation(); node.resolution = e.target.value; scheduleSave(); };
+    resolutionSelect.onchange = e => {
+        e.stopPropagation();
+        node.resolution = normalizeVideoResolutionForProvider(node.apiProvider, e.target.value);
+        if(node.resolution !== e.target.value) refreshVideoResolutionSelect(resolutionSelect, node);
+        scheduleSave();
+    };
     wrap.querySelectorAll('[data-video-toggle]').forEach(btn => {
         btn.onmousedown = e => e.stopPropagation();
         btn.onclick = e => {
@@ -10428,6 +10480,8 @@ async function runCodexCliGenerator(gen, payload, refs, out, run, count, opts={}
             pending.recoverTaskId = task.task_id;
         }
         refreshRunNodes(gen, out);
+        scheduleSave();
+        await saveCanvas();
         const result = await pollCodexCliImageTask(task.task_id, {cascadeTargetId});
         const images = result.images || [];
         if(!images.length) throw new Error('Codex CLI 已完成，但没有返回图片');
@@ -10632,7 +10686,7 @@ async function runVideoNode(nodeId, opts={}){
             model:node.model || 'veo3-fast',
             duration:Number(node.duration || 5),
             aspect_ratio:node.aspectRatio || '16:9',
-            resolution:node.resolution || '',
+            resolution:normalizeVideoResolutionForProvider(node.apiProvider, node.resolution),
             images:refs,
             videos:manualVideoUrlForNode(node)
                 ? [manualVideoUrlForNode(node)]
@@ -12424,6 +12478,16 @@ function nowMs(){ return Date.now(); }
 function outputUrlValue(item){
     return typeof item === 'string' ? item : item?.url || '';
 }
+function outputListValue(value){
+    if(Array.isArray(value)) return value.filter(Boolean);
+    if(value && typeof value === 'object') return [value];
+    if(typeof value === 'string'){
+        const text = value.trim();
+        if(!text) return [];
+        return text.split(/\s+/).filter(Boolean);
+    }
+    return [];
+}
 function isMissingAssetUrl(url){
     return Boolean(url && missingAssetUrls.has(url));
 }
@@ -12513,7 +12577,7 @@ function addGenerationLog({run, outputs=[], runMs=0, error=''}) {
         model:run?.taskLabel || runTaskLabel(run),
         request:run?.request || {},
         prompt:run?.prompt || '',
-        outputs:(outputs || []).filter(Boolean),
+        outputs:outputListValue(outputs),
         refs:run?.refs || [],
         runMs:Number(runMs || 0),
         error:error ? String(error) : '',
@@ -12525,7 +12589,9 @@ function renderCanvasLog(){
     const logs = (typeof canvas !== 'undefined' && Array.isArray(canvas?.logs)) ? canvas.logs : [];
     if(!list) return;
     list.innerHTML = logs.length ? logs.map(log => {
-        const thumbs = (log.outputs || []).slice(0, 8).map(item => {
+        const outputItems = outputListValue(log.outputs);
+        log.outputs = outputItems;
+        const thumbs = outputItems.slice(0, 8).map(item => {
             const url = outputUrlValue(item);
             if(!url) return '';
             const safe = escapeAttr(url);
@@ -13058,7 +13124,7 @@ function renderOutputMedia(item, useGridLayout=false, outputIndex=0){
         return `<div class="output-img-wrap" data-output-url="${safe}" data-missing-url="${safe}"${indexAttr}${gridStyle}>${missingAssetHtml(url, true)}${timePill}<button class="output-del" title="${tr('common.delete')}">×</button></div>`;
     }
     if(kind === 'video'){
-        return `<div class="output-img-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}>${canvasVideoPreviewHtml(url, useGridLayout ? 512 : 768, 'alt="video output"')}${timePill}<button class="canvas-video-play output-video-play" type="button" title="播放"><i data-lucide="play"></i></button><div class="output-video-badge"><i data-lucide="play" class="w-3 h-3"></i>VIDEO</div><button class="output-del" title="${tr('common.delete')}">×</button></div>`;
+        return `<div class="output-img-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}>${canvasVideoPreviewHtml(url, useGridLayout ? 512 : 768, 'alt="video output"')}${timePill}<button class="output-download" type="button" title="下载视频"><i data-lucide="download" class="w-3.5 h-3.5"></i></button><button class="canvas-video-play output-video-play" type="button" title="播放"><i data-lucide="play"></i></button><div class="output-video-badge"><i data-lucide="play" class="w-3 h-3"></i>VIDEO</div><button class="output-del" title="${tr('common.delete')}">×</button></div>`;
     }
     if(kind === 'audio'){
         return `<div class="output-img-wrap output-audio-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}><div class="output-audio-card"><i data-lucide="file-audio" class="w-7 h-7"></i><span>${escapeHtml(outputImageName(url))}</span><audio src="${safe}" data-url="${safe}" controls preload="metadata"></audio></div>${timePill}<button class="output-del" title="${tr('common.delete')}">×</button></div>`;
@@ -13387,7 +13453,7 @@ function outputLightboxItems(out=null){
         .flatMap(n => (n.images || []).map(item => normalize(item, n)).filter(Boolean));
     if(outputNodeItems.length) return outputNodeItems;
     return (canvas?.logs || [])
-        .flatMap(log => (log.outputs || []).map(url => normalize(url, null)).filter(Boolean));
+        .flatMap(log => outputListValue(log.outputs).map(url => normalize(url, null)).filter(Boolean));
 }
 function openGroupLightbox(groupId, index=0){
     const group = nodes.find(n => n.id === groupId);

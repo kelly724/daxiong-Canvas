@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import http.client
 import json
 import mimetypes
 import os
@@ -146,7 +147,7 @@ class LovartClient:
 
     def request(self, method: str, path: str, body: Any = None, params: Optional[Dict[str, Any]] = None, retries: Optional[int] = None) -> Any:
         if retries is None:
-            retries = 3 if method == "GET" else 1
+            retries = 3
         url = f"{self.base_url}{path}"
         if params:
             url += "?" + urllib.parse.urlencode(params)
@@ -238,15 +239,22 @@ class LovartClient:
             f"Content-Type: {content_type}\r\n\r\n"
         ).encode() + file_data + f"\r\n--{boundary}--\r\n".encode()
         path = f"{self.prefix}/file/upload"
-        headers = self._sign("POST", path)
-        headers["Content-Type"] = f"multipart/form-data; boundary={boundary}"
-        headers["User-Agent"] = LOVART_USER_AGENT
-        req = urllib.request.Request(f"{self.base_url}{path}", data=body, method="POST", headers=headers)
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout, context=_ssl_context()) as resp:
-                result = json.loads(resp.read().decode())
-        except urllib.error.HTTPError as exc:
-            raise LovartError(f"Upload failed ({exc.code}): {exc.read().decode()}", exc.code)
+        result = None
+        for attempt in range(3):
+            headers = self._sign("POST", path)
+            headers["Content-Type"] = f"multipart/form-data; boundary={boundary}"
+            headers["User-Agent"] = LOVART_USER_AGENT
+            req = urllib.request.Request(f"{self.base_url}{path}", data=body, method="POST", headers=headers)
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout, context=_ssl_context()) as resp:
+                    result = json.loads(resp.read().decode())
+                    break
+            except urllib.error.HTTPError as exc:
+                raise LovartError(f"Upload failed ({exc.code}): {exc.read().decode()}", exc.code)
+            except (urllib.error.URLError, ssl.SSLError, ConnectionError, OSError) as exc:
+                if attempt >= 2:
+                    raise LovartError(f"Upload failed after 3 attempts: {exc}")
+                time.sleep(2 * (attempt + 1))
         if isinstance(result, dict) and result.get("code", 0) != 0:
             raise LovartError(f"Upload failed: {result.get('message') or 'unknown error'}", int(result.get("code") or -1))
         url = (((result or {}).get("data") or {}).get("url") or "").strip()
@@ -372,6 +380,17 @@ def record_task(state_path: str, task_id: str, payload: Dict[str, Any]) -> None:
         save_state(state_path, state)
 
 
+def task_status_from_result(result: Dict[str, Any]) -> str:
+    final_status = str((result or {}).get("final_status") or "").lower()
+    if final_status == "done":
+        return "succeeded" if result.get("generation_succeeded") is not False else "failed"
+    if final_status == "pending_confirmation":
+        return "pending_confirmation"
+    if final_status in {"abort", "failed"}:
+        return "failed"
+    return "running"
+
+
 def model_metadata(mode_data: Optional[Dict[str, Any]] = None) -> Dict[str, Dict[str, Any]]:
     free_tools = set()
     if isinstance(mode_data, dict):
@@ -486,6 +505,12 @@ def submit_and_poll(
         result["project_id"] = project_id
         result["thread_id"] = thread_id
         mark_generation_success(result)
+    record_task(state_path, task_id, {
+        "status": task_status_from_result(result),
+        "final_status": result.get("final_status"),
+        "pending_confirmation": result.get("pending_confirmation"),
+        "generation_succeeded": result.get("generation_succeeded"),
+    })
     return result
 
 
@@ -515,6 +540,12 @@ def confirm_and_poll(
         result["final_status"] = status
         result["thread_id"] = thread_id
         mark_generation_success(result)
+    record_task(state_path, task_id, {
+        "status": task_status_from_result(result),
+        "final_status": result.get("final_status"),
+        "pending_confirmation": result.get("pending_confirmation"),
+        "generation_succeeded": result.get("generation_succeeded"),
+    })
     return result
 
 
@@ -568,9 +599,28 @@ def download_artifact(url: str, output_dir: str, prefix: str = "lovart") -> Dict
     if os.path.exists(local_path) and os.path.getsize(local_path) > 0:
         return {"url": url, "local_path": local_path, "new": False}
     req = urllib.request.Request(url, headers=LOVART_CDN_HEADERS)
-    with urllib.request.urlopen(req, timeout=180, context=_ssl_context()) as resp:
-        with open(local_path, "wb") as handle:
-            handle.write(resp.read())
+    last_err = None
+    tmp_path = f"{local_path}.part"
+    attempts = 5
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=180, context=_ssl_context()) as resp:
+                with open(tmp_path, "wb") as handle:
+                    handle.write(resp.read())
+            os.replace(tmp_path, local_path)
+            break
+        except (urllib.error.URLError, ssl.SSLError, ConnectionError, OSError, http.client.IncompleteRead) as exc:
+            last_err = exc
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+            if attempt >= attempts - 1:
+                raise LovartError(f"Download failed after {attempts} attempts: {exc}")
+            time.sleep(2 * (attempt + 1))
+    else:
+        raise LovartError(f"Download failed: {last_err}")
     return {"url": url, "local_path": local_path, "new": True}
 
 

@@ -1,0 +1,13 @@
+WS Connected. Total: 1, Online: 0
+INFO:     127.0.0.1:42990 - "GET /static/smart-canvas.html?probe=1781337675213 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42989 - "GET /api/canvas-video-tasks/canvas_vid_b66eae9793f34164b739eb42199b134b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59483 - "HEAD /assets/output/lovart_video_041bc0096d40.mp4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52689 - "PUT /api/canvases/5558b9da21cd475e872586062ae7539e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60074 - "GET /assets/input/ai_ref_16111622fd71.mp3 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:45887 - "GET /assets/output/lovart_01.mp4 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:10677 - "GET /api/media-preview?w=512&url=%2Fassets%2Foutput%2Flovart_video_041bc0096d40.mp4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57340 - "GET /api/media-preview?w=512&url=%2Fassets%2Foutput%2Flovart_video_041bc0096d40.mp4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57340 - "GET /assets/output/jimeng_video_f0543cbbae.mp4 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:24388 - "GET /assets/output/lovart_video_4e8bf104e8a7.mp4 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:46624 - "GET /assets/input/ai_ref_16111622fd71.mp3 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:10988 - "GET /api/media-preview?w=512&url=%2Fassets%2Foutput%2Flovart_01.mp4 HTTP/1.1" 200 OK

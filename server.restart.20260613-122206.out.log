@@ -1,0 +1,1308 @@
+INFO:     127.0.0.1:38755 - "GET /api/lovart/mode HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38755 - "PUT /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38755 - "GET /api/lovart/mode HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38755 - "PUT /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38755 - "GET /api/lovart/mode HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10759 - "POST /api/providers/test-connection HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10759 - "POST /api/lovart/mode HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47563 - "POST /api/lovart/mode HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40507 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40506 - "GET /api/jimeng/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47563 - "POST /api/lovart/mode HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47563 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47563 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:11190 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32498 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60694 - "GET /static/vendor/css/fonts.css?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60694 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:11190 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:47563 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32498 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60694 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:43642 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:13315 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:13315 - "GET /static/vendor/fonts/space-grotesk-8.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:22012 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:16169 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64342 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60365 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:22012 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:12972 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:28286 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60365 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64342 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:16169 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+WS Connected. Total: 1, Online: 1
+INFO:     127.0.0.1:13315 - "GET /static/api-settings.html?v=2026.06.11.1781323423 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:13315 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43642 - "GET /static/css/theme.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32498 - "GET /static/js/api-settings.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:13315 - "GET /static/vendor/js/lucide.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60694 - "GET /static/css/api-settings.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:13315 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13315 - "GET /static/vendor/fonts/space-grotesk-10.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32498 - "GET /static/images/modelscope-1.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:11190 - "GET /static/images/volcengine-theme-light.svg HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:13315 - "GET /static/images/modelscope.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:43642 - "GET /static/images/RunningHub-B.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:47563 - "GET /static/images/RunningHub-W.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32498 - "GET /static/images/volcengine-theme-dark.svg HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60694 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET / HTTP/1.1" 200 OK
+WS Disconnected. Total: 0, Online: 0
+INFO:     127.0.0.1:60694 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44698 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52661 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51466 - "GET /static/vendor/css/fonts.css?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51466 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44698 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52661 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37685 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23147 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51466 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51466 - "GET /static/vendor/fonts/space-grotesk-8.ttf HTTP/1.1" 200 OK
+WS Connected. Total: 1, Online: 1
+INFO:     127.0.0.1:51466 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51466 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23147 - "GET /static/vendor/js/lucide.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37685 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44698 - "GET /static/css/api-settings.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52661 - "GET /static/css/theme.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET /static/js/api-settings.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51466 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23147 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52661 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44698 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37685 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51466 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52661 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51466 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52661 - "GET /static/vendor/fonts/space-grotesk-10.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52661 - "GET /static/images/logo.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52661 - "GET /api/codex-cli/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET /api/codex-cli/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "POST /api/codex-cli/configure-local-auth HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET /api/lovart/mode HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET / HTTP/1.1" 200 OK
+WS Connected. Total: 2, Online: 1
+INFO:     127.0.0.1:60694 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13293 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19590 - "GET /api/providers HTTP/1.1" 200 OK
+WS Disconnected. Total: 1, Online: 1
+INFO:     127.0.0.1:19591 - "GET /api/jimeng/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET / HTTP/1.1" 200 OK
+WS Disconnected. Total: 0, Online: 0
+WS Connected. Total: 1, Online: 1
+INFO:     127.0.0.1:60694 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40188 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60694 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14347 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14348 - "PUT /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40518 - "GET /static/api-settings.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40518 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:61880 - "GET /static/vendor/js/lucide.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:63166 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60557 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64032 - "GET /static/css/api-settings.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52239 - "GET /static/css/theme.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:40518 - "GET /static/js/api-settings.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:40518 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60557 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64032 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52239 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:63166 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:61880 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60557 - "GET /static/vendor/js/lucide.min.js.map HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40518 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:40518 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61880 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52239 - "GET /static/images/RunningHub-W.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:61880 - "GET /static/images/modelscope.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:63166 - "GET /static/images/RunningHub-B.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:40518 - "GET /static/images/modelscope-1.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64032 - "GET /static/images/volcengine-theme-light.svg HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52432 - "GET /static/images/volcengine-theme-dark.svg HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:40729 - "GET /api/jimeng/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40729 - "POST /api/jimeng/login/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40729 - "POST /api/providers/test-connection HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11462 - "GET /api/jimeng/login/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11462 - "POST /api/providers/fetch-models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17214 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17215 - "PUT /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /static/vendor/css/fonts.css?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:27204 - "GET /static/vendor/fonts/space-grotesk-8.ttf HTTP/1.1" 304 Not Modified
+WS Connected. Total: 2, Online: 2
+INFO:     127.0.0.1:27204 - "GET /static/api-settings.html?v=2026.06.11.1781323423 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:27204 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /static/vendor/js/lucide.min.js.map HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61256 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24718 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:24717 - "GET /api/jimeng/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /static/enhance.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /static/js/image-preview.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:42604 - "GET /static/js/history-bulk-manager.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:42604 - "GET /static/vendor/js/lucide.min.js.map HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:27204 - "GET /static/vendor/fonts/inter-2.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42604 - "GET /static/vendor/fonts/inter-1.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30757 - "GET /static/vendor/fonts/inter-4.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /api/history?type=enhance HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /static/canvas.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /static/css/canvas.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46827 - "GET /static/js/canvas.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60055 - "GET /static/js/ltx-director-timeline.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46827 - "GET /static/vendor/css/fonts.css?v=2026.05.22.1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60055 - "GET /static/vendor/js/lucide.min.js.map HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60055 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60055 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46827 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27204 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60055 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51183 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "POST /api/ai/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "GET /api/media-preview?w=768&url=%2Fassets%2Finput%2Fai_ref_bb70647b4955.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "GET /api/media-preview?w=256&url=%2Fassets%2Finput%2Fai_ref_bb70647b4955.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:15421 - "GET /static/runninghub/thumbnails/app-2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:10151 - "GET /static/runninghub/thumbnails/workflow-2058824859437850625.jpg?v=1779701137 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45662 - "GET /static/runninghub/thumbnails/app-1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:28670 - "GET /static/runninghub/thumbnails/workflow-2058818588181622785.jpg?v=1779701143 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/thumbnails/workflow-2058554058318897153.jpg?v=1779701158 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43717 - "GET /static/runninghub/thumbnails/workflow-2058541134623891458.jpg?v=1779701153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43717 - "GET /static/runninghub/app-2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/app-1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/thumbnails/2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43717 - "GET /static/runninghub/thumbnails/1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43717 - "GET /static/runninghub/2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/thumbnails/app-2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43717 - "GET /static/runninghub/thumbnails/app-1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43717 - "GET /static/runninghub/app-2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/app-1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/thumbnails/2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43717 - "GET /static/runninghub/thumbnails/1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43717 - "GET /static/runninghub/2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49955 - "PUT /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/thumbnails/app-2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:25618 - "GET /static/runninghub/thumbnails/app-1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:25618 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44378 - "GET /static/runninghub/app-1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:25618 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/app-2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35755 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14764 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44378 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /static/runninghub/thumbnails/1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:25618 - "GET /static/runninghub/thumbnails/2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:14764 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14764 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44378 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14764 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35755 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39118 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25618 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44378 - "GET /static/runninghub/1997622492837646338.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:25618 - "GET /static/runninghub/2058517022748798977.jpg HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:14764 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39118 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35755 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44378 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25618 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14764 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39118 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35755 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44378 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14764 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39118 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25618 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+WS Disconnected. Total: 1, Online: 1
+INFO:     127.0.0.1:60694 - "GET / HTTP/1.1" 200 OK
+WS Disconnected. Total: 0, Online: 0
+INFO:     127.0.0.1:60694 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:49624 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60694 - "GET /static/vendor/css/fonts.css?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:41594 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:44949 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:44949 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:30361 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:41594 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60694 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:49624 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32088 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:37682 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:13992 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:41594 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:41594 - "GET /static/vendor/fonts/space-grotesk-8.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:30361 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:44949 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:17816 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:30361 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:14324 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:19098 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:35005 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+WS Connected. Total: 1, Online: 1
+INFO:     127.0.0.1:41594 - "GET /static/api-settings.html?v=2026.06.11.1781323423 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:41594 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41594 - "GET /static/vendor/js/lucide.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32088 - "GET /static/js/api-settings.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:37682 - "GET /static/css/api-settings.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:13992 - "GET /static/css/theme.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:37682 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37682 - "GET /static/vendor/fonts/space-grotesk-10.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32088 - "GET /static/images/modelscope-1.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:37682 - "GET /static/images/modelscope.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:41594 - "GET /static/images/RunningHub-B.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60694 - "GET /static/images/volcengine-theme-light.svg HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:49624 - "GET /static/images/RunningHub-W.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32088 - "GET /static/images/volcengine-theme-dark.svg HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32088 - "GET /static/images/logo.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:32088 - "GET /api/jimeng/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "POST /api/providers/test-connection HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "GET /static/canvas.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "GET /static/css/canvas.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13747 - "GET /static/js/canvas.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32088 - "GET /static/js/ltx-director-timeline.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13747 - "GET /static/vendor/css/fonts.css?v=2026.05.22.1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13747 - "GET /static/vendor/fonts/inter-1.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32088 - "GET /static/vendor/fonts/inter-4.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32088 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32088 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32088 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13747 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16260 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58472 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "GET /static/vendor/fonts/inter-2.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "POST /api/canvases/a9580e312c7845cbbf9c052848d0ca83/touch HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13992 - "GET /api/media-preview?w=256&url=%2Fassets%2Finput%2Fai_ref_bb70647b4955.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58472 - "GET /api/media-preview?w=768&url=%2Fassets%2Finput%2Fai_ref_bb70647b4955.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58472 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58472 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58472 - "GET /assets/input/ai_ref_bb70647b4955.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13795 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13795 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13795 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13795 - "POST /api/ai/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13795 - "GET /api/media-preview?w=256&url=%2Fassets%2Finput%2Fai_ref_5e6a59ecab99.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/media-preview?w=768&url=%2Fassets%2Finput%2Fai_ref_5e6a59ecab99.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "POST /api/runninghub/upload-asset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "POST /api/runninghub/workflow-submit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/runninghub/query?taskId=2065657007221997570 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/media-preview?w=768&url=%2Fassets%2Foutput%2Frh_d48bc56252ba.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /assets/input/ai_ref_5e6a59ecab99.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /assets/output/rh_d48bc56252ba.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14713 - "GET /assets/input/ai_ref_5e6a59ecab99.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:14266 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /assets/input/ai_ref_5e6a59ecab99.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:14266 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/media-preview?w=256&url=%2Fassets%2Foutput%2Frh_d48bc56252ba.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /static/vendor/fonts/inter-3.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14266 - "GET /api/jimeng/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19700 - "GET /api/jimeng/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14556 - "PUT /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14556 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31728 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14556 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31728 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14556 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25646 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13305 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31728 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61484 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13305 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31728 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14556 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25646 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13305 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61484 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14556 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31728 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13305 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61484 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25646 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14556 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "POST /api/providers/test-connection HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "POST /api/providers/fetch-models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /static/zimage.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48071 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:38239 - "GET /static/vendor/js/lucide.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:38306 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:10643 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:48071 - "GET /static/css/theme.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:35246 - "GET /static/js/image-preview.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31964 - "GET /static/js/history-bulk-manager.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31964 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:48071 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:38239 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:35246 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:38306 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:10643 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:31964 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+WS Connected. Total: 2, Online: 1
+INFO:     127.0.0.1:31964 - "GET /api/history?type=zimage HTTP/1.1" 200 OK
+Backend 127.0.0.1:8188 unreachable: <urlopen error timed out>
+INFO:     127.0.0.1:31964 - "POST /api/generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31964 - "GET /api/config/token HTTP/1.1" 200 OK
+Z-Image Task submitted, ID: 8884e91a-5f70-4fc4-9d83-17f6d4dd3827
+Task 8884e91a-5f70-4fc4-9d83-17f6d4dd3827 status check 0: RUNNING
+INFO:     127.0.0.1:31964 - "POST /generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:31964 - "GET /static/images/modelscope.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:31964 - "GET /assets/output/cloud_1781326470.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51327 - "GET /static/enhance.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51327 - "GET /static/vendor/css/fonts.css?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51327 - "GET /static/vendor/fonts/inter-1.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:15114 - "GET /static/vendor/fonts/inter-2.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:33807 - "GET /static/vendor/fonts/inter-4.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:33807 - "GET /api/history?type=enhance HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33807 - "GET /static/klein.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33807 - "GET /api/history?type=klein HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33807 - "GET /static/angle.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+WS Connected. Total: 3, Online: 1
+INFO:     127.0.0.1:19030 - "GET /static/vendor/js/three-0.160.0.module.js?v=2026.06.11 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19030 - "GET /api/history?type=angle HTTP/1.1" 200 OK
+Upload error for 127.0.0.1:8188: HTTPConnectionPool(host='127.0.0.1', port=8188): Max retries exceeded with url: /upload/image (Caused by NewConnectionError("HTTPConnection(host='127.0.0.1', port=8188): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+INFO:     127.0.0.1:19030 - "POST /api/upload HTTP/1.1" 500 Internal Server Error
+Upload error for 127.0.0.1:8188: HTTPConnectionPool(host='127.0.0.1', port=8188): Max retries exceeded with url: /upload/image (Caused by NewConnectionError("HTTPConnection(host='127.0.0.1', port=8188): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。"))
+INFO:     127.0.0.1:19030 - "POST /api/upload HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:19030 - "GET /static/online.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19030 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19030 - "GET /api/history?type=online HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19030 - "GET /static/vendor/fonts/inter-3.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:19030 - "GET /assets/output/lovart_image_b60a32cccc41.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52345 - "GET /assets/output/lovart_image_39c843cf1142.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:31433 - "GET /assets/output/jimeng_288267a3db.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:21923 - "GET /assets/output/jimeng_b70037f2a6.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40761 - "GET /assets/output/jimeng_b9c678ada5.png HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40761 - "POST /api/online-image HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:54622 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54622 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54622 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40761 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29050 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48782 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12786 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12786 - "GET /api/codex-cli/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12786 - "POST /api/codex-cli/configure-local-auth HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48782 - "GET /api/codex-cli/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47644 - "GET /api/codex-cli/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47644 - "POST /api/online-image HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:42139 - "GET /static/gpt-chat.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42139 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42139 - "GET /api/conversations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42139 - "POST /api/chat/agent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42139 - "GET /api/conversations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45448 - "POST /api/online-image HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:30236 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51830 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33228 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39493 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25474 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25474 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46846 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25386 - "POST /api/chat/agent HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:10504 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10504 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10504 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10504 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10504 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11991 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10504 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11991 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:22117 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29085 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12596 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12596 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:10139 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25386 - "POST /api/canvas-llm HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25386 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25386 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25386 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63981 - "POST /api/codex-cli/imagegen/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20018 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61864 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61864 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61864 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46982 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48505 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48505 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48505 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48505 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48505 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48505 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40750 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40750 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40750 - "POST /api/ai/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40750 - "GET /api/media-preview?w=768&url=%2Fassets%2Finput%2Fai_ref_bc8220acde63.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40750 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40750 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "GET /api/media-preview?w=256&url=%2Fassets%2Finput%2Fai_ref_bc8220acde63.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "POST /api/runninghub/upload-asset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "POST /api/runninghub/upload-asset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "POST /api/runninghub/submit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:21053 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /static/vendor/fonts/space-grotesk-8.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:17859 - "GET /static/vendor/fonts/space-grotesk-10.ttf HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:17859 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:17859 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14395 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14943 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/runninghub/query?taskId=2065660413701476353 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50687 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "GET /api/media-preview?w=768&url=%2Fassets%2Foutput%2Frh_309a6eae9ff5.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58245 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50687 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50687 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50687 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50687 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50687 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50687 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28940 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51953 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52709 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45731 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/media-preview?w=256&url=%2Fassets%2Foutput%2Frh_309a6eae9ff5.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:16308 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42159 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42159 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/vendor/css/fonts.css?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/vendor/fonts/space-grotesk-8.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/zimage.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/vendor/js/lucide.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/js/image-preview.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/css/theme.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/js/history-bulk-manager.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/history?type=zimage HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/vendor/fonts/space-grotesk-10.ttf HTTP/1.1" 200 OK
+WS Connected. Total: 4, Online: 2
+WS Connected. Total: 5, Online: 2
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/canvas.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58432 - "GET /static/js/canvas.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/css/canvas.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/js/ltx-director-timeline.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58432 - "GET /static/vendor/css/fonts.css?v=2026.05.22.1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58432 - "GET /static/vendor/fonts/inter-1.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /static/vendor/fonts/inter-4.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58432 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44741 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23958 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23958 - "GET /static/vendor/fonts/inter-2.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23958 - "POST /api/canvases/a9580e312c7845cbbf9c052848d0ca83/touch HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23958 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23958 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:23958 - "GET /api/media-preview?w=256&url=%2Fassets%2Finput%2Fai_ref_5e6a59ecab99.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44741 - "GET /api/media-preview?w=256&url=%2Fassets%2Finput%2Fai_ref_bc8220acde63.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39963 - "GET /api/media-preview?w=768&url=%2Fassets%2Foutput%2Frh_309a6eae9ff5.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27470 - "GET /api/media-preview?w=768&url=%2Fassets%2Finput%2Fai_ref_bc8220acde63.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/media-preview?w=768&url=%2Fassets%2Foutput%2Frh_d48bc56252ba.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58432 - "GET /api/media-preview?w=768&url=%2Fassets%2Finput%2Fai_ref_5e6a59ecab99.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/vendor/fonts/inter-3.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "POST /api/canvases/a9580e312c7845cbbf9c052848d0ca83/touch HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET / HTTP/1.1" 200 OK
+WS Disconnected. Total: 4, Online: 2
+WS Disconnected. Total: 3, Online: 1
+INFO:     127.0.0.1:25628 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/vendor/css/fonts.css?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/vendor/fonts/space-grotesk-8.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/vendor/js/lucide.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/css/canvas.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/css/theme.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /static/js/ltx-director-timeline.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/canvas.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/vendor/css/fonts.css?v=2026.05.22.1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/vendor/fonts/inter-1.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50980 - "GET /static/vendor/fonts/inter-4.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50980 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /static/vendor/fonts/space-grotesk-10.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25628 - "GET /api/workflows HTTP/1.1" 200 OK
+WS Connected. Total: 4, Online: 2
+INFO:     127.0.0.1:25628 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:11987 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50980 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64065 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "GET /static/vendor/fonts/inter-2.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "POST /api/canvases/a9580e312c7845cbbf9c052848d0ca83/touch HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "GET /static/vendor/fonts/inter-3.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64065 - "GET /api/media-preview?w=256&url=%2Fassets%2Foutput%2Frh_d48bc56252ba.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14125 - "GET /api/media-preview?w=256&url=%2Fassets%2Foutput%2Frh_309a6eae9ff5.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42983 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29926 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36612 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59462 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33279 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:19981 - "GET /api/codex-cli/imagegen/codex_img_66a9d01be4db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30644 - "GET /output/codex-imagegen/codex_img_66a9d01be4db/codex-output-1.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30644 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33126 - "GET /output/codex-imagegen/codex_img_66a9d01be4db/codex-output-1.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:33126 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:22483 - "GET /static/js/theme.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:30236 - "GET /static/vendor/css/fonts.css?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:28517 - "GET /static/js/i18n.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:28517 - "GET /static/js/i18n-core.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:22483 - "GET /static/js/i18n/studio.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:30236 - "GET /static/js/i18n/common.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:33126 - "GET /static/js/i18n/api-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52899 - "GET /static/js/i18n/canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:47429 - "GET /static/js/i18n/smart-canvas.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:28517 - "GET /static/js/i18n/comfyui-settings.js?v=2026.06.13.node-custom-name HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:28517 - "GET /static/vendor/fonts/space-grotesk-8.ttf HTTP/1.1" 304 Not Modified
+WS Connected. Total: 5, Online: 3
+INFO:     127.0.0.1:28517 - "GET /static/api-settings.html?v=2026.06.11.1781323423 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:28517 - "GET /api/app-info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /static/js/api-settings.js?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:28517 - "GET /static/vendor/js/lucide.js?v=2026.06.11.1781322964 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52899 - "GET /static/css/api-settings.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:47429 - "GET /static/css/theme.css?v=2026.06.11.1781322969 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52899 - "GET /static/vendor/js/lucide.min.js.map HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52899 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /static/images/RunningHub-B.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52899 - "GET /static/images/modelscope.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:28517 - "GET /static/images/modelscope-1.gif HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:30236 - "GET /static/images/RunningHub-W.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:22483 - "GET /static/images/volcengine-theme-light.svg HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:33126 - "GET /static/images/volcengine-theme-dark.svg HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:33126 - "GET /static/canvas.html?v=2026.06.11.1781323423 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "GET /static/js/canvas.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:22483 - "GET /static/js/ltx-director-timeline.js?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /static/css/canvas.css?v=2026.06.11.1781322969 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "GET /static/vendor/css/fonts.css?v=2026.05.22.1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /static/vendor/js/lucide.min.js.map HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33126 - "GET /static/vendor/fonts/inter-1.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52899 - "GET /api/runninghub/workflows/2064542485938008065 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28517 - "GET /api/runninghub/workflows/2058541134623891458 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:22483 - "GET /api/runninghub/workflows/2058554058318897153 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /api/runninghub/workflows/2058824859437850625 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "GET /api/runninghub/workflows/2058818588181622785 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "GET /static/vendor/fonts/inter-2.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "POST /api/canvases/a9580e312c7845cbbf9c052848d0ca83/touch HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "GET /api/media-preview?w=256&url=%2Fassets%2Finput%2Fai_ref_5e6a59ecab99.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33126 - "GET /api/media-preview?w=256&url=%2Fassets%2Finput%2Fai_ref_bc8220acde63.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28517 - "GET /api/media-preview?w=768&url=%2Fassets%2Foutput%2Frh_d48bc56252ba.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:22483 - "GET /api/media-preview?w=768&url=%2Fassets%2Finput%2Fai_ref_5e6a59ecab99.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52899 - "GET /api/media-preview?w=768&url=%2Fassets%2Foutput%2Frh_309a6eae9ff5.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30236 - "GET /api/media-preview?w=768&url=%2Fassets%2Finput%2Fai_ref_bc8220acde63.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:22483 - "GET /static/vendor/fonts/inter-3.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:28517 - "GET /static/vendor/fonts/inter-4.ttf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "GET /api/check-update HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38136 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "POST /api/image-task-query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "GET /api/media-preview?w=768&url=%2Foutput%2Fcodex-imagegen%2Fcodex_img_66a9d01be4db%2Fcodex-output-1.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38075 - "GET /api/media-preview?w=768&url=%2Foutput%2Fcodex-imagegen%2Fcodex_img_66a9d01be4db%2Fcodex-output-1.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53286 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53286 - "GET /api/media-preview?w=768&url=%2Foutput%2Fcodex-imagegen%2Fcodex_img_66a9d01be4db%2Fcodex-output-1.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53286 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43523 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27321 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43523 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43523 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63572 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63572 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63572 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13191 - "POST /api/codex-cli/imagegen/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/media-preview?w=256&url=%2Foutput%2Fcodex-imagegen%2Fcodex_img_66a9d01be4db%2Fcodex-output-1.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47504 - "GET /api/media-preview?w=256&url=%2Fassets%2Foutput%2Frh_309a6eae9ff5.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47429 - "GET /api/media-preview?w=256&url=%2Fassets%2Foutput%2Frh_d48bc56252ba.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "PUT /api/canvases/a9580e312c7845cbbf9c052848d0ca83 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:13208 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "POST /api/canvas-assets/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:29702 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58750 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47686 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58264 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58264 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59556 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48099 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32889 - "GET /api/codex-cli/imagegen/codex_img_6c099dc33612 HTTP/1.1" 200 OK
