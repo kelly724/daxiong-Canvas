@@ -1649,3 +1649,643 @@ body.studio-theme-dark .shell .comfy-random-btn.active svg {
     fill: none !important;
     stroke: #0f172a !important;
 }
+
+/* 汉堡甜甜圈：详细画布工作台外观层。保留原 DOM、id 和 JS 事件绑定。 */
+body .shell {
+    --page: #07090d;
+    --grid: rgba(125, 211, 252, .13);
+    --panel: rgba(11, 15, 23, .78);
+    --card: rgba(17, 23, 34, .92);
+    --card-solid: #111827;
+    --soft: rgba(17, 24, 39, .72);
+    --soft-2: rgba(30, 41, 59, .78);
+    --line: rgba(148, 163, 184, .16);
+    --line-2: rgba(125, 211, 252, .34);
+    --text: #edf4ff;
+    --muted: #94a3b8;
+    --faint: #64748b;
+    --strong: #7dd3fc;
+    --strong-text: #04111a;
+    --ring: rgba(125, 211, 252, .18);
+    --focus: rgba(125, 211, 252, .72);
+    --shadow: rgba(0, 0, 0, .42);
+    font-family: "Space Grotesk", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(circle at 18% 16%, rgba(125, 211, 252, .18), transparent 28%),
+        radial-gradient(circle at 82% 10%, rgba(248, 113, 113, .10), transparent 24%),
+        linear-gradient(180deg, #080a0f 0%, #06080c 100%);
+    letter-spacing: 0;
+}
+
+body .shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg, rgba(125, 211, 252, .06), transparent 34%),
+        radial-gradient(circle at 76% 86%, rgba(34, 197, 94, .08), transparent 30%);
+    z-index: 0;
+}
+
+body .shell > * {
+    position: relative;
+}
+
+body .topbar {
+    left: 18px;
+    right: 18px;
+    top: 14px;
+    display: grid;
+    grid-template-columns: minmax(260px, max-content) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    pointer-events: none;
+}
+
+body .shell .panel,
+body .shell .toolbar,
+body .shell .canvas-nav,
+body .shell .workflow-transfer-panel,
+body .shell .canvas-asset-panel,
+body .shell .minimap {
+    background: var(--panel);
+    border: 1px solid rgba(148, 163, 184, .16);
+    box-shadow: 0 18px 54px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .05);
+    backdrop-filter: blur(22px) saturate(1.1);
+}
+
+body .shell .canvas-nav {
+    height: 54px;
+    padding: 6px;
+    border-radius: 18px;
+    pointer-events: auto;
+}
+
+body .shell .canvas-nav .tool-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 12px;
+}
+
+body .shell .canvas-nav-meta {
+    padding-right: 8px;
+}
+
+body .shell .current-canvas-title {
+    color: #f8fbff;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+body .shell .current-canvas-time,
+body .shell #saveState {
+    color: #7dd3fc;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .06em;
+}
+
+body .shell .toolbar {
+    justify-self: stretch;
+    min-width: 0;
+    min-height: 54px;
+    padding: 7px;
+    border-radius: 18px;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+body .shell .toolbar-command-label {
+    flex: 0 0 auto;
+    min-width: 96px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 13px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: rgba(125, 211, 252, .12);
+    border: 1px solid rgba(125, 211, 252, .22);
+}
+
+body .shell .toolbar-command-label span {
+    color: #f8fbff;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+body .shell .toolbar-command-label small {
+    margin-top: 4px;
+    color: #7dd3fc;
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+body .shell .toolbar.collapsed .toolbar-command-label {
+    display: none;
+}
+
+body .shell .toolbar-items {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 6px;
+    padding-bottom: 1px;
+    scrollbar-width: none !important;
+}
+
+body .shell .toolbar-items::-webkit-scrollbar {
+    display: none !important;
+}
+
+body .shell .toolbar-fixed {
+    flex: 0 0 auto;
+    padding-left: 8px;
+    border-left: 1px solid rgba(148, 163, 184, .16);
+}
+
+body .shell .tool-btn {
+    height: 38px;
+    min-width: 38px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, .72);
+    border-color: rgba(148, 163, 184, .16);
+    color: var(--muted);
+    font-weight: 850;
+    letter-spacing: 0;
+}
+
+body .shell .tool-btn:hover,
+body .shell .tool-btn.active,
+body .shell .canvas-asset-toggle.active {
+    background: rgba(125, 211, 252, .16);
+    border-color: rgba(125, 211, 252, .34);
+    color: #f8fbff;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .2);
+}
+
+body .shell .toolbar-items .tool-btn {
+    flex: 0 0 auto;
+    width: 38px;
+    padding: 0 10px;
+    overflow: hidden;
+    transition: width .24s var(--ease), background-color .16s ease, border-color .16s ease, color .16s ease, transform .12s ease;
+}
+
+body .shell .toolbar-items .tool-btn,
+body .shell .toolbar-items .tool-btn span {
+    white-space: nowrap;
+}
+
+body .shell .toolbar-items .tool-btn span {
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-width .22s var(--ease), opacity .16s ease;
+}
+
+body .shell .toolbar-items .tool-btn:hover,
+body .shell .toolbar-items .tool-btn:focus-visible {
+    width: auto;
+    min-width: 86px;
+}
+
+body .shell .toolbar-items .tool-btn:hover span,
+body .shell .toolbar-items .tool-btn:focus-visible span {
+    max-width: 116px;
+    opacity: 1;
+}
+
+body .shell .board {
+    background-color: var(--page);
+    background-image:
+        linear-gradient(rgba(125, 211, 252, .05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 211, 252, .05) 1px, transparent 1px),
+        radial-gradient(circle at 25% 18%, rgba(125, 211, 252, .16), transparent 28%),
+        radial-gradient(circle at 80% 72%, rgba(248, 113, 113, .08), transparent 30%);
+    background-size: 48px 48px, 48px 48px, auto, auto;
+}
+
+body .shell .drop-overlay {
+    background: rgba(7, 9, 13, .58);
+    color: #dbeafe;
+    backdrop-filter: blur(8px);
+}
+
+body .shell .link {
+    stroke: rgba(125, 211, 252, .58);
+    stroke-width: 2.2;
+    opacity: .78;
+}
+
+body .shell .link.temp {
+    stroke: #7dd3fc;
+    filter: drop-shadow(0 0 8px rgba(125, 211, 252, .34));
+}
+
+body .shell .node {
+    border-radius: 18px;
+    border-color: rgba(148, 163, 184, .16);
+    background: linear-gradient(180deg, rgba(20, 28, 41, .96), rgba(13, 19, 30, .94));
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+body .shell .node::before {
+    border-radius: inherit;
+    background: transparent;
+}
+
+body .shell .node.selected {
+    outline: 2px solid rgba(125, 211, 252, .9);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px rgba(125, 211, 252, .12), 0 24px 70px rgba(0, 0, 0, .38);
+}
+
+body .shell .node-head {
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 17px 17px 0 0 !important;
+    background: rgba(125, 211, 252, .06);
+    border-bottom-color: rgba(148, 163, 184, .14);
+}
+
+body .shell .node-title {
+    color: #9fb0c8;
+    letter-spacing: .08em;
+}
+
+body .shell .node-title-wrap.has-custom-name .node-title {
+    color: #f8fbff;
+}
+
+body .shell .node-type-chip {
+    border-color: rgba(125, 211, 252, .20);
+    color: #7dd3fc;
+    background: rgba(125, 211, 252, .08);
+}
+
+body .shell .node-body {
+    color: var(--text);
+}
+
+body .shell .node-run-status {
+    border-radius: 999px;
+    letter-spacing: 0;
+}
+
+body .shell .node-run-status.queued {
+    background: rgba(148, 163, 184, .16);
+    color: #cbd5e1;
+}
+
+body .shell .node-run-status.running {
+    background: rgba(125, 211, 252, .18);
+    color: #7dd3fc;
+}
+
+body .shell .node-run-status.failed {
+    background: rgba(248, 113, 113, .18);
+    color: #fca5a5;
+}
+
+body .shell .port {
+    box-shadow: 0 0 0 3px rgba(7, 9, 13, .88), 0 0 16px rgba(125, 211, 252, .24);
+}
+
+body .shell .create-menu,
+body .shell .selection-hub {
+    background: rgba(11, 15, 23, .92);
+    border-color: rgba(148, 163, 184, .16);
+    box-shadow: 0 20px 58px rgba(0, 0, 0, .38);
+}
+
+body .shell .menu-btn,
+body .shell .hub-port {
+    color: #a7b4c7;
+}
+
+body .shell .menu-btn:hover,
+body .shell .hub-port:hover {
+    background: rgba(125, 211, 252, .10);
+    color: #f8fbff;
+}
+
+body .shell .minimap {
+    right: 22px;
+    bottom: 20px;
+    border-radius: 14px;
+    background: rgba(11, 15, 23, .74);
+}
+
+body .shell .minimap-content {
+    background: rgba(125, 211, 252, .07);
+}
+
+body .shell .minimap-node {
+    background: rgba(125, 211, 252, .68);
+    border-color: rgba(248, 251, 255, .26);
+}
+
+body .shell .minimap-viewport {
+    border-color: #7dd3fc;
+    background: rgba(125, 211, 252, .08);
+    box-shadow: 0 0 0 1px rgba(7, 9, 13, .8), 0 0 16px rgba(125, 211, 252, .24);
+}
+
+body .shell .canvas-asset-panel {
+    width: 340px;
+    top: 82px;
+    right: 18px;
+    bottom: 24px;
+    border-radius: 20px;
+    padding: 14px;
+}
+
+body .shell .workflow-transfer-panel {
+    width: 400px;
+    top: 82px;
+    right: 18px;
+    border-radius: 20px;
+}
+
+body .shell .canvas-asset-head strong,
+body .shell .workflow-transfer-title {
+    color: #f8fbff;
+    font-size: 14px;
+    letter-spacing: 0;
+}
+
+body .shell .canvas-asset-select,
+body .shell .workflow-transfer-card,
+body .shell .workflow-transfer-meta,
+body .shell .workflow-import-drop,
+body .shell .canvas-asset-drop,
+body .shell .canvas-asset-item,
+body .shell .canvas-asset-empty {
+    background: rgba(15, 23, 42, .72);
+    border-color: rgba(148, 163, 184, .16);
+    color: var(--text);
+}
+
+body .shell .canvas-asset-drop,
+body .shell .workflow-import-drop {
+    border-style: dashed;
+    color: #94a3b8;
+}
+
+body .shell .canvas-asset-item:hover,
+body .shell .workflow-transfer-card:hover {
+    border-color: rgba(125, 211, 252, .34);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, .28);
+}
+
+body .shell .workflow-transfer-btn.primary,
+body .shell .primary-btn,
+body .shell .create-confirm {
+    background: #7dd3fc;
+    border-color: #7dd3fc;
+    color: #04111a;
+}
+
+body .shell .workflow-transfer-btn.secondary,
+body .shell .secondary-btn,
+body .shell .create-cancel,
+body .shell .gate-icon-btn,
+body .shell .gate-back-link {
+    background: rgba(15, 23, 42, .72);
+    border-color: rgba(148, 163, 184, .16);
+    color: #a7b4c7;
+}
+
+body .shell .canvas-gate {
+    padding: 28px;
+    justify-content: center;
+    background:
+        linear-gradient(rgba(125, 211, 252, .055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 211, 252, .055) 1px, transparent 1px),
+        radial-gradient(circle at 15% 18%, rgba(125, 211, 252, .18), transparent 30%),
+        radial-gradient(circle at 88% 20%, rgba(248, 113, 113, .10), transparent 26%),
+        #07090d;
+    background-size: 48px 48px, 48px 48px, auto, auto, auto;
+}
+
+body .shell .gate-panel {
+    width: min(1180px, 100%);
+    min-height: min(680px, calc(100vh - 56px));
+    padding: 24px;
+    border-radius: 26px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(11, 15, 23, .80) !important;
+    border: 1px solid rgba(125, 211, 252, .22);
+    box-shadow: 0 30px 100px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+body .shell .gate-head {
+    margin-bottom: 18px;
+    align-items: stretch;
+}
+
+body .shell .gate-head-text {
+    min-height: 150px;
+    padding: 22px;
+    border-radius: 20px;
+    justify-content: flex-end;
+    background:
+        linear-gradient(135deg, rgba(125, 211, 252, .18), rgba(248, 113, 113, .08)),
+        rgba(15, 23, 42, .62);
+    border: 1px solid rgba(125, 211, 252, .18);
+}
+
+body .shell .gate-title {
+    color: #f8fbff;
+    font-size: clamp(30px, 5vw, 64px);
+    font-weight: 950;
+    line-height: .96;
+    letter-spacing: 0;
+}
+
+body .shell .gate-subtitle {
+    max-width: 520px;
+    color: #9fb0c8;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+body .shell .gate-count-pill {
+    background: rgba(125, 211, 252, .15);
+    border: 1px solid rgba(125, 211, 252, .24);
+    color: #7dd3fc;
+}
+
+body .shell .gate-head-actions {
+    width: min(420px, 42vw);
+    padding: 12px;
+    border-radius: 20px;
+    display: grid;
+    grid-template-columns: 1fr 42px 42px;
+    align-content: start;
+    gap: 8px;
+    background: rgba(15, 23, 42, .54);
+    border: 1px solid rgba(148, 163, 184, .14);
+}
+
+body .shell .gate-sort,
+body .shell .gate-create-row,
+body .shell .gate-list {
+    background: rgba(15, 23, 42, .70);
+    border-color: rgba(148, 163, 184, .14);
+}
+
+body .shell .gate-sort {
+    grid-column: 1 / -1;
+    border-radius: 13px;
+}
+
+body .shell .gate-sort-btn {
+    border-radius: 10px;
+    color: #94a3b8;
+}
+
+body .shell .gate-sort-btn.active {
+    background: rgba(125, 211, 252, .15);
+    color: #f8fbff;
+    box-shadow: none;
+}
+
+body .shell .primary-btn,
+body .shell .smart-create-btn {
+    min-width: 0;
+    height: 42px;
+    border-radius: 13px;
+}
+
+body .shell #gateCreateBtn,
+body .shell #gateCreateSmartBtn,
+body .shell #gateAssetManagerBtn {
+    grid-column: 1 / -1;
+}
+
+body .shell .smart-create-btn {
+    background:
+        linear-gradient(rgba(15, 23, 42, .88), rgba(15, 23, 42, .88)) padding-box,
+        linear-gradient(135deg, #7dd3fc, #22c55e, #f87171) border-box;
+    color: #f8fbff;
+    border: 1px solid transparent;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .22);
+}
+
+body .shell .gate-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    padding: 12px;
+    border-radius: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px;
+}
+
+body .shell .canvas-item {
+    min-height: 150px;
+    border-radius: 18px;
+    background: rgba(17, 24, 39, .76);
+    border-color: rgba(148, 163, 184, .14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+
+body .shell .canvas-item:hover {
+    border-color: rgba(125, 211, 252, .30);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .28);
+}
+
+body .shell .canvas-item.active {
+    background: rgba(125, 211, 252, .14);
+    border-color: rgba(125, 211, 252, .40);
+    box-shadow: 0 0 0 1px rgba(125, 211, 252, .18), 0 18px 42px rgba(0, 0, 0, .26);
+}
+
+body .shell .canvas-item.active .canvas-card-title,
+body .shell .canvas-card-title {
+    color: #f8fbff;
+    letter-spacing: 0;
+}
+
+body .shell .canvas-card-time {
+    color: #8fa0b8;
+}
+
+body .shell .canvas-card-meta,
+body .shell .canvas-preview-mark,
+body .shell .canvas-card-edit,
+body .shell .canvas-delete {
+    background: rgba(7, 9, 13, .48);
+    border-color: rgba(148, 163, 184, .14);
+    color: #94a3b8;
+}
+
+@media (max-width: 980px) {
+    body .topbar {
+        grid-template-columns: 1fr;
+        right: 14px;
+        left: 14px;
+        top: 12px;
+    }
+
+    body .shell .toolbar-command-label {
+        display: none;
+    }
+
+    body .shell .gate-head {
+        flex-direction: column;
+    }
+
+    body .shell .gate-head-actions {
+        width: 100%;
+        grid-template-columns: 1fr 42px 42px;
+    }
+
+    body .shell .gate-title {
+        font-size: 36px;
+    }
+}
+
+@media (max-width: 760px) {
+    body .shell .canvas-gate {
+        padding: 14px;
+    }
+
+    body .shell .gate-panel {
+        min-height: calc(100vh - 28px);
+        padding: 16px;
+        border-radius: 20px;
+    }
+
+    body .shell .gate-head-text {
+        min-height: 126px;
+        padding: 16px;
+    }
+
+    body .shell .gate-list {
+        grid-template-columns: 1fr;
+    }
+
+    body .shell .canvas-asset-panel,
+    body .shell .workflow-transfer-panel {
+        right: 14px;
+        left: 14px;
+        width: auto;
+        max-width: none;
+    }
+}
