@@ -25,6 +25,8 @@ import math
 import shlex
 import functools
 import html
+import socket
+import ipaddress
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Any, Optional, Tuple
 from threading import Lock, Thread
@@ -37,6 +39,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response, StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
+from services.lovart_service import (
+    LOVART_DEFAULT_BASE_URL,
+    LOVART_IMAGE_MODEL_IDS,
+    LOVART_VIDEO_MODEL_IDS,
+    LovartError,
+    confirm_and_poll as lovart_confirm_and_poll,
+    download_artifacts as lovart_download_artifacts,
+    models_payload as lovart_models_payload,
+    pending_cost as lovart_pending_cost,
+    query_mode_with_keys as lovart_query_mode_with_keys,
+    set_mode_with_keys as lovart_set_mode_with_keys,
+    submit_and_poll as lovart_submit_and_poll,
+)
 
 QUIET_ACCESS_PATHS = {
     "/api/queue_status",
@@ -67,9 +82,25 @@ logging.getLogger("uvicorn.access").addFilter(QuietAccessLogFilter())
 
 app = FastAPI()
 
+# 安全修复(H-1)：默认只允许本机来源跨域。
+# 如确需放开（例如被局域网其它设备的网页调用），用 CANVAS_CORS_ORIGINS 显式指定，
+# 例如 CANVAS_CORS_ORIGINS="http://192.168.1.10:3000,http://my-host:3000"，或设为 "*" 完全放开（不推荐）。
+def _resolve_cors_origins():
+    raw = (os.getenv("CANVAS_CORS_ORIGINS") or "").strip()
+    if raw == "*":
+        return ["*"]
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    origins = []
+    for host in ("127.0.0.1", "localhost"):
+        for port in ("3000",):
+            origins.append(f"http://{host}:{port}")
+            origins.append(f"https://{host}:{port}")
+    return origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_resolve_cors_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -220,6 +251,7 @@ LOCAL_UPLOAD_DIR = os.path.join(ASSETS_DIR, "uploads")
 HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
 API_ENV_FILE = os.path.join(BASE_DIR, "API", ".env")
 DATA_DIR = os.path.join(BASE_DIR, "data")
+LOVART_STATE_FILE = os.path.join(DATA_DIR, "lovart_state.json")
 CONVERSATION_DIR = os.path.join(DATA_DIR, "conversations")
 CANVAS_DIR = os.path.join(DATA_DIR, "canvases")
 MEDIA_PREVIEW_DIR = os.path.join(DATA_DIR, "media_previews")
@@ -252,7 +284,7 @@ JIMENG_LOGIN_SESSION = {
 }
 
 PROVIDER_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{2,40}$")
-SUPPORTED_PROVIDER_PROTOCOLS = {"openai", "apimart", "gemini", "volcengine", "runninghub", "jimeng"}
+SUPPORTED_PROVIDER_PROTOCOLS = {"openai", "apimart", "gemini", "volcengine", "runninghub", "jimeng", "codex_cli", "lovart"}
 SUPPORTED_IMAGE_REQUEST_MODES = {"openai", "openai-json"}
 RUNNINGHUB_DEFAULT_BASE_URL = "https://www.runninghub.cn"
 JIMENG_DEFAULT_IMAGE_MODELS = [
@@ -596,6 +628,8 @@ def provider_key_env(provider_id):
         return "RUNNINGHUB_API_KEY"
     if provider_id == "volcengine":
         return "ARK_API_KEY"
+    if provider_id == "lovart":
+        return "LOVART_ACCESS_KEY"
     return f"API_PROVIDER_{re.sub(r'[^A-Za-z0-9]', '_', provider_id).upper()}_KEY"
 
 def runninghub_wallet_key_env():
@@ -606,6 +640,21 @@ def volcengine_access_key_env():
 
 def volcengine_secret_key_env():
     return "VOLCENGINE_SECRET_ACCESS_KEY"
+
+def lovart_access_key_env():
+    return "LOVART_ACCESS_KEY"
+
+def lovart_secret_key_env():
+    return "LOVART_SECRET_KEY"
+
+def lovart_base_url_env():
+    return "LOVART_BASE_URL"
+
+def lovart_insecure_ssl_env():
+    return "LOVART_INSECURE_SSL"
+
+def lovart_reasoning_mode_env():
+    return "LOVART_REASONING_MODE"
 
 def read_api_env_value(key: str) -> str:
     key = str(key or "").strip()
@@ -646,6 +695,28 @@ def volcengine_secret_key_value() -> str:
     env_key = volcengine_secret_key_env()
     return os.getenv(env_key, "") or read_api_env_value(env_key)
 
+def lovart_access_key_value(explicit_key: str = "") -> str:
+    explicit_key = str(explicit_key or "").strip()
+    if explicit_key:
+        return explicit_key
+    env_key = lovart_access_key_env()
+    return os.getenv(env_key, "") or read_api_env_value(env_key)
+
+def lovart_secret_key_value(explicit_key: str = "") -> str:
+    explicit_key = str(explicit_key or "").strip()
+    if explicit_key:
+        return explicit_key
+    env_key = lovart_secret_key_env()
+    return os.getenv(env_key, "") or read_api_env_value(env_key)
+
+def lovart_base_url_value(explicit_url: str = "") -> str:
+    value = str(explicit_url or os.getenv(lovart_base_url_env(), "") or read_api_env_value(lovart_base_url_env()) or LOVART_DEFAULT_BASE_URL).strip().rstrip("/")
+    return value or LOVART_DEFAULT_BASE_URL
+
+def lovart_reasoning_mode_value() -> str:
+    value = str(os.getenv(lovart_reasoning_mode_env(), "") or read_api_env_value(lovart_reasoning_mode_env()) or "fast").strip().lower()
+    return value if value in {"fast", "thinking"} else "fast"
+
 def volcengine_provider_api_key(explicit_key: str = "") -> str:
     explicit_key = str(explicit_key or "").strip()
     if explicit_key:
@@ -672,6 +743,38 @@ def bearer_auth_value(value):
 def default_api_providers():
     # 独立入口平台强制保留，其他平台均可自定义增删
     return [
+        {
+            "id": "codex_cli",
+            "name": "Codex CLI 本机生图",
+            "base_url": "",
+            "protocol": "codex_cli",
+            "image_request_mode": "openai",
+            "image_generation_endpoint": "",
+            "image_edit_endpoint": "",
+            "enabled": True,
+            "primary": False,
+            "image_models": ["codex-cli/gpt-image"],
+            "chat_models": [],
+            "video_models": [],
+            "ms_loras": [],
+            "ms_defaults_version": 0,
+        },
+        {
+            "id": "lovart",
+            "name": "Lovart",
+            "base_url": LOVART_DEFAULT_BASE_URL,
+            "protocol": "lovart",
+            "image_request_mode": "openai",
+            "image_generation_endpoint": "",
+            "image_edit_endpoint": "",
+            "enabled": True,
+            "primary": False,
+            "image_models": LOVART_IMAGE_MODEL_IDS,
+            "chat_models": [],
+            "video_models": LOVART_VIDEO_MODEL_IDS,
+            "ms_loras": [],
+            "ms_defaults_version": 0,
+        },
         {
             "id": "modelscope",
             "name": "ModelScope",
@@ -729,6 +832,19 @@ def default_api_providers():
 def merge_default_api_providers(providers):
     merged = [dict(item) for item in providers]
     # 强制保留独立入口平台（不再强制 comfly）
+    codex_default = next((d for d in default_api_providers() if d["id"] == "codex_cli"), None)
+    if codex_default and not any(item.get("id") == "codex_cli" for item in merged):
+        merged.insert(0, codex_default)
+    lovart_default = next((d for d in default_api_providers() if d["id"] == "lovart"), None)
+    if lovart_default:
+        current = next((item for item in merged if item.get("id") == "lovart"), None)
+        if not current:
+            merged.append(lovart_default)
+        else:
+            current["protocol"] = "lovart"
+            current["base_url"] = current.get("base_url") or lovart_default["base_url"]
+            current["image_models"] = model_list_from_values([*(current.get("image_models") or []), *LOVART_IMAGE_MODEL_IDS])
+            current["video_models"] = model_list_from_values([*(current.get("video_models") or []), *LOVART_VIDEO_MODEL_IDS])
     ms_default = next((d for d in default_api_providers() if d["id"] == "modelscope"), None)
     if ms_default:
         current = next((item for item in merged if item.get("id") == "modelscope"), None)
@@ -1088,6 +1204,9 @@ def normalize_provider(item):
     if provider_id == "jimeng":
         protocol = "jimeng"
         base_url = ""
+    if provider_id == "lovart":
+        protocol = "lovart"
+        base_url = base_url or LOVART_DEFAULT_BASE_URL
     return {
         "id": provider_id,
         "name": name,
@@ -1098,9 +1217,9 @@ def normalize_provider(item):
         "image_edit_endpoint": image_edit_endpoint,
         "enabled": bool(item.get("enabled", True)),
         "primary": bool(item.get("primary", False)),
-        "image_models": model_list_from_values(item.get("image_models") or []),
+        "image_models": model_list_from_values(item.get("image_models") or (LOVART_IMAGE_MODEL_IDS if provider_id == "lovart" else [])),
         "chat_models": model_list_from_values(item.get("chat_models") or []),
-        "video_models": model_list_from_values(item.get("video_models") or []),
+        "video_models": model_list_from_values(item.get("video_models") or (LOVART_VIDEO_MODEL_IDS if provider_id == "lovart" else [])),
         "model_protocols": normalize_model_protocols(item.get("model_protocols")),
         "ms_loras": normalize_ms_loras(item.get("ms_loras") or []),
         "ms_defaults_version": int(item.get("ms_defaults_version") or 0),
@@ -1161,6 +1280,19 @@ def public_provider(provider):
             "volcengine_secret_key_env": volcengine_secret_key_env(),
             "volcengine_project_name": provider.get("volcengine_project_name") or VOLCENGINE_DEFAULT_PROJECT_NAME,
             "volcengine_region": provider.get("volcengine_region") or VOLCENGINE_DEFAULT_REGION,
+        })
+    if provider.get("id") == "lovart":
+        ak = lovart_access_key_value()
+        sk = lovart_secret_key_value()
+        item.update({
+            "has_lovart_access_key": bool(ak),
+            "lovart_access_key_preview": mask_secret(ak),
+            "lovart_access_key_env": lovart_access_key_env(),
+            "has_lovart_secret_key": bool(sk),
+            "lovart_secret_key_preview": mask_secret(sk),
+            "lovart_secret_key_env": lovart_secret_key_env(),
+            "lovart_base_url_env": lovart_base_url_env(),
+            "model_metadata": lovart_models_payload({}).get("model_metadata") or {},
         })
     return item
 
@@ -1253,6 +1385,11 @@ def update_env_values(updates):
             os.environ[key] = str(value or "")
     with open(API_ENV_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(next_lines).rstrip() + "\n")
+    # 安全修复(L-3)：API/.env 存有明文密钥，收紧文件权限为仅本人可读写。
+    try:
+        os.chmod(API_ENV_FILE, 0o600)
+    except OSError:
+        pass
 
 BACKEND_LOCAL_LOAD = {addr: 0 for addr in COMFYUI_INSTANCES}
 
@@ -2299,6 +2436,7 @@ class OnlineImageRequest(BaseModel):
     quality: str = "auto"
     n: int = 1
     reference_images: List[AIReference] = []
+    unlimited: bool = True
 
 class ImageTaskQueryRequest(BaseModel):
     provider_id: str = "comfly"
@@ -2327,6 +2465,7 @@ class CanvasVideoRequest(BaseModel):
     generate_audio: bool = False
     multimodal: bool = False
     trusted_asset: bool = False
+    unlimited: bool = True
 
 class TempShUploadRequest(BaseModel):
     url: str = ""
@@ -2408,12 +2547,16 @@ class ApiProviderPayload(BaseModel):
     volcengine_region: str = VOLCENGINE_DEFAULT_REGION
     volcengine_access_key_id: Optional[str] = None
     volcengine_secret_access_key: Optional[str] = None
+    lovart_access_key: Optional[str] = None
+    lovart_secret_key: Optional[str] = None
     api_key: Optional[str] = None
     wallet_api_key: Optional[str] = None
     clear_key: bool = False
     clear_wallet_key: bool = False
     clear_volcengine_access_key_id: bool = False
     clear_volcengine_secret_access_key: bool = False
+    clear_lovart_access_key: bool = False
+    clear_lovart_secret_key: bool = False
 
 class ChatRequest(BaseModel):
     conversation_id: str = ""
@@ -2448,6 +2591,40 @@ class CanvasLLMRequest(BaseModel):
     ms_model: str = ""
     images: List[str] = []   # 可以是 /output/*.png、/assets/*.png 本地路径 或 http(s) URL 或 data URL
     videos: List[str] = []   # 可以是 /output/*.mp4、/assets/*.mp4 本地路径 或 http(s) URL 或 data URL
+
+class StoryboardSourceText(BaseModel):
+    node_id: str = ""
+    title: str = ""
+    content: str = ""
+
+class StoryboardScriptRequest(BaseModel):
+    provider: str = "comfly"
+    model: str = ""
+    ms_model: str = ""
+    prompt: str = Field(default="", max_length=12000)
+    shot_count: int = 8
+    language: str = "zh-CN"
+    style: str = ""
+    source_texts: List[StoryboardSourceText] = []
+    images: List[str] = []
+    videos: List[str] = []
+
+class SceneDetectionRequest(BaseModel):
+    provider: str = "comfly"
+    model: str = ""
+    ms_model: str = ""
+    prompt: str = Field(default="", max_length=12000)
+    max_scenes: int = Field(default=8, ge=1, le=40)
+    images: List[str] = []
+    videos: List[str] = []
+
+class CodexCliImageStartRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=12000)
+    aspect_ratio: str = "1:1"
+    batch_size: int = 1
+    mode: str = "text2image"
+    reference_images: List[str] = []
+    timeout_ms: int = 1200000
 
 class ConversationCreateRequest(BaseModel):
     title: str = "新对话"
@@ -3133,6 +3310,9 @@ def iter_canvas_asset_values(value, path=""):
 def canvas_node_title(node):
     if not isinstance(node, dict):
         return ""
+    custom_name = str(node.get("customName") or "").strip()
+    if custom_name:
+        return custom_name[:120]
     return str(node.get("title") or node.get("name") or node.get("label") or node.get("type") or "节点")[:120]
 
 def extract_canvas_assets(canvas):
@@ -3504,7 +3684,7 @@ def provider_protocol(provider):
 # 单模型可覆盖的协议（仅 OpenAI / Gemini，二者可共用同一站点的 Base URL + Key）
 PER_MODEL_PROTOCOL_OPTIONS = {"openai", "gemini"}
 # 协议固定、不支持单模型覆盖的内置平台
-FIXED_PROTOCOL_PROVIDER_IDS = {"modelscope", "volcengine", "jimeng", "runninghub"}
+FIXED_PROTOCOL_PROVIDER_IDS = {"modelscope", "volcengine", "jimeng", "runninghub", "codex_cli", "lovart"}
 
 def normalize_model_protocols(value):
     """规整 {模型名: 协议} 覆盖表，仅保留 openai/gemini。"""
@@ -3560,6 +3740,9 @@ def is_runninghub_provider(provider):
 
 def is_jimeng_provider(provider):
     return provider_protocol(provider) == "jimeng" or str((provider or {}).get("id") or "").strip().lower() == "jimeng"
+
+def is_lovart_provider(provider):
+    return provider_protocol(provider) == "lovart" or str((provider or {}).get("id") or "").strip().lower() == "lovart"
 
 def is_yuli_provider(provider):
     # 玉玉API（yuli.host）的视频接口走自有格式（/v1/video/create + /v1/video/query），
@@ -4539,11 +4722,40 @@ def filename_from_media_url(url: str, fallback: str = "download.bin") -> str:
     name = os.path.basename(urllib.parse.unquote(path))
     return sanitize_export_filename(name or fallback, fallback)
 
+def _is_blocked_remote_host(host: str) -> bool:
+    """安全修复(H-2)：判断目标主机是否指向回环/私有/链路本地/保留地址，用于阻断 SSRF。"""
+    host = (host or "").strip().strip("[]")
+    if not host:
+        return True
+    candidates = set()
+    try:
+        candidates.add(ipaddress.ip_address(host))
+    except ValueError:
+        # 不是字面 IP，解析其所有 A/AAAA 记录后逐一判断
+        try:
+            for info in socket.getaddrinfo(host, None):
+                try:
+                    candidates.add(ipaddress.ip_address(info[4][0]))
+                except ValueError:
+                    continue
+        except (socket.gaierror, UnicodeError, OSError):
+            # 解析失败：交给后续 requests 处理网络错误，这里不放行也不误伤
+            return False
+    if not candidates:
+        return False
+    for ip in candidates:
+        if (ip.is_loopback or ip.is_private or ip.is_link_local
+                or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+            return True
+    return False
+
 def fetch_remote_media_bytes(url: str, timeout: float = 30.0, max_bytes: int = 200 * 1024 * 1024):
     text = str(url or "").strip()
     parsed = urllib.parse.urlparse(text)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         return None
+    if _is_blocked_remote_host(parsed.hostname or ""):
+        raise HTTPException(status_code=400, detail="不允许访问该地址（内网/本机地址已被拦截）")
     with requests.get(text, stream=True, timeout=timeout, headers={"User-Agent": "ComfyUI-API-Modelscope/1.0"}) as response:
         response.raise_for_status()
         content_type = response.headers.get("content-type") or "application/octet-stream"
@@ -8109,6 +8321,13 @@ async def upload_ai_reference(files: List[UploadFile] = File(...)):
             kind = "file"
             if not ext:
                 ext = ".bin"
+        # 安全修复(M-5)：图片类上传做真实解码校验，拒绝伪装成图片的非图片文件。
+        if kind == "image":
+            try:
+                with Image.open(BytesIO(content)) as _probe:
+                    _probe.verify()
+            except Exception:
+                raise HTTPException(status_code=400, detail=f"{file.filename or '文件'} 不是有效的图片文件")
         filename = f"ai_ref_{uuid.uuid4().hex[:12]}{ext}"
         path = output_path_for(filename, "input")
         with open(path, "wb") as f:
@@ -9088,6 +9307,18 @@ async def save_providers(payload: List[ApiProviderPayload]):
                 env_updates[sk_env] = ""
             elif item.volcengine_secret_access_key is not None and item.volcengine_secret_access_key.strip():
                 env_updates[sk_env] = item.volcengine_secret_access_key.strip()
+        if provider["id"] == "lovart":
+            ak_env = lovart_access_key_env()
+            sk_env = lovart_secret_key_env()
+            if item.clear_lovart_access_key:
+                env_updates[ak_env] = ""
+            elif item.lovart_access_key is not None and item.lovart_access_key.strip():
+                env_updates[ak_env] = item.lovart_access_key.strip()
+            if item.clear_lovart_secret_key:
+                env_updates[sk_env] = ""
+            elif item.lovart_secret_key is not None and item.lovart_secret_key.strip():
+                env_updates[sk_env] = item.lovart_secret_key.strip()
+            env_updates[lovart_base_url_env()] = provider.get("base_url") or LOVART_DEFAULT_BASE_URL
         if provider["id"] == "comfly":
             env_updates["COMFLY_BASE_URL"] = provider["base_url"]
             env_updates["IMAGE_MODELS"] = ",".join(provider["image_models"])
@@ -9099,6 +9330,9 @@ async def save_providers(payload: List[ApiProviderPayload]):
             provider["protocol"] = "runninghub"
         if provider["id"] == "volcengine":
             provider["protocol"] = "volcengine"
+        if provider["id"] == "lovart":
+            provider["protocol"] = "lovart"
+            provider["base_url"] = provider.get("base_url") or LOVART_DEFAULT_BASE_URL
     if not providers:
         raise HTTPException(status_code=400, detail="至少保留一个 API 平台")
     # 强制最多一个 primary（取最后被标记的；都没标记则保持原样不强制）
@@ -9138,6 +9372,8 @@ class TestConnectionPayload(BaseModel):
     provider_id: str = ""
     protocol: str = "openai"
     image_request_mode: str = "openai"
+    lovart_access_key: str = ""
+    lovart_secret_key: str = ""
 
 def protocol_from_payload(payload):
     provider_id = str(getattr(payload, "provider_id", "") or "").strip().lower()
@@ -9147,6 +9383,8 @@ def protocol_from_payload(payload):
         return "runninghub"
     if provider_id == "jimeng":
         return "jimeng"
+    if provider_id == "lovart":
+        return "lovart"
     protocol = str(getattr(payload, "protocol", "") or "openai").strip().lower()
     return protocol if protocol in SUPPORTED_PROVIDER_PROTOCOLS else "openai"
 
@@ -9166,7 +9404,40 @@ def api_key_from_payload(payload, protocol: str = ""):
             return value
     if protocol == "volcengine":
         return volcengine_provider_api_key("")
+    if protocol == "lovart":
+        return lovart_access_key_value(getattr(payload, "lovart_access_key", ""))
     return ""
+
+def lovart_keys_from_payload(payload):
+    return (
+        lovart_access_key_value(getattr(payload, "lovart_access_key", "")),
+        lovart_secret_key_value(getattr(payload, "lovart_secret_key", "")),
+    )
+
+def lovart_http_exception(exc: Exception):
+    if isinstance(exc, LovartError):
+        code = int(getattr(exc, "code", 0) or 0)
+        status_code = code if 400 <= code <= 599 else 502
+        if code in {1001, 401, 403}:
+            status_code = 401
+        if code in {1005, 429}:
+            status_code = 429
+        if code in {2012, 402}:
+            status_code = 402
+        return HTTPException(status_code=status_code, detail=exc.message)
+    return HTTPException(status_code=502, detail=str(exc))
+
+async def lovart_query_mode_payload(payload=None):
+    try:
+        if payload is not None:
+            ak, sk = lovart_keys_from_payload(payload)
+            base_url = lovart_base_url_value(getattr(payload, "base_url", ""))
+        else:
+            ak, sk = lovart_access_key_value(), lovart_secret_key_value()
+            base_url = lovart_base_url_value()
+        return await asyncio.to_thread(lovart_query_mode_with_keys, base_url, ak, sk)
+    except Exception as exc:
+        raise lovart_http_exception(exc) from exc
 
 def upstream_models_url(base_url: str, protocol: str):
     if protocol == "gemini":
@@ -9360,6 +9631,23 @@ def apply_agnes_model_defaults(base_url, grouped, ids):
 async def test_provider_connection(payload: TestConnectionPayload):
     """测试请求地址是否可用：调上游 /v1/models。验证通过时同时把模型清单按类别返回，避免再调一次拉取接口。"""
     protocol = protocol_from_payload(payload)
+    if protocol == "lovart":
+        mode_data = await lovart_query_mode_payload(payload)
+        models = lovart_models_payload(mode_data)
+        mode_name = "免费模式" if mode_data.get("unlimited") else "付费模式"
+        return {
+            "ok": True,
+            "protocol": "lovart",
+            "status": 200,
+            "message": f"Lovart AK/SK 验证通过（当前 {mode_name}）",
+            "model_count": models["total"],
+            "image_models": models["image_models"],
+            "chat_models": [],
+            "video_models": models["video_models"],
+            "all": models["all"],
+            "model_metadata": models.get("model_metadata") or {},
+            "raw": mode_data,
+        }
     if protocol == "jimeng":
         status = await jimeng_status()
         return {
@@ -9548,6 +9836,13 @@ async def probe_async_endpoint(payload: TestConnectionPayload):
 async def fetch_models_from_upstream(base_url: str, api_key: str, protocol: str = "openai", image_request_mode: str = "openai"):
     """从上游模型列表端点拉取模型，并按名称做轻量分类。"""
     protocol = protocol if protocol in SUPPORTED_PROVIDER_PROTOCOLS else "openai"
+    if protocol == "lovart":
+        mode_data = {}
+        try:
+            mode_data = await lovart_query_mode_payload(None)
+        except HTTPException:
+            mode_data = {}
+        return lovart_models_payload(mode_data)
     if protocol == "jimeng":
         return {
             "total": len(JIMENG_DEFAULT_IMAGE_MODELS) + len(JIMENG_DEFAULT_VIDEO_MODELS),
@@ -9665,6 +9960,13 @@ async def fetch_models_from_upstream(base_url: str, api_key: str, protocol: str 
 async def fetch_upstream_models_from_payload(payload: TestConnectionPayload):
     """按页面当前表单值拉取模型，支持新增平台未保存时直接使用临时 Base URL / Key。"""
     protocol = protocol_from_payload(payload)
+    if protocol == "lovart":
+        mode_data = {}
+        try:
+            mode_data = await lovart_query_mode_payload(payload)
+        except HTTPException:
+            mode_data = {}
+        return lovart_models_payload(mode_data)
     api_key = api_key_from_payload(payload, protocol)
     return await fetch_models_from_upstream(payload.base_url, api_key, protocol, payload.image_request_mode)
 
@@ -9672,6 +9974,13 @@ async def fetch_upstream_models_from_payload(payload: TestConnectionPayload):
 async def fetch_upstream_models(provider_id: str):
     """从已保存的上游 OpenAI 兼容接口拉取 /v1/models 列表，按名称智能分类为 image/chat/video。"""
     provider = get_api_provider_exact(provider_id)
+    if is_lovart_provider(provider):
+        mode_data = {}
+        try:
+            mode_data = await lovart_query_mode_payload(None)
+        except HTTPException:
+            mode_data = {}
+        return lovart_models_payload(mode_data)
     api_key = os.getenv(runninghub_wallet_key_env(), "") if provider["id"] == "runninghub" else ""
     if not api_key:
         api_key = os.getenv(provider_key_env(provider["id"]), "")
@@ -9679,10 +9988,246 @@ async def fetch_upstream_models(provider_id: str):
         raise HTTPException(status_code=400, detail=f"{provider.get('name') or provider_id} 未配置 API Key")
     return await fetch_models_from_upstream(provider.get("base_url") or "", api_key, provider_protocol(provider), provider.get("image_request_mode") or "openai")
 
-async def build_online_image_result(payload: OnlineImageRequest):
+class LovartModePayload(BaseModel):
+    unlimited: bool = True
+
+@app.get("/api/lovart/mode")
+async def lovart_mode():
+    mode_data = await lovart_query_mode_payload(None)
+    payload = lovart_models_payload(mode_data)
+    return {
+        "ok": True,
+        "unlimited": bool(mode_data.get("unlimited")),
+        "mode": "unlimited" if mode_data.get("unlimited") else "fast",
+        "raw": mode_data,
+        "model_metadata": payload.get("model_metadata") or {},
+    }
+
+@app.post("/api/lovart/mode")
+async def set_lovart_mode(payload: LovartModePayload):
+    try:
+        result = await asyncio.to_thread(
+            lovart_set_mode_with_keys,
+            bool(payload.unlimited),
+            lovart_base_url_value(),
+            lovart_access_key_value(),
+            lovart_secret_key_value(),
+        )
+    except Exception as exc:
+        raise lovart_http_exception(exc) from exc
+    return {
+        "ok": True,
+        "unlimited": bool(payload.unlimited),
+        "mode": "unlimited" if payload.unlimited else "fast",
+        "raw": result,
+    }
+
+def lovart_output_url_from_path(path: str) -> str:
+    if not path:
+        return ""
+    abs_path = os.path.abspath(path)
+    output_root = os.path.abspath(OUTPUT_OUTPUT_DIR)
+    input_root = os.path.abspath(OUTPUT_INPUT_DIR)
+    legacy_output_root = os.path.abspath(OUTPUT_DIR)
+    if os.path.commonpath([output_root, abs_path]) == output_root:
+        return output_url_for(os.path.basename(abs_path), "output")
+    if os.path.commonpath([input_root, abs_path]) == input_root:
+        return output_url_for(os.path.basename(abs_path), "input")
+    if os.path.commonpath([legacy_output_root, abs_path]) == legacy_output_root:
+        return f"/output/{os.path.basename(abs_path)}"
+    return abs_path
+
+def lovart_reference_values(refs) -> List[str]:
+    values = []
+    for ref in refs or []:
+        url = str((ref or {}).get("url") or "").strip()
+        if not url:
+            continue
+        path = output_file_from_url(url)
+        if path:
+            values.append(path)
+        elif url.startswith("http://") or url.startswith("https://"):
+            values.append(url)
+    return values
+
+UNRESOLVED_PROMPT_PLACEHOLDER_RE = re.compile(r"\[[^\]\n]{1,80}\]")
+PROMPT_TEMPLATE_PLACEHOLDER_KEYWORDS = (
+    "主体",
+    "角色",
+    "产品",
+    "事件",
+    "场景",
+    "动作",
+    "阶段",
+    "情绪",
+    "描述",
+    "详细",
+    "地点",
+    "时间",
+    "镜头",
+    "风格",
+)
+
+def unresolved_prompt_template_placeholders(prompt: str) -> List[str]:
+    placeholders: List[str] = []
+    for match in UNRESOLVED_PROMPT_PLACEHOLDER_RE.findall(str(prompt or "")):
+        inner = match[1:-1].strip()
+        if not inner:
+            continue
+        looks_like_template_slot = (
+            any(keyword in inner for keyword in PROMPT_TEMPLATE_PLACEHOLDER_KEYWORDS)
+            or bool(re.search(r"阶段\d+|情绪[A-Za-zＡ-Ｚａ-ｚ]", inner))
+        )
+        if looks_like_template_slot and match not in placeholders:
+            placeholders.append(match)
+        if len(placeholders) >= 8:
+            break
+    return placeholders
+
+def assert_no_lovart_template_placeholders(prompt: str):
+    placeholders = unresolved_prompt_template_placeholders(prompt)
+    if not placeholders:
+        return
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            "提示词里还有未替换的模板占位符："
+            + "、".join(placeholders)
+            + "。请先把这些方括号内容改成具体剧情、产品或主体描述后再提交 Lovart。"
+        ),
+    )
+
+def lovart_image_prompt(prompt: str, size: str = "", quality: str = "") -> str:
+    hints = []
+    if size:
+        hints.append(f"Target image size/aspect preference: {size}.")
+    if quality and str(quality).lower() not in {"auto", "standard"}:
+        hints.append(f"Quality preference: {quality}.")
+    return "\n\n".join([str(prompt or "").strip(), *hints]).strip()
+
+def lovart_video_prompt(payload: CanvasVideoRequest) -> str:
+    hints = []
+    if payload.aspect_ratio:
+        hints.append(f"Target aspect ratio preference: {payload.aspect_ratio}.")
+    if payload.duration:
+        hints.append(f"Target duration preference: {payload.duration} seconds.")
+    if payload.resolution:
+        hints.append(f"Target resolution preference: {payload.resolution}.")
+    role_notes = []
+    for index, ref in enumerate(payload.images or [], start=1):
+        role = str(getattr(ref, "role", "") or "").strip()
+        if role:
+            role_notes.append(f"Reference image {index} role: {role}.")
+    if role_notes:
+        hints.extend(role_notes)
+    return "\n\n".join([str(payload.prompt or "").strip(), *hints]).strip()
+
+def lovart_status_payload(result: Dict[str, Any], model: str, kind: str, task_id: str) -> Dict[str, Any]:
+    final_status = str(result.get("final_status") or "").lower()
+    thread_id = str(result.get("thread_id") or "").strip()
+    if final_status == "pending_confirmation":
+        pc = result.get("pending_confirmation") or {}
+        estimated = lovart_pending_cost(model, pc)
+        return {
+            "status": "pending_confirmation",
+            "task_id": task_id,
+            "thread_id": thread_id,
+            "kind": kind,
+            "provider_id": "lovart",
+            "model": model,
+            "estimated_cost": estimated,
+            "pending_confirmation": pc,
+            "message": f"本次 Lovart 生成需确认消耗 {estimated if estimated not in (None, '') else '待确认'} credits",
+            "raw": result,
+        }
+    if final_status == "timeout":
+        return {
+            "status": "running",
+            "task_id": task_id,
+            "thread_id": thread_id,
+            "kind": kind,
+            "provider_id": "lovart",
+            "model": model,
+            "message": "Lovart 任务仍在队列中，可稍后继续查询",
+            "raw": result,
+        }
+    if final_status == "abort":
+        raise HTTPException(status_code=502, detail="Lovart Agent 终止任务")
+    if final_status and final_status != "done":
+        raise HTTPException(status_code=502, detail=f"Lovart 任务状态异常：{final_status}")
+    if result.get("generation_succeeded") is False:
+        raise HTTPException(status_code=502, detail=result.get("agent_message") or result.get("warning") or "Lovart 未产出产物")
+    return {}
+
+async def lovart_finalize_image_result(payload: OnlineImageRequest, provider: Dict[str, Any], model: str, result: Dict[str, Any], task_id: str = ""):
+    status_payload = lovart_status_payload(result, model, "image", task_id)
+    if status_payload:
+        return status_payload
+    downloads = await asyncio.to_thread(lovart_download_artifacts, result, OUTPUT_OUTPUT_DIR, "image", "lovart_image")
+    local_urls = [lovart_output_url_from_path(item.get("local_path") or "") for item in downloads if item.get("local_path")]
+    if not local_urls:
+        raw_text = json.dumps(result, ensure_ascii=False)[:800]
+        raise HTTPException(status_code=502, detail=f"Lovart 未返回图片产物：{raw_text}")
+    refs = [ref.dict() for ref in payload.reference_images if ref.url]
+    record = {
+        "status": "succeeded",
+        "prompt": payload.prompt,
+        "images": local_urls,
+        "timestamp": time.time(),
+        "type": "online",
+        "model": model,
+        "provider_id": provider["id"],
+        "provider_name": provider.get("name") or provider["id"],
+        "task_id": task_id or result.get("thread_id"),
+        "thread_id": result.get("thread_id"),
+        "request_id": result.get("thread_id"),
+        "params": {
+            "provider_id": provider["id"],
+            "model": model,
+            "size": payload.size,
+            "quality": payload.quality,
+            "n": payload.n,
+            "reference_images": refs,
+            "unlimited": bool(payload.unlimited),
+        },
+        "raw": result,
+    }
+    save_to_history(record)
+    if GLOBAL_LOOP:
+        asyncio.run_coroutine_threadsafe(manager.broadcast_new_image(record), GLOBAL_LOOP)
+    return record
+
+async def build_lovart_image_result(payload: OnlineImageRequest, provider: Dict[str, Any], model: str, task_id: str = ""):
+    assert_no_lovart_template_placeholders(payload.prompt)
+    refs = [ref.dict() for ref in payload.reference_images if ref.url]
+    attachments = lovart_reference_values(image_references(refs))
+    prompt = lovart_image_prompt(payload.prompt, payload.size, payload.quality)
+    try:
+        result = await asyncio.to_thread(
+            lovart_submit_and_poll,
+            prompt=prompt,
+            model=model,
+            kind="image",
+            billing_unlimited=bool(payload.unlimited),
+            state_path=LOVART_STATE_FILE,
+            task_id=task_id or f"online_img_{uuid.uuid4().hex}",
+            attachments=attachments,
+            timeout=int(IMAGE_TASK_TIMEOUT or 300),
+            base_url=lovart_base_url_value(provider.get("base_url") or ""),
+            access_key=lovart_access_key_value(),
+            secret_key=lovart_secret_key_value(),
+            reasoning_mode=lovart_reasoning_mode_value(),
+        )
+    except Exception as exc:
+        raise lovart_http_exception(exc) from exc
+    return await lovart_finalize_image_result(payload, provider, model, result, task_id)
+
+async def build_online_image_result(payload: OnlineImageRequest, task_id: str = ""):
     provider = get_api_provider(payload.provider_id)
     default_model = (provider.get("image_models") or [IMAGE_MODEL])[0]
     model = selected_model(payload.model, default_model)
+    if is_lovart_provider(provider):
+        return await build_lovart_image_result(payload, provider, model, task_id)
     refs = [ref.dict() for ref in payload.reference_images if ref.url]
     image_refs = image_references(refs)
     count = max(1, min(8, int(payload.n or 1)))
@@ -9732,8 +10277,11 @@ async def online_image(payload: OnlineImageRequest):
 
 @app.post("/api/image-task-query")
 async def query_image_task(payload: ImageTaskQueryRequest):
-    provider = get_api_provider(payload.provider_id)
     task_id = str(payload.task_id or "").strip()
+    provider_id = str(payload.provider_id or "").strip().lower()
+    if provider_id == "codex_cli":
+        return await codex_cli_imagegen_status(task_id)
+    provider = get_api_provider(payload.provider_id)
     timeout = httpx.Timeout(connect=20.0, read=300.0, write=60.0, pool=20.0)
     try:
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
@@ -9796,7 +10344,21 @@ async def run_canvas_image_task(task_id: str, payload: OnlineImageRequest):
             CANVAS_TASKS[task_id]["status"] = "running"
             CANVAS_TASKS[task_id]["updated_at"] = time.time()
     try:
-        result = await build_online_image_result(payload)
+        result = await build_online_image_result(payload, task_id=task_id)
+        status = str((result or {}).get("status") or "succeeded")
+        if status in {"pending_confirmation", "running"}:
+            with CANVAS_TASK_LOCK:
+                CANVAS_TASKS[task_id].update({
+                    "status": status,
+                    "result": result,
+                    "error": "",
+                    "thread_id": result.get("thread_id"),
+                    "estimated_cost": result.get("estimated_cost"),
+                    "pending_confirmation": result.get("pending_confirmation"),
+                    "message": result.get("message") or "",
+                    "updated_at": time.time(),
+                })
+            return
         with CANVAS_TASK_LOCK:
             CANVAS_TASKS[task_id].update({
                 "status": "succeeded",
@@ -9833,6 +10395,9 @@ async def run_canvas_image_task(task_id: str, payload: OnlineImageRequest):
 
 @app.post("/api/canvas-image-tasks")
 async def create_canvas_image_task(payload: OnlineImageRequest):
+    provider = get_api_provider(payload.provider_id)
+    if is_lovart_provider(provider):
+        assert_no_lovart_template_placeholders(payload.prompt)
     task_id = f"canvas_img_{uuid.uuid4().hex}"
     with CANVAS_TASK_LOCK:
         CANVAS_TASKS[task_id] = {
@@ -9845,6 +10410,8 @@ async def create_canvas_image_task(payload: OnlineImageRequest):
             "error": "",
             "provider_id": payload.provider_id,
             "model": payload.model,
+            "unlimited": bool(payload.unlimited),
+            "payload": payload.dict(),
         }
     asyncio.create_task(run_canvas_image_task(task_id, payload))
     return {"task_id": task_id, "status": "queued"}
@@ -9856,6 +10423,85 @@ async def get_canvas_image_task(task_id: str):
     if not task:
         raise HTTPException(status_code=404, detail="画布任务不存在，可能服务已重启或任务已过期")
     return task
+
+class LovartConfirmPayload(BaseModel):
+    task_id: str = ""
+    thread_id: str = ""
+
+async def run_lovart_confirm_task(task_id: str, thread_id: str):
+    with CANVAS_TASK_LOCK:
+        task = dict(CANVAS_TASKS.get(task_id) or {})
+        if task_id in CANVAS_TASKS:
+            CANVAS_TASKS[task_id].update({
+                "status": "running",
+                "message": "Lovart 已确认，继续生成中",
+                "error": "",
+                "updated_at": time.time(),
+            })
+    try:
+        result = await asyncio.to_thread(
+            lovart_confirm_and_poll,
+            thread_id=thread_id,
+            state_path=LOVART_STATE_FILE,
+            task_id=task_id,
+            timeout=int(VIDEO_POLL_TIMEOUT or 600),
+            base_url=lovart_base_url_value(),
+            access_key=lovart_access_key_value(),
+            secret_key=lovart_secret_key_value(),
+        )
+        payload_data = task.get("payload") or {}
+        kind = str(task.get("type") or "")
+        provider = get_api_provider_exact("lovart")
+        model = str(task.get("model") or "")
+        if kind == "online-image":
+            image_payload = OnlineImageRequest(**payload_data)
+            model = selected_model(model or image_payload.model, (provider.get("image_models") or LOVART_IMAGE_MODEL_IDS)[0])
+            final = await lovart_finalize_image_result(image_payload, provider, model, result, task_id)
+        elif kind == "online-video":
+            video_payload = CanvasVideoRequest(**payload_data)
+            model = selected_model(model or video_payload.model, (provider.get("video_models") or LOVART_VIDEO_MODEL_IDS)[0])
+            final = await lovart_finalize_video_result(video_payload, provider, model, result, task_id)
+        else:
+            raise HTTPException(status_code=400, detail=f"未知 Lovart 任务类型：{kind}")
+        status = str((final or {}).get("status") or "succeeded")
+        with CANVAS_TASK_LOCK:
+            CANVAS_TASKS[task_id].update({
+                "status": status,
+                "result": final,
+                "error": "",
+                "thread_id": final.get("thread_id") or thread_id,
+                "estimated_cost": final.get("estimated_cost"),
+                "pending_confirmation": final.get("pending_confirmation"),
+                "message": final.get("message") or "",
+                "updated_at": time.time(),
+            })
+    except Exception as exc:
+        detail = getattr(exc, "detail", None) or str(exc)
+        status_code = getattr(exc, "status_code", 500)
+        with CANVAS_TASK_LOCK:
+            if task_id in CANVAS_TASKS:
+                CANVAS_TASKS[task_id].update({
+                    "status": "failed",
+                    "error": str(detail),
+                    "status_code": status_code,
+                    "updated_at": time.time(),
+                })
+
+@app.post("/api/lovart/confirm")
+async def lovart_confirm(payload: LovartConfirmPayload):
+    task_id = str(payload.task_id or "").strip()
+    thread_id = str(payload.thread_id or "").strip()
+    if not task_id or not thread_id:
+        raise HTTPException(status_code=400, detail="缺少 task_id 或 thread_id")
+    with CANVAS_TASK_LOCK:
+        task = CANVAS_TASKS.get(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Lovart 任务不存在，可能服务已重启或任务已过期")
+        saved_thread = str(task.get("thread_id") or "").strip()
+        if saved_thread and saved_thread != thread_id:
+            raise HTTPException(status_code=400, detail="thread_id 与任务记录不一致")
+    asyncio.create_task(run_lovart_confirm_task(task_id, thread_id))
+    return {"ok": True, "status": "running", "task_id": task_id, "thread_id": thread_id}
 
 # --- Canvas Video ---
 
@@ -10298,9 +10944,130 @@ def volcengine_video_prompt_text(prompt, aspect_ratio="", duration=None):
     suffix_text = " ".join(suffixes)
     return f"{text} {suffix_text}".strip() if text else suffix_text
 
+async def lovart_finalize_video_result(payload: CanvasVideoRequest, provider: Dict[str, Any], model: str, result: Dict[str, Any], task_id: str = ""):
+    status_payload = lovart_status_payload(result, model, "video", task_id)
+    if status_payload:
+        return status_payload
+    downloads = await asyncio.to_thread(lovart_download_artifacts, result, OUTPUT_OUTPUT_DIR, "video", "lovart_video")
+    local_urls = [lovart_output_url_from_path(item.get("local_path") or "") for item in downloads if item.get("local_path")]
+    if not local_urls:
+        raw_text = json.dumps(result, ensure_ascii=False)[:800]
+        raise HTTPException(status_code=502, detail=f"Lovart 未返回视频产物：{raw_text}")
+    return {
+        "status": "succeeded",
+        "videos": local_urls,
+        "task_id": task_id,
+        "thread_id": result.get("thread_id"),
+        "provider_id": provider["id"],
+        "provider_name": provider.get("name") or provider["id"],
+        "model": model,
+        "params": {
+            "provider_id": provider["id"],
+            "model": model,
+            "duration": payload.duration,
+            "aspect_ratio": payload.aspect_ratio,
+            "resolution": payload.resolution,
+            "unlimited": bool(payload.unlimited),
+        },
+        "raw": result,
+    }
+
+async def build_lovart_video_result(payload: CanvasVideoRequest, provider: Dict[str, Any], model: str, task_id: str = ""):
+    assert_no_lovart_template_placeholders(payload.prompt)
+    refs = [ref.dict() for ref in payload.images if ref.url]
+    attachments = lovart_reference_values(refs)
+    prompt = lovart_video_prompt(payload)
+    try:
+        result = await asyncio.to_thread(
+            lovart_submit_and_poll,
+            prompt=prompt,
+            model=model,
+            kind="video",
+            billing_unlimited=bool(payload.unlimited),
+            state_path=LOVART_STATE_FILE,
+            task_id=task_id or f"canvas_vid_{uuid.uuid4().hex}",
+            attachments=attachments,
+            timeout=int(VIDEO_POLL_TIMEOUT or 600),
+            base_url=lovart_base_url_value(provider.get("base_url") or ""),
+            access_key=lovart_access_key_value(),
+            secret_key=lovart_secret_key_value(),
+            reasoning_mode=lovart_reasoning_mode_value(),
+        )
+    except Exception as exc:
+        raise lovart_http_exception(exc) from exc
+    return await lovart_finalize_video_result(payload, provider, model, result, task_id)
+
+async def run_canvas_video_task(task_id: str, payload: CanvasVideoRequest):
+    with CANVAS_TASK_LOCK:
+        if task_id in CANVAS_TASKS:
+            CANVAS_TASKS[task_id]["status"] = "running"
+            CANVAS_TASKS[task_id]["updated_at"] = time.time()
+    try:
+        provider = get_api_provider(payload.provider_id)
+        if not is_lovart_provider(provider):
+            raise HTTPException(status_code=400, detail="/api/canvas-video-tasks 仅支持 Lovart 视频，其他平台请使用 /api/canvas-video")
+        model = selected_model(payload.model, (provider.get("video_models") or LOVART_VIDEO_MODEL_IDS)[0])
+        result = await build_lovart_video_result(payload, provider, model, task_id)
+        status = str((result or {}).get("status") or "succeeded")
+        with CANVAS_TASK_LOCK:
+            CANVAS_TASKS[task_id].update({
+                "status": status,
+                "result": result,
+                "error": "",
+                "thread_id": result.get("thread_id"),
+                "estimated_cost": result.get("estimated_cost"),
+                "pending_confirmation": result.get("pending_confirmation"),
+                "message": result.get("message") or "",
+                "updated_at": time.time(),
+            })
+    except Exception as exc:
+        detail = getattr(exc, "detail", None) or str(exc)
+        status_code = getattr(exc, "status_code", 500)
+        with CANVAS_TASK_LOCK:
+            CANVAS_TASKS[task_id].update({
+                "status": "failed",
+                "error": str(detail),
+                "status_code": status_code,
+                "updated_at": time.time(),
+            })
+
+@app.post("/api/canvas-video-tasks")
+async def create_canvas_video_task(payload: CanvasVideoRequest):
+    provider = get_api_provider(payload.provider_id)
+    if not is_lovart_provider(provider):
+        raise HTTPException(status_code=400, detail="/api/canvas-video-tasks 仅支持 Lovart 视频，其他平台请使用 /api/canvas-video")
+    assert_no_lovart_template_placeholders(payload.prompt)
+    task_id = f"canvas_vid_{uuid.uuid4().hex}"
+    with CANVAS_TASK_LOCK:
+        CANVAS_TASKS[task_id] = {
+            "id": task_id,
+            "type": "online-video",
+            "status": "queued",
+            "created_at": time.time(),
+            "updated_at": time.time(),
+            "result": None,
+            "error": "",
+            "provider_id": payload.provider_id,
+            "model": payload.model,
+            "unlimited": bool(payload.unlimited),
+            "payload": payload.dict(),
+        }
+    asyncio.create_task(run_canvas_video_task(task_id, payload))
+    return {"task_id": task_id, "status": "queued"}
+
+@app.get("/api/canvas-video-tasks/{task_id}")
+async def get_canvas_video_task(task_id: str):
+    with CANVAS_TASK_LOCK:
+        task = dict(CANVAS_TASKS.get(task_id) or {})
+    if not task:
+        raise HTTPException(status_code=404, detail="画布视频任务不存在，可能服务已重启或任务已过期")
+    return task
+
 @app.post("/api/canvas-video")
 async def canvas_video(payload: CanvasVideoRequest):
     provider = get_api_provider(payload.provider_id)
+    if is_lovart_provider(provider):
+        raise HTTPException(status_code=400, detail="Lovart 视频请使用 /api/canvas-video-tasks 异步接口")
     if is_jimeng_provider(provider):
         return await generate_jimeng_video(payload, provider)
     base_url = video_api_root(provider)
@@ -10794,6 +11561,513 @@ async def canvas_llm(payload: CanvasLLMRequest):
     raw_data = unwrap_apimart_response(raw) if isinstance(raw, dict) else {}
     return {"text": text, "model": model, "raw_usage": raw_data.get("usage")}
 
+STORYBOARD_SCRIPT_SYSTEM_PROMPT = """你是专业分镜导演和短视频脚本策划。请严格返回 JSON，不要返回 Markdown。
+输出结构必须是：
+{
+  "schema_version": "storyboard-script.v1",
+  "shots": [
+    {
+      "shotNumber": 1,
+      "duration": "3s",
+      "scene": "",
+      "shotSize": "",
+      "camera": "",
+      "character": "",
+      "action": "",
+      "emotion": "",
+      "dialogue": "",
+      "sound": "",
+      "imagePrompt": "",
+      "videoPrompt": "",
+      "negativePrompt": "",
+      "notes": ""
+    }
+  ]
+}
+要求：
+- shots 数量尽量等于用户要求的镜头数量。
+- imagePrompt 要适合文生图，具体、视觉化、可执行。
+- videoPrompt 要适合文生视频，包含运动、节奏、镜头语言。
+- 不要省略字段；没有内容时填空字符串。
+"""
+
+def build_storyboard_script_prompt(payload: StoryboardScriptRequest) -> str:
+    shot_count = max(1, min(80, int(payload.shot_count or 8)))
+    parts = [
+        f"请生成 {shot_count} 个分镜镜头。",
+        f"输出语言：{payload.language or 'zh-CN'}。",
+    ]
+    if payload.style:
+        parts.append(f"整体风格：{payload.style}")
+    if payload.prompt:
+        parts.append(f"用户任务：\n{payload.prompt}")
+    for item in payload.source_texts[:20]:
+        text = (item.content or "").strip()
+        if text:
+            parts.append(f"[源文本: {item.title or item.node_id or '未命名'}]\n{text}")
+    if payload.images:
+        parts.append(f"已连接 {min(len(payload.images), 8)} 张图片参考，请结合图片内容规划画面。")
+    if payload.videos:
+        parts.append(f"已连接 {min(len(payload.videos), 3)} 个视频参考，请结合视频关键帧理解节奏和场景。")
+    parts.append("只返回 JSON，不要解释。")
+    return "\n\n".join(parts)
+
+def extract_json_object_from_text(text: str) -> Any:
+    raw = (text or "").strip()
+    if not raw:
+        raise ValueError("empty response")
+    fenced = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw, re.IGNORECASE)
+    if fenced:
+        raw = fenced.group(1).strip()
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start >= 0 and end > start:
+        return json.loads(raw[start:end + 1])
+    start = raw.find("[")
+    end = raw.rfind("]")
+    if start >= 0 and end > start:
+        return json.loads(raw[start:end + 1])
+    raise ValueError("no JSON object found")
+
+def normalize_storyboard_rows(raw: Any) -> List[Dict[str, Any]]:
+    if isinstance(raw, dict):
+        rows = raw.get("shots") or raw.get("rows") or raw.get("storyboard") or []
+    else:
+        rows = raw
+    if not isinstance(rows, list):
+        rows = []
+    normalized = []
+    for idx, item in enumerate(rows[:100], start=1):
+        if not isinstance(item, dict):
+            continue
+        shot_number = item.get("shotNumber") or item.get("shot_number") or item.get("index") or idx
+        try:
+            shot_number = int(shot_number)
+        except Exception:
+            shot_number = idx
+        normalized.append({
+            "id": str(item.get("id") or f"shot_{idx:03d}"),
+            "shotNumber": shot_number,
+            "duration": str(item.get("duration") or "3s"),
+            "scene": str(item.get("scene") or ""),
+            "shotSize": str(item.get("shotSize") or item.get("shot_size") or ""),
+            "camera": str(item.get("camera") or ""),
+            "character": str(item.get("character") or ""),
+            "action": str(item.get("action") or ""),
+            "emotion": str(item.get("emotion") or ""),
+            "dialogue": str(item.get("dialogue") or ""),
+            "sound": str(item.get("sound") or ""),
+            "imagePrompt": str(item.get("imagePrompt") or item.get("image_prompt") or item.get("prompt") or ""),
+            "videoPrompt": str(item.get("videoPrompt") or item.get("video_prompt") or ""),
+            "negativePrompt": str(item.get("negativePrompt") or item.get("negative_prompt") or ""),
+            "notes": str(item.get("notes") or item.get("note") or ""),
+        })
+    normalized.sort(key=lambda row: row.get("shotNumber") or 0)
+    return normalized
+
+def storyboard_rows_to_csv(rows: List[Dict[str, Any]]) -> str:
+    headers = ["shotNumber", "duration", "scene", "shotSize", "camera", "character", "action", "emotion", "dialogue", "sound", "imagePrompt", "videoPrompt", "negativePrompt", "notes"]
+    def cell(value):
+        text = str(value or "").replace('"', '""')
+        return f'"{text}"'
+    return "\n".join([",".join(headers), *[",".join(cell(row.get(h)) for h in headers) for row in rows]])
+
+SCENE_DETECTION_SYSTEM_PROMPT = """你是专业剪辑师和视频分场分析师。请严格返回 JSON，不要返回 Markdown。
+输出结构必须是：
+{
+  "schema_version": "scene-detection.v1",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "timeRange": "00:00-00:05",
+      "title": "场景标题",
+      "description": "画面内容",
+      "camera": "镜头/运动",
+      "action": "关键动作",
+      "mood": "情绪/节奏",
+      "imagePrompt": "可用于生成关键帧的中文提示词",
+      "videoPrompt": "可用于生成该段视频的中文提示词"
+    }
+  ],
+  "summary": "整体分析"
+}
+要求：
+- 按时间顺序拆分场景，最多不超过用户要求数量。
+- 如果只有图片，按画面元素和可能的动作阶段拆分。
+- 提示词必须具体，可直接给画布图片/视频节点使用。
+- 不确定时间时使用估算区间。"""
+
+def build_scene_detection_prompt(payload: SceneDetectionRequest) -> str:
+    lines = [
+        f"请分析输入素材并拆分为最多 {max(1, min(40, int(payload.max_scenes or 8)))} 个场景。",
+        "请输出中文 JSON。",
+    ]
+    if payload.prompt:
+        lines.append(f"用户补充要求：\n{payload.prompt}")
+    lines.append(f"素材统计：图片 {len(payload.images or [])} 张，视频 {len(payload.videos or [])} 个。")
+    return "\n\n".join(lines)
+
+def normalize_scene_detection_scenes(raw: Any) -> List[Dict[str, Any]]:
+    if isinstance(raw, dict):
+        scenes = raw.get("scenes") or raw.get("shots") or raw.get("rows") or raw.get("storyboard") or []
+    elif isinstance(raw, list):
+        scenes = raw
+    else:
+        scenes = []
+    normalized: List[Dict[str, Any]] = []
+    for idx, item in enumerate(scenes if isinstance(scenes, list) else []):
+        if not isinstance(item, dict):
+            continue
+        scene_no = item.get("sceneNumber") or item.get("scene_number") or item.get("shotNumber") or item.get("index") or idx + 1
+        normalized.append({
+            "id": str(item.get("id") or f"scene_{scene_no}"),
+            "sceneNumber": scene_no,
+            "timeRange": str(item.get("timeRange") or item.get("time_range") or item.get("time") or ""),
+            "title": str(item.get("title") or item.get("scene") or f"场景 {scene_no}"),
+            "description": str(item.get("description") or item.get("visual") or item.get("content") or ""),
+            "camera": str(item.get("camera") or item.get("shotSize") or ""),
+            "action": str(item.get("action") or ""),
+            "mood": str(item.get("mood") or item.get("emotion") or ""),
+            "imagePrompt": str(item.get("imagePrompt") or item.get("image_prompt") or ""),
+            "videoPrompt": str(item.get("videoPrompt") or item.get("video_prompt") or ""),
+        })
+    return normalized
+
+def scene_detection_csv(scenes: List[Dict[str, Any]]) -> str:
+    headers = ["sceneNumber", "timeRange", "title", "description", "camera", "action", "mood", "imagePrompt", "videoPrompt"]
+    def cell(value):
+        text = str(value or "").replace('"', '""')
+        return f'"{text}"'
+    return "\n".join([",".join(headers), *[",".join(cell(scene.get(h)) for h in headers) for scene in scenes]])
+
+@app.post("/api/storyboard-script/generate")
+async def storyboard_script_generate(payload: StoryboardScriptRequest):
+    prompt = build_storyboard_script_prompt(payload)
+    llm_payload = CanvasLLMRequest(
+        message=prompt,
+        system_prompt=STORYBOARD_SCRIPT_SYSTEM_PROMPT,
+        model=payload.model,
+        ms_model=payload.ms_model,
+        provider=payload.provider,
+        images=payload.images,
+        videos=payload.videos,
+    )
+    result = await canvas_llm(llm_payload)
+    text = result.get("text") or ""
+    try:
+        raw_json = extract_json_object_from_text(text)
+        rows = normalize_storyboard_rows(raw_json)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"分镜 JSON 解析失败：{exc}；原始回复：{text[:500]}") from exc
+    if not rows:
+        raise HTTPException(status_code=502, detail=f"分镜结果为空；原始回复：{text[:500]}")
+    return {
+        "success": True,
+        "rows": rows,
+        "raw_json": raw_json,
+        "csv": storyboard_rows_to_csv(rows),
+        "provider": payload.provider,
+        "model": result.get("model") or payload.model,
+        "raw_usage": result.get("raw_usage"),
+    }
+
+@app.post("/api/scene-detection/analyze")
+async def scene_detection_analyze(payload: SceneDetectionRequest):
+    if not (payload.images or payload.videos or payload.prompt):
+        raise HTTPException(status_code=400, detail="请连接图片/视频，或填写分析要求。")
+    result = await canvas_llm(CanvasLLMRequest(
+        message=build_scene_detection_prompt(payload),
+        system_prompt=SCENE_DETECTION_SYSTEM_PROMPT,
+        model=payload.model,
+        ms_model=payload.ms_model,
+        provider=payload.provider,
+        images=(payload.images or [])[:8],
+        videos=(payload.videos or [])[:3],
+    ))
+    text = result.get("text") or ""
+    try:
+        raw_json = extract_json_object_from_text(text)
+        scenes = normalize_scene_detection_scenes(raw_json)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"场景检测 JSON 解析失败：{exc}；原始回复：{text[:500]}") from exc
+    if not scenes:
+        raise HTTPException(status_code=502, detail=f"场景检测结果为空；原始回复：{text[:500]}")
+    return {
+        "success": True,
+        "schema_version": "scene-detection.v1",
+        "scenes": scenes,
+        "raw_json": raw_json,
+        "csv": scene_detection_csv(scenes),
+        "provider": payload.provider,
+        "model": result.get("model") or payload.model,
+        "raw_usage": result.get("raw_usage"),
+    }
+
+CODEX_CLI_TASKS: Dict[str, Dict[str, Any]] = {}
+CODEX_CLI_TASK_LOCK = Lock()
+
+def codex_cli_command_path() -> str:
+    return shutil.which("codex") or ""
+
+def codex_cli_auth_cache_status() -> Dict[str, Any]:
+    auth_path = os.path.expanduser("~/.codex/auth.json")
+    status = {
+        "path": auth_path,
+        "exists": os.path.exists(auth_path),
+        "readable": False,
+        "auth_mode": "",
+        "has_openai_api_key": False,
+        "has_access_token": False,
+        "has_refresh_token": False,
+        "last_refresh": "",
+    }
+    if not status["exists"]:
+        return status
+    try:
+        with open(auth_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        status["readable"] = True
+        status["auth_mode"] = str(data.get("auth_mode") or "")
+        status["has_openai_api_key"] = bool(data.get("OPENAI_API_KEY"))
+        tokens = data.get("tokens") if isinstance(data.get("tokens"), dict) else {}
+        status["has_access_token"] = bool(tokens.get("access_token"))
+        status["has_refresh_token"] = bool(tokens.get("refresh_token"))
+        status["last_refresh"] = str(data.get("last_refresh") or "")
+    except Exception as exc:
+        status["error"] = str(exc)
+    return status
+
+def codex_cli_status_payload() -> Dict[str, Any]:
+    cmd = codex_cli_command_path()
+    auth_cache = codex_cli_auth_cache_status()
+    checks = {
+        "installed": bool(cmd),
+        "supportsExec": False,
+        "supportsImage": False,
+        "loggedIn": False,
+        "workspaceWritable": os.access(BASE_DIR, os.W_OK),
+    }
+    missing = []
+    version = ""
+    help_text = ""
+    if not cmd:
+        missing.append("没有找到 codex 命令，请先安装 Codex CLI。")
+    else:
+        try:
+            version = subprocess.run([cmd, "--version"], capture_output=True, text=True, timeout=8).stdout.strip()
+        except Exception:
+            version = ""
+        try:
+            help_proc = subprocess.run([cmd, "exec", "--help"], capture_output=True, text=True, timeout=8)
+            help_text = (help_proc.stdout or "") + (help_proc.stderr or "")
+            checks["supportsExec"] = help_proc.returncode == 0 or "Usage" in help_text or "exec" in help_text
+            checks["supportsImage"] = "--image" in help_text
+        except Exception:
+            help_text = ""
+        try:
+            auth_proc = subprocess.run([cmd, "login", "status"], capture_output=True, text=True, timeout=8)
+            auth_text = ((auth_proc.stdout or "") + (auth_proc.stderr or "")).lower()
+            checks["loggedIn"] = auth_proc.returncode == 0 and not any(word in auth_text for word in ("not logged", "login required", "unauthorized", "not authenticated"))
+        except Exception:
+            checks["loggedIn"] = False
+        if not checks["loggedIn"] and auth_cache.get("readable"):
+            checks["loggedIn"] = bool(auth_cache.get("has_openai_api_key") or auth_cache.get("has_access_token") or auth_cache.get("has_refresh_token"))
+    if cmd and not checks["supportsExec"]:
+        missing.append("当前 Codex CLI 不支持 codex exec，请升级 Codex CLI。")
+    if cmd and not checks["supportsImage"]:
+        missing.append("当前 Codex CLI 未检测到 --image 参数，参考图能力可能不可用。")
+    if cmd and not checks["loggedIn"]:
+        missing.append("Codex CLI 可能尚未登录，请在终端运行 codex login。")
+    if not checks["workspaceWritable"]:
+        missing.append("当前项目目录不可写，无法保存 Codex 生图结果。")
+    return {
+        "success": True,
+        "provider": "codex_cli",
+        "available": bool(cmd),
+        "ready": bool(cmd and checks["supportsExec"] and checks["workspaceWritable"]),
+        "commandPath": cmd,
+        "version": version,
+        "checks": checks,
+        "authCache": auth_cache,
+        "missing": missing,
+    }
+
+def codex_cli_task_dir(task_id: str) -> str:
+    return os.path.join(OUTPUT_DIR, "codex-imagegen", task_id)
+
+def codex_cli_task_url(task_id: str, filename: str) -> str:
+    return f"/output/codex-imagegen/{task_id}/{filename}"
+
+def codex_cli_task_images(task_id: str) -> List[Dict[str, str]]:
+    task_dir = codex_cli_task_dir(task_id)
+    image_files: List[Dict[str, str]] = []
+    if not os.path.isdir(task_dir):
+        return image_files
+    for root, _, files in os.walk(task_dir):
+        for name in files:
+            if re.search(r"\.(png|jpe?g|webp)$", name, re.I):
+                abs_path = os.path.join(root, name)
+                rel = os.path.relpath(abs_path, task_dir).replace("\\", "/")
+                image_files.append({"url": codex_cli_task_url(task_id, rel), "localPath": abs_path})
+    image_files.sort(key=lambda item: item.get("localPath", ""))
+    return image_files
+
+def run_codex_cli_image_task(task_id: str, payload: Dict[str, Any]):
+    task_dir = codex_cli_task_dir(task_id)
+    os.makedirs(task_dir, exist_ok=True)
+    prompt_path = os.path.join(task_dir, "prompt.txt")
+    stdout_path = os.path.join(task_dir, "stdout.log")
+    stderr_path = os.path.join(task_dir, "stderr.log")
+    result_path = os.path.join(task_dir, "result_message.txt")
+    command_path = os.path.join(task_dir, "command.json")
+    with open(prompt_path, "w", encoding="utf-8") as f:
+        f.write(payload.get("prompt") or "")
+    cmd = codex_cli_command_path()
+    if not cmd:
+        with CODEX_CLI_TASK_LOCK:
+            CODEX_CLI_TASKS[task_id].update({"status": "failed", "error": "没有找到 codex 命令"})
+        return
+    instruction = (
+        "请根据下面提示生成图片，并把最终图片文件保存到当前任务目录。"
+        f"\n任务目录：{task_dir}\n"
+        f"画幅比例：{payload.get('aspect_ratio') or '1:1'}\n"
+        f"数量：{max(1, min(4, int(payload.get('batch_size') or 1)))}\n\n"
+        f"提示词：\n{payload.get('prompt') or ''}"
+    )
+    command = [cmd, "exec", "--sandbox", "workspace-write", "--cd", BASE_DIR, "--output-last-message", result_path]
+    for ref in payload.get("reference_images") or []:
+        path = output_file_from_url(ref) if isinstance(ref, str) else ""
+        if path and os.path.isfile(path):
+            command.extend(["--image", path])
+    command.extend(["--", instruction])
+    with open(command_path, "w", encoding="utf-8") as f:
+        json.dump(command, f, ensure_ascii=False, indent=2)
+    with CODEX_CLI_TASK_LOCK:
+        CODEX_CLI_TASKS[task_id].update({"status": "running", "started_at": now_ms(), "command": command})
+    try:
+        with open(stdout_path, "w", encoding="utf-8") as out, open(stderr_path, "w", encoding="utf-8") as err:
+            proc = subprocess.Popen(command, cwd=BASE_DIR, stdout=out, stderr=err, text=True)
+            with CODEX_CLI_TASK_LOCK:
+                CODEX_CLI_TASKS[task_id]["pid"] = proc.pid
+            timeout = max(30, min(1800, int(payload.get("timeout_ms") or 1200000) // 1000))
+            proc.wait(timeout=timeout)
+        image_files = codex_cli_task_images(task_id)
+        with CODEX_CLI_TASK_LOCK:
+            if proc.returncode == 0 and image_files:
+                CODEX_CLI_TASKS[task_id].update({"status": "succeeded", "images": image_files, "completed_at": now_ms()})
+            elif proc.returncode == 0:
+                CODEX_CLI_TASKS[task_id].update({"status": "failed", "error": "Codex CLI 已完成，但未在任务目录发现图片文件", "completed_at": now_ms()})
+            else:
+                CODEX_CLI_TASKS[task_id].update({"status": "failed", "error": f"Codex CLI 退出码 {proc.returncode}", "completed_at": now_ms()})
+    except subprocess.TimeoutExpired:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        image_files = codex_cli_task_images(task_id)
+        with CODEX_CLI_TASK_LOCK:
+            if image_files:
+                CODEX_CLI_TASKS[task_id].update({"status": "succeeded", "images": image_files, "error": "", "completed_at": now_ms(), "recovered": True})
+            else:
+                CODEX_CLI_TASKS[task_id].update({"status": "failed", "error": "Codex CLI 任务超时", "completed_at": now_ms()})
+    except Exception as exc:
+        with CODEX_CLI_TASK_LOCK:
+            CODEX_CLI_TASKS[task_id].update({"status": "failed", "error": str(exc), "completed_at": now_ms()})
+
+@app.get("/api/codex-cli/status")
+async def codex_cli_status():
+    return codex_cli_status_payload()
+
+@app.post("/api/codex-cli/open-login")
+async def codex_cli_open_login():
+    return {"success": True, "message": "请在终端运行 codex login 完成登录。", "command": "codex login"}
+
+@app.post("/api/codex-cli/configure-local-auth")
+async def codex_cli_configure_local_auth():
+    status = codex_cli_status_payload()
+    ready = bool(status.get("ready") and status.get("checks", {}).get("loggedIn"))
+    if not ready:
+        detail = "未检测到可用的本机 Codex 登录态。请先运行 codex login。"
+        if not status.get("available"):
+            detail = "没有找到 codex 命令，请先安装 Codex CLI。"
+        raise HTTPException(status_code=400, detail=detail)
+    return {
+        "success": True,
+        "configured": True,
+        "message": "已使用本机 Codex CLI 登录态。画布生成时会由 codex exec 直接读取本机 auth 缓存，项目不会保存 token 明文。",
+        "status": status,
+    }
+
+@app.post("/api/codex-cli/imagegen/start")
+async def codex_cli_imagegen_start(payload: CodexCliImageStartRequest):
+    status = codex_cli_status_payload()
+    if not status.get("available"):
+        raise HTTPException(status_code=400, detail="没有找到 codex 命令，请先安装 Codex CLI。")
+    task_id = f"codex_img_{uuid.uuid4().hex[:12]}"
+    task = {
+        "success": True,
+        "task_id": task_id,
+        "status": "queued",
+        "created_at": now_ms(),
+        "images": [],
+        "error": "",
+    }
+    with CODEX_CLI_TASK_LOCK:
+        CODEX_CLI_TASKS[task_id] = task
+    payload_data = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+    Thread(target=run_codex_cli_image_task, args=(task_id, payload_data), daemon=True).start()
+    return {"success": True, "task_id": task_id, "status": "queued"}
+
+@app.get("/api/codex-cli/imagegen/{task_id}")
+async def codex_cli_imagegen_status(task_id: str):
+    with CODEX_CLI_TASK_LOCK:
+        task = dict(CODEX_CLI_TASKS.get(task_id) or {})
+    if not task:
+        image_files = codex_cli_task_images(task_id)
+        if not image_files:
+            raise HTTPException(status_code=404, detail="Codex CLI 任务不存在")
+        task = {
+            "success": True,
+            "task_id": task_id,
+            "status": "succeeded",
+            "images": image_files,
+            "error": "",
+            "recovered": True,
+        }
+    elif task.get("status") == "failed" and not task.get("images"):
+        image_files = codex_cli_task_images(task_id)
+        if image_files:
+            recovered = {"status": "succeeded", "images": image_files, "error": "", "completed_at": now_ms(), "recovered": True}
+            with CODEX_CLI_TASK_LOCK:
+                if task_id in CODEX_CLI_TASKS:
+                    CODEX_CLI_TASKS[task_id].update(recovered)
+            task.update(recovered)
+    task["stdoutPath"] = os.path.join(codex_cli_task_dir(task_id), "stdout.log")
+    task["stderrPath"] = os.path.join(codex_cli_task_dir(task_id), "stderr.log")
+    task["promptPath"] = os.path.join(codex_cli_task_dir(task_id), "prompt.txt")
+    return task
+
+@app.post("/api/codex-cli/imagegen/{task_id}/cancel")
+async def codex_cli_imagegen_cancel(task_id: str):
+    with CODEX_CLI_TASK_LOCK:
+        task = CODEX_CLI_TASKS.get(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Codex CLI 任务不存在")
+        pid = task.get("pid")
+    if pid:
+        try:
+            os.kill(int(pid), 15)
+        except Exception:
+            pass
+    with CODEX_CLI_TASK_LOCK:
+        task["status"] = "cancelled"
+        task["completed_at"] = now_ms()
+    return {"success": True, "task_id": task_id, "status": "cancelled"}
+
 # --- 对话管理 ---
 
 @app.get("/api/conversations")
@@ -11102,18 +12376,45 @@ async def import_canvas_workflow(file: UploadFile = File(...)):
                 workflow_name = "workflow.json" if "workflow.json" in zf.namelist() else (candidates[0] if candidates else "")
                 if not workflow_name:
                     raise HTTPException(status_code=400, detail="压缩包中没有 workflow.json")
+                # 安全修复(M-2)：限制解压规模，防止 zip bomb 耗尽磁盘/内存。
+                ZIP_MEMBER_MAX = 256 * 1024 * 1024   # 单个成员解压上限
+                ZIP_TOTAL_MAX = 1024 * 1024 * 1024   # 累计解压上限
+                ZIP_MAX_RESOURCES = 2000             # 资源文件数量上限
+                if zf.getinfo(workflow_name).file_size > ZIP_MEMBER_MAX:
+                    raise HTTPException(status_code=400, detail="workflow.json 体积异常过大")
                 workflow = json.loads(zf.read(workflow_name).decode("utf-8-sig"))
                 stamp = time.strftime("%Y%m%d-%H%M%S")
                 import_dir = os.path.join(OUTPUT_INPUT_DIR, f"workflow_import_{stamp}_{uuid.uuid4().hex[:6]}")
                 os.makedirs(import_dir, exist_ok=True)
+                _zip_total_written = 0
+                _zip_count = 0
                 for res in workflow.get("resources") or []:
                     archive = str(res.get("archive") or "").replace("\\", "/").lstrip("/")
                     if not archive or archive not in zf.namelist():
                         continue
+                    _zip_count += 1
+                    if _zip_count > ZIP_MAX_RESOURCES:
+                        raise HTTPException(status_code=400, detail="压缩包内资源文件过多")
+                    if zf.getinfo(archive).file_size > ZIP_MEMBER_MAX:
+                        raise HTTPException(status_code=400, detail=f"资源文件过大：{os.path.basename(archive)}")
                     base = sanitize_export_filename(res.get("name") or os.path.basename(archive), os.path.basename(archive) or "resource.bin")
                     target = os.path.join(import_dir, f"{uuid.uuid4().hex[:8]}_{base}")
+                    written = 0
                     with zf.open(archive) as src, open(target, "wb") as dst:
-                        shutil.copyfileobj(src, dst)
+                        while True:
+                            buf = src.read(1024 * 256)
+                            if not buf:
+                                break
+                            written += len(buf)
+                            _zip_total_written += len(buf)
+                            if written > ZIP_MEMBER_MAX or _zip_total_written > ZIP_TOTAL_MAX:
+                                dst.close()
+                                try:
+                                    os.remove(target)
+                                except OSError:
+                                    pass
+                                raise HTTPException(status_code=400, detail="压缩包解压内容过大，已中止导入")
+                            dst.write(buf)
                     rel = os.path.relpath(target, ASSETS_DIR).replace("\\", "/")
                     new_url = f"/assets/{rel}"
                     old_url = str(res.get("url") or "").strip()
@@ -13523,4 +14824,13 @@ def run_workflow(name: str, payload: WorkflowRunRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=3000)
+    # 安全修复(C-1)：默认只监听本机回环地址，避免零鉴权服务暴露到局域网。
+    # 确需局域网访问时，显式设置环境变量 CANVAS_HOST=0.0.0.0（并自行确保网络可信）。
+    _host = (os.getenv("CANVAS_HOST") or "127.0.0.1").strip() or "127.0.0.1"
+    try:
+        _port = int(os.getenv("CANVAS_PORT") or "3000")
+    except ValueError:
+        _port = 3000
+    if _host not in ("127.0.0.1", "localhost", "::1"):
+        print(f"[安全提醒] 服务监听 {_host}:{_port}，将对局域网开放且无鉴权，请确保所在网络可信。")
+    uvicorn.run(app, host=_host, port=_port)

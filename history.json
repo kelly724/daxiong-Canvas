@@ -1,5 +1,162 @@
 [
     {
+        "status": "succeeded",
+        "prompt": "A 4-panel storyboard sequence in 2x2 grid, showing narrative progression of [事件/场景]: top-left [阶段1描述], top-right [阶段2描述], bottom-left [阶段3描述], bottom-right [阶段4描述]. Consistent character design across all panels, coherent lighting and color palette, uniform light warm gray background color F0EDE8, subjects softly blending with background with natural edge transition, no hard edges no white halo no light bleed, cinematic composition, emotional arc from [情绪A] to [情绪B], film grain texture, clean thin white grid dividers, absolutely no visible numbers text labels frame counters corner marks or annotations anywhere on the image\n\nNegative prompt:\nnumbers, text, letters, labels, frame numbers, corner marks, annotations, captions, watermarks, signatures, logos, readable text, font, typography, grid numbers, sequence markers, page numbers, index, hard edge, glowing edge, white halo, light bleed, overexposed edge, cutout look, pasted on background, floating subject, disconnected shadow, pure white background, stark white, cold gray, bad anatomy, distorted face, extra fingers, deformed hands, inconsistent character design, lighting mismatch between frames, discontinuous action, jump cut feel, blurry, low quality, cropped, out of frame\n\nParams:\nMidjourney: `--ar 1:1 --style raw --s 75`\n即梦/可灵: 直接粘贴，建议分镜时先写情绪词再填场景\nFlux: 配合 `film grain` LoRA 增强故事板质感",
+        "images": [
+            "/assets/output/lovart_image_b60a32cccc41.png"
+        ],
+        "timestamp": 1781322025.922685,
+        "type": "online",
+        "model": "generate_image_gpt_image_2",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_6b7a35651e3d4800b1eedce4a574cb74",
+        "thread_id": "3febd9eb-4add-4c12-9ade-39cbd5bb9ef9",
+        "request_id": "3febd9eb-4add-4c12-9ade-39cbd5bb9ef9",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_gpt_image_2",
+            "size": "1280x720",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_d93899ad2001.jpg",
+                    "name": "44abec222c5a4375ff64789ae1961a84.jpg",
+                    "role": "",
+                    "kind": "image",
+                    "mime": ""
+                }
+            ],
+            "unlimited": true
+        },
+        "raw": {
+            "thread_id": "3febd9eb-4add-4c12-9ade-39cbd5bb9ef9",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "我来分析这张参考图，然后为您生成一个4格故事板序列。"
+                },
+                {
+                    "type": "assistant",
+                    "text": "故事板已生成。这是一个2x2四格布局的废土微光叙事序列：\n\n**左上** - 发现：年轻女性在废墟中发现白色毛茸茸的小生物，晨光透过残破建筑洒下，情绪是温柔的惊喜与初遇的连接感\n\n**右上** - 羁绊：女性与两个伙伴（白色毛球和蓝色眼睛的球形机器人）依偎在一起休息，温暖的午后光线，情绪是信任与慰藉\n\n**左下** - 旅途：三人结伴穿越荒原，女性在前引路，毛球跟随，机器人在旁悬浮，金色黄昏光线，情绪是决心与陪伴\n\n**右下** - 希望：三人剪影面向远处的光源（可能是聚落或日出），温暖的逆光，情绪弧线以乐观与团结收尾\n\n整体保持了参考图中的角色设计一致性——年轻女性、白色毛球生物、球形机器人，采用统一的暖灰色调（F0EDE8背景）和电影颗粒质感，人物与背景自然融合，无硬边和白边。"
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/Zt2RgoAfpXBe0c4t.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "status": "succeeded",
+        "prompt": "A tiny matte blue cube centered on a clean white background, simple studio product render, no text, no watermark.",
+        "images": [
+            "/assets/output/lovart_image_39c843cf1142.png"
+        ],
+        "timestamp": 1781318481.411604,
+        "type": "online",
+        "model": "generate_image_gpt_image_2_low",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_e6cf581de4d247e78090dc32b63c0a9c",
+        "thread_id": "29fcbdbd-f4e5-4a19-b06f-8cf9d8a85d2e",
+        "request_id": "29fcbdbd-f4e5-4a19-b06f-8cf9d8a85d2e",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_gpt_image_2_low",
+            "size": "1024x1024",
+            "quality": "low",
+            "n": 1,
+            "reference_images": [],
+            "unlimited": true
+        },
+        "raw": {
+            "thread_id": "29fcbdbd-f4e5-4a19-b06f-8cf9d8a85d2e",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "Your matte blue cube is ready. The image shows a small matte blue cube centered on a clean white background, rendered with simple studio lighting. No text or watermarks."
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/MwDkSZpXZXKPbQxt.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "project_id": "1312eac7924342dfbfcc539d1026e3ec",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "prompt": "《烬龙废墟》的视觉基底是：\n权游式脏现实西方玄幻 + 宗教哥特火祭 + 赛博废土机械寄生。\n比例建议：\n65% 脏现实西方玄幻\n20% 宗教哥特与异端火祭\n15% 赛博废土机械结构\n这不是明亮的游戏奇幻，也不是霓虹赛博朋克。\n这是一个看起来真实、沉重、肮脏、古老的世界。\n机械不是高科技装饰，而是寄生在龙骨、祭台、奴隶身体和宗教器具里的工业病变。",
+        "images": [
+            "/assets/output/jimeng_b70037f2a6.png"
+        ],
+        "timestamp": 1781289739.814163,
+        "type": "online",
+        "model": "5.0",
+        "provider_id": "jimeng",
+        "provider_name": "即梦 CLI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "jimeng",
+            "model": "5.0",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": []
+        },
+        "raw_usage": null
+    },
+    {
+        "prompt": "A 4-panel storyboard sequence in 2x2 grid, showing narrative progression of [事件/场景]: top-left [阶段1描述], top-right [阶段2描述], bottom-left [阶段3描述], bottom-right [阶段4描述]. Consistent character design across all panels, coherent lighting and color palette, uniform light warm gray background color F0EDE8, subjects softly blending with background with natural edge transition, no hard edges no white halo no light bleed, cinematic composition, emotional arc from [情绪A] to [情绪B], film grain texture, clean thin white grid dividers, absolutely no visible numbers text labels frame counters corner marks or annotations anywhere on the image\n\nNegative prompt:\nnumbers, text, letters, labels, frame numbers, corner marks, annotations, captions, watermarks, signatures, logos, readable text, font, typography, grid numbers, sequence markers, page numbers, index, hard edge, glowing edge, white halo, light bleed, overexposed edge, cutout look, pasted on background, floating subject, disconnected shadow, pure white background, stark white, cold gray, bad anatomy, distorted face, extra fingers, deformed hands, inconsistent character design, lighting mismatch between frames, discontinuous action, jump cut feel, blurry, low quality, cropped, out of frame\n\nParams:\nMidjourney: `--ar 1:1 --style raw --s 75`\n即梦/可灵: 直接粘贴，建议分镜时先写情绪词再填场景\nFlux: 配合 `film grain` LoRA 增强故事板质感",
+        "images": [
+            "/assets/output/jimeng_288267a3db.png"
+        ],
+        "timestamp": 1781288160.178197,
+        "type": "online",
+        "model": "5.0",
+        "provider_id": "jimeng",
+        "provider_name": "即梦 CLI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "jimeng",
+            "model": "5.0",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_d93899ad2001.jpg",
+                    "name": "44abec222c5a4375ff64789ae1961a84.jpg",
+                    "role": "",
+                    "kind": "image",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": null
+    },
+    {
         "prompt": "A multi-camera angle reference sheet in 3x3 grid layout, showing [主体] from 9 different perspectives simultaneously: top-left front view, top-center 3/4 front view, top-right side profile, middle-left low angle, middle-center eye-level straight-on, middle-right high angle, bottom-left back view, bottom-center 3/4 back view, bottom-right top-down overhead view. [主体详细描述]. Consistent lighting across all 9 frames, uniform light warm gray background color F0EDE8, subjects softly blending with background with natural edge transition, no hard edges no white halo no light bleed, professional studio photography, clean grid layout with thin white dividers between frames, character consistency maintained across all angles, absolutely no visible numbers text labels frame counters corner marks or annotations anywhere on the image\n\nNegative prompt:\nnumbers, text, letters, labels, frame numbers, corner marks, annotations, captions, watermarks, signatures, logos, readable text, font, typography, grid numbers, sequence markers, page numbers, index, hard edge, glowing edge, white halo, light bleed, overexposed edge, cutout look, pasted on background, floating subject, disconnected shadow, pure white background, stark white, cold gray, bad anatomy, distorted face, extra fingers, deformed hands, inconsistent character design, lighting mismatch between frames, blurry, low quality, cropped, out of frame\n\nParams:\nMidjourney: `--ar 1:1 --style raw --s 50`\n即梦/可灵: 直接粘贴，开启「参考图」锁一致性\nFlux: 配合 `add_detail` LoRA，CFG 3.5-5.0",
         "images": [
             "/assets/output/jimeng_b9c678ada5.png"

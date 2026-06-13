@@ -20,10 +20,18 @@ const volcSkInput = document.getElementById('volcSkInput');
 const volcAssetKeyHint = document.getElementById('volcAssetKeyHint');
 const volcProjectInput = document.getElementById('volcProjectInput');
 const volcRegionInput = document.getElementById('volcRegionInput');
+const lovartSkInput = document.getElementById('lovartSkInput');
+const lovartKeyHint = document.getElementById('lovartKeyHint');
+const lovartModePanel = document.getElementById('lovartModePanel');
+const lovartModeStatus = document.getElementById('lovartModeStatus');
+const lovartModeInfo = document.getElementById('lovartModeInfo');
 const jimengCliPanel = document.getElementById('jimengCliPanel');
 const jimengCliStatus = document.getElementById('jimengCliStatus');
 const jimengCredit = document.getElementById('jimengCredit');
 const jimengLoginBox = document.getElementById('jimengLoginBox');
+const codexCliPanel = document.getElementById('codexCliPanel');
+const codexCliStatus = document.getElementById('codexCliStatus');
+const codexCliInfo = document.getElementById('codexCliInfo');
 const jimengHelpOverlay = document.getElementById('jimengHelpOverlay');
 const jimengHelpCommand = document.getElementById('jimengHelpCommand');
 const jimengHelpOutput = document.getElementById('jimengHelpOutput');
@@ -80,6 +88,42 @@ const JIMENG_DEFAULT_IMAGE_MODELS = ['5.0', '4.6', '4.5', '4.1', '4.0', '3.1', '
 const JIMENG_DEFAULT_VIDEO_MODELS = ['seedance2.0fast_vip', 'seedance2.0_vip'];
 const JIMENG_LEGACY_IMAGE_MODELS = new Set(['jimeng-image-2k', 'jimeng-image-4k']);
 const JIMENG_LEGACY_VIDEO_MODELS = new Set(['jimeng-video-720p', 'jimeng-video-1080p']);
+const CODEX_CLI_DEFAULT_IMAGE_MODELS = ['codex-cli/gpt-image'];
+const LOVART_DEFAULT_BASE_URL = 'https://lgw.lovart.ai';
+const LOVART_DEFAULT_IMAGE_MODELS = [
+    'generate_image_midjourney',
+    'generate_image_gpt_image_1_5',
+    'generate_image_gpt_image_2',
+    'generate_image_gpt_image_2_low',
+    'generate_image_nano_banana',
+    'generate_image_nano_banana_2',
+    'generate_image_nano_banana_pro',
+    'generate_image_seedream_v4',
+    'generate_image_seedream_v4_5',
+    'generate_image_flux_2_max',
+    'generate_image_flux_2_pro',
+    'generate_image_ideogram_v4',
+    'generate_image_seedream_v5',
+    'generate_image_gpt_image_2_medium',
+    'generate_image_gpt_image_2_high',
+    'generate_image_luma_uni_1',
+    'generate_image_luma_uni_1_max'
+];
+const LOVART_DEFAULT_VIDEO_MODELS = [
+    'generate_video_kling_v2_6',
+    'generate_video_kling_omni_v1',
+    'generate_video_wan_v2_6',
+    'generate_video_veo3',
+    'generate_video_veo3_1',
+    'generate_video_veo3_1_fast',
+    'generate_video_seedance_v2_0',
+    'generate_video_seedance_v2_0_fast',
+    'generate_video_seedance_pro_v1_5',
+    'generate_video_kling_v3',
+    'generate_video_kling_v3_omni',
+    'generate_video_hailuo_v2_3',
+    'generate_video_vidu_q2'
+];
 const ONBOARDING_GUIDES = {
     modelscope:{
         titleKey:'api.msOnboardingTitle',
@@ -243,7 +287,7 @@ function deriveIdFromName(name, existingId){
 function updateIdPreview(){
     const item = provider();
     if(!item) return;
-    const isBuiltin = item.id === 'comfly' || item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng';
+    const isBuiltin = item.id === 'comfly' || item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng' || item.id === 'codex_cli' || item.id === 'lovart';
     const idPreview = document.getElementById('idPreview');
     if(!idPreview) return;
     if(isBuiltin){
@@ -264,7 +308,7 @@ function visibleProviders(){
 function isFixedProvider(itemOrId){
     const id = typeof itemOrId === 'string' ? itemOrId : itemOrId?.id;
     // 即梦 CLI 不再是固定平台：可删除、可排序，未添加则不存在。
-    return id === 'modelscope' || id === 'runninghub' || id === 'volcengine';
+    return id === 'modelscope' || id === 'runninghub' || id === 'volcengine' || id === 'codex_cli' || id === 'lovart';
 }
 function unique(values){
     const seen = new Set();
@@ -585,6 +629,18 @@ function applyProviderOnboardingDefaults(id){
         item.protocol = 'jimeng';
         item.image_models = unique([...(item.image_models || []).filter(model => !JIMENG_LEGACY_IMAGE_MODELS.has(String(model || '').trim())), ...JIMENG_DEFAULT_IMAGE_MODELS]);
         item.video_models = unique([...(item.video_models || []).filter(model => !JIMENG_LEGACY_VIDEO_MODELS.has(String(model || '').trim())), ...JIMENG_DEFAULT_VIDEO_MODELS]);
+    } else if(id === 'codex_cli'){
+        item.base_url = '';
+        item.protocol = 'codex_cli';
+        item.image_models = unique([...(item.image_models || []), ...CODEX_CLI_DEFAULT_IMAGE_MODELS]);
+        item.chat_models = [];
+        item.video_models = [];
+    } else if(id === 'lovart'){
+        item.base_url = item.base_url || LOVART_DEFAULT_BASE_URL;
+        item.protocol = 'lovart';
+        item.image_models = unique([...(item.image_models || []), ...LOVART_DEFAULT_IMAGE_MODELS]);
+        item.chat_models = [];
+        item.video_models = unique([...(item.video_models || []), ...LOVART_DEFAULT_VIDEO_MODELS]);
     }
     selectedId = item.id;
     renderEditor();
@@ -598,18 +654,18 @@ function syncEditor(){
     const item = provider();
     if(!item) return;
     const oldId = item.id;
-    const isBuiltin = item.id === 'comfly' || item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng';
+    const isBuiltin = item.id === 'comfly' || item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng' || item.id === 'codex_cli' || item.id === 'lovart';
     // 内置和自定义平台的 ID 都保持稳定；新建时若没有 ID 才生成一次。
     const nextId = isBuiltin ? item.id : deriveIdFromName(nameInput.value, item.id);
     item.id = nextId;
     if(oldId !== item.id) selectedId = item.id;
     item.name = nameInput.value.trim() || item.id;
-    const selectedProtocol = item.id === 'modelscope' ? 'openai' : item.id === 'runninghub' ? 'runninghub' : item.id === 'volcengine' ? 'volcengine' : item.id === 'jimeng' ? 'jimeng' : (protocolInput?.value || 'openai');
-    item.base_url = selectedProtocol === 'jimeng' ? '' : baseInput.value.trim();
+    const selectedProtocol = item.id === 'modelscope' ? 'openai' : item.id === 'runninghub' ? 'runninghub' : item.id === 'volcengine' ? 'volcengine' : item.id === 'jimeng' ? 'jimeng' : item.id === 'codex_cli' ? 'codex_cli' : item.id === 'lovart' ? 'lovart' : (protocolInput?.value || 'openai');
+    item.base_url = ['jimeng', 'codex_cli'].includes(selectedProtocol) ? '' : baseInput.value.trim();
     // 固定平台不从协议下拉读取
     item.protocol = selectedProtocol;
     item.image_request_mode = normalizeImageRequestMode(
-        item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng'
+        item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng' || item.id === 'codex_cli' || item.id === 'lovart'
             ? 'openai'
             : (imageRequestModeInput?.value || item.image_request_mode)
     );
@@ -633,6 +689,15 @@ function syncEditor(){
         item.volcengine_project_name = (volcProjectInput?.value.trim() || VOLCENGINE_DEFAULT_PROJECT_NAME);
         item.volcengine_region = (volcRegionInput?.value.trim() || VOLCENGINE_DEFAULT_REGION);
     }
+    if(item.id === 'lovart'){
+        const ak = keyInput?.value.trim() || '';
+        const sk = lovartSkInput?.value.trim() || '';
+        if(ak) item.lovart_access_key = ak;
+        if(sk) item.lovart_secret_key = sk;
+        item.base_url = item.base_url || LOVART_DEFAULT_BASE_URL;
+        item.protocol = 'lovart';
+        item.chat_models = [];
+    }
 }
 function ensureRunningHubLists(item){
     if(!item) return;
@@ -641,11 +706,12 @@ function ensureRunningHubLists(item){
 }
 function updateProtocolFromInput(){
     const item = provider();
-    if(!item || !protocolInput || item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng') return;
+    if(!item || !protocolInput || item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng' || item.id === 'codex_cli' || item.id === 'lovart') return;
     const value = String(protocolInput.value || 'openai').toLowerCase();
-    item.protocol = ['openai', 'apimart', 'gemini', 'volcengine', 'jimeng'].includes(value) ? value : 'openai';
-    if(item.protocol === 'jimeng') item.base_url = '';
+    item.protocol = ['openai', 'apimart', 'gemini', 'volcengine', 'jimeng', 'codex_cli', 'lovart'].includes(value) ? value : 'openai';
+    if(['jimeng', 'codex_cli'].includes(item.protocol)) item.base_url = '';
     document.body.classList.toggle('show-jimeng', item.protocol === 'jimeng');
+    document.body.classList.toggle('show-codex-cli', item.protocol === 'codex_cli');
     clearVerifyResult();
     // 协议会改变整个表单（如即梦 CLI 账户面板、默认模型、Key 占位）。renderEditor 是唯一切换这些的入口，
     // 这里复跑一次让面板立即出现；保存并恢复 Key 输入框，避免推荐流程里先填的 Key 被 renderEditor 清空。
@@ -2071,7 +2137,7 @@ async function saveRecommendedApi(index){
     if(ok) setStatus(trf('api.recommendSaved', {name:api.name}));
 }
 function sortedProviders(){
-    const order = ['modelscope', 'runninghub', 'volcengine'];
+    const order = ['modelscope', 'runninghub', 'volcengine', 'lovart'];
     return visibleProviders().sort((a, b) => {
         const ai = order.indexOf(a.id);
         const bi = order.indexOf(b.id);
@@ -2199,7 +2265,7 @@ function renderEditor(){
     clearVerifyResult();
     baseInput.placeholder = EXAMPLE_BASE_URL;
     baseInput.value = item.base_url || '';
-    if(protocolInput) protocolInput.value = item.id === 'runninghub' ? 'openai' : item.id === 'volcengine' ? 'volcengine' : item.id === 'jimeng' ? 'jimeng' : (item.protocol || 'openai');
+    if(protocolInput) protocolInput.value = item.id === 'runninghub' ? 'openai' : item.id === 'volcengine' ? 'volcengine' : item.id === 'jimeng' ? 'jimeng' : item.id === 'codex_cli' ? 'codex_cli' : item.id === 'lovart' ? 'lovart' : (item.protocol || 'openai');
     if(imageRequestModeInput) imageRequestModeInput.value = normalizeImageRequestMode(item.image_request_mode);
     keyInput.value = '';
     keyInput.placeholder = item.has_key ? `${tr('api.keepCurrentKey')} ${item.key_preview || ''}` : tr('api.enterKey');
@@ -2209,6 +2275,8 @@ function renderEditor(){
     const isVolcengine = item.id === 'volcengine' || String(protocolInput?.value || item.protocol || '').toLowerCase() === 'volcengine';
     const isStandaloneVolcengine = item.id === 'volcengine';
     const isJimeng = item.id === 'jimeng' || String(protocolInput?.value || item.protocol || '').toLowerCase() === 'jimeng';
+    const isCodexCli = item.id === 'codex_cli' || String(protocolInput?.value || item.protocol || '').toLowerCase() === 'codex_cli';
+    const isLovart = item.id === 'lovart' || String(protocolInput?.value || item.protocol || '').toLowerCase() === 'lovart';
     if(isRunningHub){
         ensureRunningHubLists(item);
         if(rhFreeKeyInput){
@@ -2251,11 +2319,39 @@ function renderEditor(){
         keyInput.placeholder = '即梦 CLI 使用本机 dreamina login，无需 API Key';
         keyHint.textContent = '请先在终端安装 dreamina CLI，并执行 dreamina login';
     }
+    if(isCodexCli){
+        item.base_url = '';
+        item.protocol = 'codex_cli';
+        item.image_models = unique([...(item.image_models || []), ...CODEX_CLI_DEFAULT_IMAGE_MODELS]);
+        item.chat_models = [];
+        item.video_models = [];
+        keyInput.placeholder = 'Codex CLI 使用本机 codex login，无需 API Key';
+        keyHint.textContent = '项目不会保存 token；生成时由 codex exec 读取 ~/.codex/auth.json 或系统凭据库。';
+    }
+    if(isLovart){
+        item.base_url = item.base_url || LOVART_DEFAULT_BASE_URL;
+        item.protocol = 'lovart';
+        item.image_models = unique([...(item.image_models || []), ...LOVART_DEFAULT_IMAGE_MODELS]);
+        item.chat_models = [];
+        item.video_models = unique([...(item.video_models || []), ...LOVART_DEFAULT_VIDEO_MODELS]);
+        keyInput.placeholder = item.has_lovart_access_key ? `保持当前 Lovart AK ${item.lovart_access_key_preview || ''}` : 'Lovart Access Key';
+        keyHint.textContent = item.has_lovart_access_key ? `AK 已保存：${item.lovart_access_key_env || 'API/.env'} ${item.lovart_access_key_preview || ''}` : '还没有保存 Lovart Access Key。';
+        if(lovartSkInput){
+            lovartSkInput.value = '';
+            lovartSkInput.placeholder = item.has_lovart_secret_key ? `保持当前 SK ${item.lovart_secret_key_preview || ''}` : 'Lovart Secret Key';
+        }
+        if(lovartKeyHint){
+            const sk = item.has_lovart_secret_key ? `SK 已保存：${item.lovart_secret_key_env || 'API/.env'} ${item.lovart_secret_key_preview || ''}` : 'SK 未保存';
+            lovartKeyHint.textContent = sk;
+        }
+    }
     document.body.classList.toggle('show-ms', isModelScope);
     document.body.classList.toggle('show-runninghub', isRunningHub);
     document.body.classList.toggle('show-volcengine', isVolcengine);
     document.body.classList.toggle('show-volcengine-standalone', isStandaloneVolcengine);
     document.body.classList.toggle('show-jimeng', isJimeng);
+    document.body.classList.toggle('show-codex-cli', isCodexCli);
+    document.body.classList.toggle('show-lovart', isLovart);
     renderProviderOnboarding(item);
     renderRecommendApi();
     if(runninghubConfigBlock){
@@ -2274,6 +2370,18 @@ function renderEditor(){
         jimengCliPanel.hidden = !isJimeng;
         jimengCliPanel.style.display = isJimeng ? 'flex' : 'none';
         if(isJimeng) refreshJimengStatus(false);
+    }
+    if(codexCliPanel){
+        codexCliPanel.hidden = !isCodexCli;
+        codexCliPanel.style.display = isCodexCli ? 'flex' : 'none';
+        if(isCodexCli) refreshCodexCliStatus(false);
+    }
+    const lovartKeyStack = document.querySelector('.lovart-key-stack');
+    if(lovartKeyStack) lovartKeyStack.hidden = !isLovart;
+    if(lovartModePanel){
+        lovartModePanel.hidden = !isLovart;
+        lovartModePanel.style.display = isLovart ? 'flex' : 'none';
+        if(isLovart) refreshLovartMode(false);
     }
     const deleteBtn = document.getElementById('deleteBtn');
     if(deleteBtn) deleteBtn.style.display = isFixedProvider(item) ? 'none' : 'inline-flex';
@@ -2394,6 +2502,159 @@ async function refreshJimengCredit(){
         if(jimengCredit) jimengCredit.textContent = e.message || String(e);
     }
 }
+function setCodexCliStatus(text, ok=null){
+    if(!codexCliStatus) return;
+    codexCliStatus.textContent = text || '未检测';
+    codexCliStatus.classList.toggle('ok', ok === true);
+    codexCliStatus.classList.toggle('bad', ok === false);
+}
+function codexCliInfoText(data){
+    const checks = data?.checks || {};
+    const cache = data?.authCache || {};
+    const parts = [];
+    if(data?.version) parts.push(data.version);
+    if(data?.commandPath) parts.push(`命令：${data.commandPath}`);
+    if(cache.exists) {
+        const mode = cache.auth_mode ? `auth_mode=${cache.auth_mode}` : 'auth 缓存存在';
+        const tokenState = cache.has_access_token || cache.has_refresh_token || cache.has_openai_api_key ? '已检测到凭据字段' : '未检测到凭据字段';
+        parts.push(`${mode} · ${tokenState}`);
+    } else {
+        parts.push('未找到 ~/.codex/auth.json；如果使用系统凭据库，仍可能由 CLI 自行读取。');
+    }
+    if(Array.isArray(data?.missing) && data.missing.length) parts.push(data.missing.join('；'));
+    if(checks.loggedIn) parts.push('状态：已登录，可直接在画布选择 Codex CLI 本机生图。');
+    return parts.join('\n');
+}
+async function refreshCodexCliStatus(showInfo=true){
+    if(!codexCliPanel || codexCliPanel.hidden) return;
+    setCodexCliStatus('检测中...');
+    try {
+        const data = await fetch('/api/codex-cli/status').then(async r => {
+            const json = await r.json();
+            if(!r.ok) throw new Error(json.detail || '检测失败');
+            return json;
+        });
+        const checks = data.checks || {};
+        const ready = Boolean(data.ready && checks.loggedIn);
+        setCodexCliStatus(ready ? '已登录' : (data.available ? '需登录' : '未安装'), ready);
+        if(showInfo && codexCliInfo) codexCliInfo.textContent = codexCliInfoText(data);
+    } catch(e){
+        setCodexCliStatus('检测失败', false);
+        if(codexCliInfo) codexCliInfo.textContent = e.message || String(e);
+    }
+}
+async function configureCodexCliAuth(){
+    setCodexCliStatus('配置中...');
+    try {
+        const data = await fetch('/api/codex-cli/configure-local-auth', {method:'POST'}).then(async r => {
+            const json = await r.json();
+            if(!r.ok) throw new Error(json.detail || '配置失败');
+            return json;
+        });
+        setCodexCliStatus('已配置', true);
+        if(codexCliInfo) codexCliInfo.textContent = data.message || codexCliInfoText(data.status || {});
+        const item = provider();
+        if(item){
+            item.id = 'codex_cli';
+            item.name = item.name || 'Codex CLI 本机生图';
+            item.base_url = '';
+            item.protocol = 'codex_cli';
+            item.image_models = unique([...(item.image_models || []), ...CODEX_CLI_DEFAULT_IMAGE_MODELS]);
+            item.chat_models = [];
+            item.video_models = [];
+        }
+        renderModels('image');
+        renderProviderList();
+        refreshIcons();
+    } catch(e){
+        setCodexCliStatus('未登录', false);
+        if(codexCliInfo) codexCliInfo.textContent = `${e.message || String(e)}\n可在终端执行：codex login`;
+    }
+}
+function showCodexCliLoginHelp(){
+    if(codexCliInfo){
+        codexCliInfo.textContent = [
+            '终端登录：codex login',
+            '使用 API Key 登录：printenv OPENAI_API_KEY | codex login --with-api-key',
+            '使用 Access Token 登录：printenv CODEX_ACCESS_TOKEN | codex login --with-access-token',
+            '本页面不会读取或显示 token 明文。'
+        ].join('\n');
+    }
+    setCodexCliStatus('待登录');
+}
+function lovartInfoText(raw){
+    if(!raw || typeof raw !== 'object') return '';
+    const parts = [];
+    const seen = new Set();
+    const visit = value => {
+        if(!value || typeof value !== 'object') return;
+        Object.entries(value).forEach(([key, item]) => {
+            const low = key.toLowerCase();
+            if(/credit|balance|quota|point|coin|积分|余额/.test(low) && item !== null && typeof item !== 'object'){
+                const label = `${key}: ${item}`;
+                if(!seen.has(label)){ seen.add(label); parts.push(label); }
+            } else if(item && typeof item === 'object') {
+                visit(item);
+            }
+        });
+    };
+    visit(raw);
+    const freeCount = Array.isArray(raw.unlimited_list) ? raw.unlimited_list.length : 0;
+    if(freeCount) parts.push(`免费模型 ${freeCount} 个`);
+    return parts.join(' · ') || prettyJson(raw);
+}
+function setLovartModeStatus(text, ok=null){
+    if(!lovartModeStatus) return;
+    lovartModeStatus.textContent = text || '未检测';
+    lovartModeStatus.classList.toggle('ok', ok === true);
+    lovartModeStatus.classList.toggle('bad', ok === false);
+}
+function updateLovartModeRadios(unlimited){
+    document.querySelectorAll('input[name="lovartMode"]').forEach(input => {
+        input.checked = unlimited ? input.value === 'free' : input.value === 'paid';
+    });
+}
+async function refreshLovartMode(showStatus=true){
+    const item = provider();
+    if(!item || item.id !== 'lovart' || !lovartModePanel || lovartModePanel.hidden) return;
+    if(showStatus) setLovartModeStatus('查询中...');
+    try {
+        const data = await fetch('/api/lovart/mode').then(async r => {
+            const json = await r.json();
+            if(!r.ok) throw new Error(json.detail || 'Lovart 模式查询失败');
+            return json;
+        });
+        updateLovartModeRadios(Boolean(data.unlimited));
+        item.model_metadata = data.model_metadata || item.model_metadata || {};
+        setLovartModeStatus(data.unlimited ? '免费模式' : '付费模式', true);
+        if(lovartModeInfo) lovartModeInfo.textContent = lovartInfoText(data.raw);
+        renderModels('image');
+        renderModels('video');
+    } catch(e){
+        setLovartModeStatus('检测失败', false);
+        if(lovartModeInfo) lovartModeInfo.textContent = e.message || String(e);
+    }
+}
+async function setLovartMode(unlimited){
+    setLovartModeStatus('切换中...');
+    try {
+        const data = await fetch('/api/lovart/mode', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({unlimited:Boolean(unlimited)})
+        }).then(async r => {
+            const json = await r.json();
+            if(!r.ok) throw new Error(json.detail || 'Lovart 模式切换失败');
+            return json;
+        });
+        updateLovartModeRadios(Boolean(data.unlimited));
+        setLovartModeStatus(data.unlimited ? '免费模式' : '付费模式', true);
+        if(lovartModeInfo) lovartModeInfo.textContent = '计费模式已更新';
+    } catch(e){
+        setLovartModeStatus('切换失败', false);
+        if(lovartModeInfo) lovartModeInfo.textContent = e.message || String(e);
+    }
+}
 async function logoutJimeng(){
     if(!confirm('确认退出即梦 CLI 登录？')) return;
     try {
@@ -2461,11 +2722,11 @@ function applyDetectedImageRequestMode(mode){
 function applyDetectedProtocol(protocol){
     const item = provider();
     const detected = String(protocol || '').toLowerCase();
-    if(!item || !protocolInput || !['openai', 'apimart', 'gemini', 'volcengine', 'jimeng'].includes(detected)) return false;
+    if(!item || !protocolInput || !['openai', 'apimart', 'gemini', 'volcengine', 'jimeng', 'codex_cli', 'lovart'].includes(detected)) return false;
     if(String(protocolInput.value || '').toLowerCase() === detected && String(item.protocol || '').toLowerCase() === detected) return false;
     protocolInput.value = detected;
     item.protocol = detected;
-    item.base_url = detected === 'jimeng' ? '' : (baseInput?.value.trim() || item.base_url || '');
+    item.base_url = ['jimeng', 'codex_cli'].includes(detected) ? '' : (baseInput?.value.trim() || item.base_url || '');
     if(detected === 'volcengine'){
         item.video_models = unique([...(item.video_models || []), ...VOLCENGINE_DEFAULT_VIDEO_MODELS]);
         item.volcengine_project_name = item.volcengine_project_name || VOLCENGINE_DEFAULT_PROJECT_NAME;
@@ -2480,6 +2741,11 @@ async function probeAsync(){
     if(!item) return;
     const btn = document.getElementById('probeAsyncBtn');
     const baseUrl = baseInput.value.trim();
+    const isCodexCli = item.id === 'codex_cli' || (protocolInput?.value || '') === 'codex_cli';
+    if(isCodexCli){
+        await refreshCodexCliStatus(true);
+        return;
+    }
     if(!baseUrl){ alert('请先填写请求地址'); return; }
     if(btn){ btn.disabled = true; btn.querySelector('span').textContent = '检测中...'; }
     showVerifyResult(`<span style="color:var(--muted);font-size:11px;font-weight:700">正在检测协议类型...</span>`);
@@ -2545,7 +2811,13 @@ async function testConnection(){
     const btn = document.getElementById('testUrlBtn');
     const baseUrl = baseInput.value.trim();
     const isJimeng = item.id === 'jimeng' || (protocolInput?.value || '') === 'jimeng';
-    if(!baseUrl && !isJimeng){ alert('请先填写请求地址'); return; }
+    const isCodexCli = item.id === 'codex_cli' || (protocolInput?.value || '') === 'codex_cli';
+    const isLovart = item.id === 'lovart' || (protocolInput?.value || '') === 'lovart';
+    if(isCodexCli){
+        await refreshCodexCliStatus(true);
+        return;
+    }
+    if(!baseUrl && !isJimeng && !isLovart){ alert('请先填写请求地址'); return; }
     if(btn){ btn.disabled = true; btn.querySelector('span').textContent = tr('api.testingUrl') || '验证中...'; }
     showVerifyResult(`<span style="color:var(--muted);font-size:11px;font-weight:700">验证中...</span>`);
     try {
@@ -2557,7 +2829,9 @@ async function testConnection(){
                 api_key: apiKey,
                 provider_id: item.id,
                 protocol: protocolInput?.value || 'openai',
-                image_request_mode: imageRequestModeInput?.value || item.image_request_mode || 'openai'
+                image_request_mode: imageRequestModeInput?.value || item.image_request_mode || 'openai',
+                lovart_access_key: item.id === 'lovart' ? (keyInput?.value.trim() || '') : '',
+                lovart_secret_key: item.id === 'lovart' ? (lovartSkInput?.value.trim() || '') : ''
             })
         }).then(async r => {
             if(!r.ok) throw new Error((await r.json()).detail || (tr('api.urlInvalid') || '验证失败'));
@@ -2583,8 +2857,10 @@ async function testConnection(){
                 ? `<div style="margin-top:6px;color:#92400e;font-size:11px;font-weight:700">${detectedProtocol === 'volcengine' ? '已自动识别为方舟/Ark 任务协议。' : ''}火山协议提示：模型列表只代表可见模型，聊天模型建议填写你在方舟控制台创建的 <code>ep-...</code> 推理接入点。</div>`
                 : '';
             const jimengNote = isJimeng ? `<div style="margin-top:6px;color:#15803d;font-size:11px;font-weight:700">即梦 CLI 已可用，可在画布里选择“即梦 CLI”生成。</div>` : '';
+            const lovartNote = isLovart ? `<div style="margin-top:6px;color:#15803d;font-size:11px;font-weight:700">Lovart AK/SK 已可用；模型成本以确认弹窗返回为准。</div>` : '';
             const imageModeNote = ` · 图片接口：${imageRequestModeLabel(imageRequestModeInput?.value || item.image_request_mode)}`;
-            showVerifyResult(`<span style="color:#15803d;font-size:11px;font-weight:800">✓ 地址验证通过 · 找到 ${data.model_count} 个模型${imageModeNote}</span>${volcengineNote}${jimengNote}`);
+            if(isLovart && data.model_metadata) item.model_metadata = data.model_metadata;
+            showVerifyResult(`<span style="color:#15803d;font-size:11px;font-weight:800">✓ 地址验证通过 · 找到 ${data.model_count} 个模型${isLovart ? '' : imageModeNote}</span>${volcengineNote}${jimengNote}${lovartNote}`);
         } else {
             showVerifyResult(`
                 <div style="font-size:11px;font-weight:800;color:#b45309">⚠ 地址验证未通过 (HTTP ${data.status})</div>
@@ -2607,7 +2883,16 @@ async function fetchModels(){
     const baseUrl = baseInput.value.trim();
     const apiKey = currentProviderApiKey(item);
     const isJimeng = item.id === 'jimeng' || (protocolInput?.value || '') === 'jimeng';
-    if(!baseUrl && !isJimeng){ alert('请先填写请求地址'); return; }
+    const isCodexCli = item.id === 'codex_cli' || (protocolInput?.value || '') === 'codex_cli';
+    const isLovart = item.id === 'lovart' || (protocolInput?.value || '') === 'lovart';
+    if(isCodexCli){
+        item.image_models = unique([...(item.image_models || []), ...CODEX_CLI_DEFAULT_IMAGE_MODELS]);
+        renderModels('image');
+        await refreshCodexCliStatus(true);
+        setStatus('Codex CLI 使用固定本机模型，无需从远端拉取模型列表');
+        return;
+    }
+    if(!baseUrl && !isJimeng && !isLovart){ alert('请先填写请求地址'); return; }
     if(btn){ btn.disabled = true; btn.querySelector('span').textContent = tr('api.fetchingModels') || '拉取中...'; }
     setStatus(tr('api.fetchingModels') || '正在从上游拉取模型列表...');
     try {
@@ -2619,7 +2904,9 @@ async function fetchModels(){
                 api_key:apiKey,
                 provider_id:item.id,
                 protocol:protocolInput?.value || 'openai',
-                image_request_mode:imageRequestModeInput?.value || item.image_request_mode || 'openai'
+                image_request_mode:imageRequestModeInput?.value || item.image_request_mode || 'openai',
+                lovart_access_key:item.id === 'lovart' ? (keyInput?.value.trim() || '') : '',
+                lovart_secret_key:item.id === 'lovart' ? (lovartSkInput?.value.trim() || '') : ''
             })
         }).then(async r => {
             if(!r.ok) throw new Error((await r.json()).detail || (tr('api.urlInvalid') || '拉取失败'));
@@ -2631,6 +2918,7 @@ async function fetchModels(){
             chat: new Set(data.chat_models || []),
             video: new Set(data.video_models || []),
         };
+        if(isLovart && data.model_metadata) item.model_metadata = data.model_metadata;
         const detectedProtocol = String(data.protocol || '').toLowerCase();
         if(detectedProtocol && detectedProtocol !== String(protocolInput?.value || '').toLowerCase()){
             applyDetectedProtocol(detectedProtocol);
@@ -2707,12 +2995,14 @@ function renderModelPicker(){
     // 列表
     const html = list.map((id, index) => {
         const checked = pickerState.selected[id];
+        const item = provider();
         return `
             <div class="picker-row ${checked?'has-sel':''}" onclick="togglePickerRowByIndex(${index})">
                 <div class="picker-checkbox ${checked?'checked':''}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
                 <div class="picker-model-name" title="${escapeAttr(id)}">${escapeHtml(id)}</div>
+                ${lovartBadgeHtml(item, id)}
             </div>
         `;
     }).join('');
@@ -2776,9 +3066,30 @@ async function clearKeyOnly(){
     const ok = await saveProviders();
     if(ok) keyInput.value = '';
 }
-const FIXED_PROTOCOL_PROVIDER_IDS = new Set(['modelscope', 'volcengine', 'jimeng', 'runninghub']);
+const FIXED_PROTOCOL_PROVIDER_IDS = new Set(['modelscope', 'volcengine', 'jimeng', 'runninghub', 'codex_cli', 'lovart']);
 function providerSupportsModelProtocol(item){
     return Boolean(item) && !FIXED_PROTOCOL_PROVIDER_IDS.has(item.id);
+}
+function lovartModelMeta(item, model){
+    if(!item || item.id !== 'lovart') return null;
+    const meta = item.model_metadata && item.model_metadata[String(model || '').trim()];
+    return meta || null;
+}
+function lovartCostLabel(meta){
+    if(!meta) return '';
+    if(meta.cost_label === 'free' || meta.billing === 'free') return '免费';
+    if(meta.cost_label === 'no_confirm' || meta.billing === 'no_confirm') return '免确认';
+    if(meta.cost_label === 'pending') return '待确认';
+    if(meta.cost_label) return meta.cost_label;
+    if(meta.cost) return `${meta.cost} credits`;
+    return meta.billing === 'paid' ? '付费' : '';
+}
+function lovartBadgeHtml(item, model){
+    const meta = lovartModelMeta(item, model);
+    const label = lovartCostLabel(meta);
+    if(!label) return '';
+    const cls = meta.cost_label === 'pending' ? 'pending' : (meta.billing || '');
+    return `<span class="lovart-model-badge ${escapeAttr(cls)}">${escapeHtml(label)}</span>`;
 }
 function modelProtocolSelectHtml(kind, index, model, item){
     if(kind === 'video' || !providerSupportsModelProtocol(item)) return '';
@@ -2802,11 +3113,12 @@ function renderModels(kind){
     }
     const showProtocol = kind !== 'video' && providerSupportsModelProtocol(item);
     list.innerHTML = models.map((model, index) => `
-        <div class="model-row${showProtocol ? ' has-protocol' : ''}">
-            <input value="${escapeAttr(model)}" oninput="updateModel('${kind}', ${index}, this.value)">
-            ${modelProtocolSelectHtml(kind, index, model, item)}
-            <button class="icon-btn" type="button" onclick="removeModel('${kind}', ${index})" title="删除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-        </div>
+        <div class="model-row${showProtocol ? ' has-protocol' : ''}${lovartModelMeta(item, model) ? ' has-lovart-badge' : ''}">
+                <input value="${escapeAttr(model)}" oninput="updateModel('${kind}', ${index}, this.value)">
+                ${lovartBadgeHtml(item, model)}
+                ${modelProtocolSelectHtml(kind, index, model, item)}
+                <button class="icon-btn" type="button" onclick="removeModel('${kind}', ${index})" title="删除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
     `).join('');
     refreshIcons();
 }
@@ -2959,6 +3271,31 @@ async function clearVolcengineAssetKeys(){
         if(volcSkInput) volcSkInput.value = '';
     }
 }
+async function saveLovartKeys(){
+    const item = provider();
+    if(!item || item.id !== 'lovart') return;
+    const ak = keyInput?.value.trim() || '';
+    const sk = lovartSkInput?.value.trim() || '';
+    if(!ak && !sk){ alert('请输入 Lovart Access Key 或 Secret Key'); return; }
+    syncEditor();
+    const ok = await saveProviders();
+    if(ok){
+        if(keyInput) keyInput.value = '';
+        if(lovartSkInput) lovartSkInput.value = '';
+    }
+}
+async function clearLovartKeys(){
+    const item = provider();
+    if(!item || item.id !== 'lovart') return;
+    if(!confirm('确认清除 Lovart AK/SK？')) return;
+    item._clearLovartAccessKey = true;
+    item._clearLovartSecretKey = true;
+    const ok = await saveProviders();
+    if(ok){
+        if(keyInput) keyInput.value = '';
+        if(lovartSkInput) lovartSkInput.value = '';
+    }
+}
 function addModel(kind){
     const item = provider();
     const key = kind === 'image' ? 'image_models' : kind === 'video' ? 'video_models' : 'chat_models';
@@ -3039,14 +3376,30 @@ async function saveProviders(){
             ? 'volcengine'
             : item.id === 'jimeng'
             ? 'jimeng'
-            : ['openai', 'apimart', 'gemini', 'volcengine', 'jimeng'].includes(String(item.protocol || '').toLowerCase()) ? String(item.protocol).toLowerCase() : 'openai';
+            : item.id === 'codex_cli'
+            ? 'codex_cli'
+            : item.id === 'lovart'
+            ? 'lovart'
+            : ['openai', 'apimart', 'gemini', 'volcengine', 'jimeng', 'codex_cli', 'lovart'].includes(String(item.protocol || '').toLowerCase()) ? String(item.protocol).toLowerCase() : 'openai';
         item.image_request_mode = normalizeImageRequestMode(
-            item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng'
+            item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng' || item.id === 'codex_cli' || item.id === 'lovart'
                 ? 'openai'
                 : item.image_request_mode
         );
         if(item.id === 'jimeng') item.base_url = '';
+        if(item.id === 'codex_cli') item.base_url = '';
+        if(item.id === 'lovart'){
+            item.base_url = item.base_url || LOVART_DEFAULT_BASE_URL;
+            item.image_models = unique([...(item.image_models || []), ...LOVART_DEFAULT_IMAGE_MODELS]);
+            item.chat_models = [];
+            item.video_models = unique([...(item.video_models || []), ...LOVART_DEFAULT_VIDEO_MODELS]);
+        }
         if(item.id === 'jimeng') item.video_models = unique([...(item.video_models || []).filter(model => !JIMENG_LEGACY_VIDEO_MODELS.has(String(model || '').trim())), ...JIMENG_DEFAULT_VIDEO_MODELS]);
+        if(item.id === 'codex_cli'){
+            item.image_models = unique([...(item.image_models || []), ...CODEX_CLI_DEFAULT_IMAGE_MODELS]);
+            item.chat_models = [];
+            item.video_models = [];
+        }
         item.image_generation_endpoint = '';
         item.image_edit_endpoint = '';
         item.image_models = unique(item.image_models || []);
@@ -3076,7 +3429,7 @@ async function saveProviders(){
                 id:item.id,
                 name:item.name,
                 base_url:item.base_url,
-                protocol:(item.id === 'modelscope') ? 'openai' : item.id === 'runninghub' ? 'runninghub' : item.id === 'volcengine' ? 'volcengine' : item.id === 'jimeng' ? 'jimeng' : (item.protocol || 'openai'),
+                protocol:(item.id === 'modelscope') ? 'openai' : item.id === 'runninghub' ? 'runninghub' : item.id === 'volcengine' ? 'volcengine' : item.id === 'jimeng' ? 'jimeng' : item.id === 'codex_cli' ? 'codex_cli' : item.id === 'lovart' ? 'lovart' : (item.protocol || 'openai'),
                 image_request_mode:item.image_request_mode || 'openai',
                 image_generation_endpoint:item.image_generation_endpoint || '',
                 image_edit_endpoint:item.image_edit_endpoint || '',
@@ -3094,12 +3447,16 @@ async function saveProviders(){
                 volcengine_region:item.id === 'volcengine' ? (item.volcengine_region || VOLCENGINE_DEFAULT_REGION) : '',
                 volcengine_access_key_id:item.volcengine_access_key_id || undefined,
                 volcengine_secret_access_key:item.volcengine_secret_access_key || undefined,
+                lovart_access_key:item.lovart_access_key || undefined,
+                lovart_secret_key:item.lovart_secret_key || undefined,
                 api_key:item.api_key || undefined,
                 wallet_api_key:item.wallet_api_key || undefined,
                 clear_key:item._clearKey === true,
                 clear_wallet_key:item._clearWalletKey === true,
                 clear_volcengine_access_key_id:item._clearVolcengineAccessKey === true,
-                clear_volcengine_secret_access_key:item._clearVolcengineSecretKey === true
+                clear_volcengine_secret_access_key:item._clearVolcengineSecretKey === true,
+                clear_lovart_access_key:item._clearLovartAccessKey === true,
+                clear_lovart_secret_key:item._clearLovartSecretKey === true
             })))
         });
         if(!res.ok) throw new Error((await res.json()).detail || tr('api.saveFailed'));
@@ -3110,10 +3467,14 @@ async function saveProviders(){
             delete item.wallet_api_key;
             delete item.volcengine_access_key_id;
             delete item.volcengine_secret_access_key;
+            delete item.lovart_access_key;
+            delete item.lovart_secret_key;
             delete item._clearKey;
             delete item._clearWalletKey;
             delete item._clearVolcengineAccessKey;
             delete item._clearVolcengineSecretKey;
+            delete item._clearLovartAccessKey;
+            delete item._clearLovartSecretKey;
         });
         selectedId = provider()?.id || providers[0]?.id || '';
         renderEditor();
@@ -3173,7 +3534,7 @@ window.onload = () => {
         if(!item) return;
         item.image_request_mode = normalizeImageRequestMode(imageRequestModeInput.value);
     });
-    [keyInput, rhFreeKeyInput, rhWalletKeyInput].forEach(input => {
+    [keyInput, rhFreeKeyInput, rhWalletKeyInput, lovartSkInput].forEach(input => {
         if(input) input.addEventListener('input', refreshProviderOnboarding);
     });
 };

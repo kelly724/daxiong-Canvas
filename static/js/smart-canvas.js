@@ -315,6 +315,7 @@ let settings = {
     videoTrustedAsset:false,
     videoTrustedSource:'library',
     videoTempShLinks:[],
+    lovartUnlimited:true,
     msgenModel:'zimage',
     msCustomModel:'',
     msRatio:'square',
@@ -1509,6 +1510,35 @@ function providerImageModels(providerId){
     if(providerId === 'volcengine') return volcengineProvider().image_models || [];
     return (apiProviders || []).find(p => p.id === providerId)?.image_models || [];
 }
+function exactApiProvider(providerId){
+    if(providerId === 'volcengine') return volcengineProvider();
+    return (apiProviders || []).find(p => p.id === providerId) || null;
+}
+function isLovartProviderId(providerId){
+    const provider = exactApiProvider(providerId);
+    const id = String(providerId || provider?.id || '').trim().toLowerCase();
+    const protocol = String(provider?.protocol || '').trim().toLowerCase();
+    const name = String(provider?.name || '').trim().toLowerCase();
+    return id === 'lovart' || protocol === 'lovart' || name === 'lovart';
+}
+function lovartUnlimitedForSettings(source=settings){
+    if(source && typeof source.lovartUnlimited === 'undefined') source.lovartUnlimited = true;
+    return source?.lovartUnlimited !== false;
+}
+function lovartModelMeta(providerId, model){
+    const provider = exactApiProvider(providerId);
+    const meta = provider?.model_metadata || provider?.modelMetadata || {};
+    return meta?.[model] || {};
+}
+function lovartCostLabel(meta={}){
+    const billing = String(meta.billing || '').toLowerCase();
+    if(meta.cost_label) return String(meta.cost_label);
+    const cost = Number(meta.cost);
+    if(Number.isFinite(cost) && cost > 0) return `${cost} 积分`;
+    if(billing === 'no_confirm') return '排队免费';
+    if(billing === 'paid') return '需确认';
+    return '免费';
+}
 // 即梦图生图（挂了参考图）不支持 3.0/3.1，此时从模型下拉里隐藏它们。
 const JIMENG_IMAGE2IMAGE_UNSUPPORTED = ['3.0', '3.1'];
 function jimengImageEditMode(){
@@ -1804,6 +1834,7 @@ function renderApiParams(){
     dynamicParams.innerHTML = `
         ${renderProviderControl(providers)}
         ${renderModelControl(models)}
+        ${isLovartProviderId(settings.provider_id) ? renderLovartBillingControl(settings.provider_id, settings.model) : ''}
         ${renderResolutionControl('')}
         ${outpaintLocked ? '' : renderRatioControl('', true)}
         ${outpaintLocked ? '' : renderInlineCustomSizeFields('')}
@@ -1820,6 +1851,7 @@ function renderApiVideoParams(){
     dynamicParams.innerHTML = `
         ${renderVideoProviderControl(providers)}
         ${renderVideoModelControl(models)}
+        ${isLovartProviderId(settings.videoProvider) ? renderLovartBillingControl(settings.videoProvider, settings.videoModel) : ''}
         ${renderVideoResolutionControl()}
         ${renderVideoAspectControl()}
         ${renderVideoDurationControl()}
@@ -2115,6 +2147,23 @@ function videoAspectIconClass(value){
     if(value === '3:4') return 'r-portrait43';
     if(value === 'keep_ratio' || value === 'adaptive') return 'r-source';
     return '';
+}
+function renderLovartBillingControl(providerId, model){
+    const unlimited = lovartUnlimitedForSettings(settings);
+    const labels = {true:'免费', false:'付费'};
+    const meta = lovartModelMeta(providerId, model);
+    const cost = lovartCostLabel(meta);
+    return `<div class="smart-control lovart-billing-control">
+        <button class="smart-pill" type="button"><i data-lucide="coins"></i><span>${escapeHtml(labels[String(unlimited)])}</span><i data-lucide="chevron-down" class="pill-caret"></i></button>
+        <div class="smart-popover compact-popover">
+            <div class="smart-popover-title">Lovart 计费</div>
+            <div class="seg-row two">
+                <button type="button" class="${unlimited ? 'active' : ''}" data-smart-param="lovartUnlimited" data-smart-value="true">免费</button>
+                <button type="button" class="${!unlimited ? 'active' : ''}" data-smart-param="lovartUnlimited" data-smart-value="false">付费</button>
+            </div>
+            <div class="lovart-cost-note">${escapeHtml(unlimited ? `免费模式 · ${cost}` : `付费模式 · ${cost}`)}</div>
+        </div>
+    </div>`;
 }
 function renderProviderControl(providers){
     const current = (providers || []).find(p => p.id === settings.provider_id) || apiProviderById(settings.provider_id);
@@ -2814,8 +2863,9 @@ function smartComfyRandomValue(field){
 }
 function setDynamicSetting(key, value){
     const numericKeys = new Set(['count','width','height','videoDuration','enhanceStrength','enhanceUpscaleRes','editUpscaleRes','customRatioWidth','customRatioHeight','customWidth','customHeight','msCustomRatioWidth','msCustomRatioHeight','msCustomWidth','msCustomHeight']);
-    const layoutKeys = new Set(['provider_id','model','resolution','ratio','msgenModel','msCustomModel','msResolution','msRatio','videoProvider','videoModel','videoAspect','videoResolution','comfyMode','comfyWorkflow','quality','count','enhanceUpscaleRes','editUpscaleRes','rhConfigKey','rhPayment','rhInstanceType']);
-    settings[key] = numericKeys.has(key) && value !== '' ? Number(value) : value;
+    const booleanKeys = new Set(['lovartUnlimited']);
+    const layoutKeys = new Set(['provider_id','model','resolution','ratio','msgenModel','msCustomModel','msResolution','msRatio','videoProvider','videoModel','videoAspect','videoResolution','comfyMode','comfyWorkflow','quality','count','enhanceUpscaleRes','editUpscaleRes','rhConfigKey','rhPayment','rhInstanceType','lovartUnlimited']);
+    settings[key] = booleanKeys.has(key) ? value !== 'false' : (numericKeys.has(key) && value !== '' ? Number(value) : value);
     if(key === 'provider_id') settings.model = '';
     if(key === 'videoProvider') settings.videoModel = '';
     if(key === 'videoMultimodal') settings._videoMultimodalUserSet = true;
@@ -12204,6 +12254,7 @@ async function runApiGeneration(prompt, refs, runSettings=settings){
     if(!runSettings.provider_id || !runSettings.model) throw new Error(tr('smart.errNoApiModel'));
     const count = Math.max(1, Math.min(8, Number(runSettings.count || 1)));
     const payload = {prompt, provider_id:runSettings.provider_id, model:runSettings.model, size:sizeForRun(runSettings), quality:runSettings.quality || 'auto', n:1, reference_images:imageRefsOnly(refs)};
+    if(isLovartProviderId(payload.provider_id)) payload.unlimited = lovartUnlimitedForSettings(runSettings);
     const tasks = await Promise.all(Array.from({length:count}, () => fetch('/api/canvas-image-tasks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}).then(async r => {
         if(!r.ok) throw new Error(await r.text());
         return r.json();
@@ -12300,6 +12351,19 @@ async function runApiVideoGeneration(prompt, refs, runSettings=settings){
             multimodal: Boolean(runSettings.videoMultimodal),
             trusted_asset: useAssetUris
         };
+        if(isLovartProviderId(payload.provider_id)) payload.unlimited = lovartUnlimitedForSettings(runSettings);
+        if(isLovartProviderId(payload.provider_id)){
+            const task = await fetch('/api/canvas-video-tasks', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify(payload)
+            }).then(async r => {
+                if(!r.ok) throw new Error(await smartResponseErrorMessage(r, tr('smart.errRunFailed')));
+                return r.json();
+            });
+            const result = await pollSmartCanvasTask(task.task_id, 'video');
+            return resultMediaUrls(result);
+        }
         const result = await fetch('/api/canvas-video', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
@@ -12711,31 +12775,63 @@ function resumeJimengPendingNodes(){
         startJimengPoll(n);
     });
 }
-async function pollSmartCanvasTask(taskId){
+function lovartPendingCostText(taskData={}){
+    const cost = taskData.estimated_cost ?? taskData.cost ?? taskData.credits ?? taskData.pending_confirmation?.cost ?? taskData.pending_confirmation?.credits;
+    if(cost === null || typeof cost === 'undefined' || cost === '') return '待确认积分';
+    return `${cost} 积分`;
+}
+function lovartPendingConfirmMessage(taskData={}, kind='image'){
+    const kindLabel = kind === 'video' || taskData.kind === 'video' ? '视频' : '图片';
+    const model = taskData.model ? `\n模型：${taskData.model}` : '';
+    const cost = `\n预计消耗：${lovartPendingCostText(taskData)}`;
+    return `Lovart ${kindLabel}生成需要二次确认。${model}${cost}\n\n确认后会继续提交并可能扣除积分。`;
+}
+async function confirmSmartLovartPendingTask(taskData={}, kind='image'){
+    const taskId = String(taskData.task_id || taskData.id || '').trim();
+    const threadId = String(taskData.thread_id || taskData.threadId || '').trim();
+    if(!taskId || !threadId) throw new Error('Lovart 确认信息不完整');
+    if(!window.confirm(lovartPendingConfirmMessage(taskData, kind))) return false;
+    const res = await fetch('/api/lovart/confirm', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({task_id:taskId, thread_id:threadId})
+    });
+    if(!res.ok) throw new Error(await smartResponseErrorMessage(res, 'Lovart 确认失败'));
+    toast('Lovart 已确认，继续生成中');
+    return true;
+}
+async function pollSmartCanvasTask(taskId, kind='image'){
     if(!taskId) throw new Error(tr('smart.errRunFailed'));
-    if(activeSmartTaskPolls.has(taskId)) return activeSmartTaskPolls.get(taskId);
+    const pollKey = `${kind}:${taskId}`;
+    if(activeSmartTaskPolls.has(pollKey)) return activeSmartTaskPolls.get(pollKey);
     const promise = (async () => {
+        const endpoint = kind === 'video' ? '/api/canvas-video-tasks' : '/api/canvas-image-tasks';
         for(let i = 0; i < 900; i++){
             await new Promise(resolve => setTimeout(resolve, 2000));
-            const task = await fetch(`/api/canvas-image-tasks/${encodeURIComponent(taskId)}`).then(async r => {
+            const task = await fetch(`${endpoint}/${encodeURIComponent(taskId)}`).then(async r => {
                 if(!r.ok) throw new Error(await r.text());
                 return r.json();
             });
             if(task.status === 'succeeded') return task.result || {};
             if(task.status === 'jimeng_pending') throw new JimengPendingSignal({submitId:task.submit_id, kind:task.kind, queueInfo:task.queue_info, message:task.message});
+            if(task.status === 'pending_confirmation'){
+                const confirmed = await confirmSmartLovartPendingTask(task, kind);
+                if(!confirmed) throw new Error('已取消 Lovart 付费确认');
+                continue;
+            }
             if(task.status === 'failed'){
                 const recoverTaskId = task.upstream_task_id || extractUpstreamTaskId(task.error || '');
-                if(recoverTaskId) throw new ImageTaskRecoverSignal({taskId, recoverTaskId, providerId:task.provider_id, kind:'image', message:task.error || tr('smart.errRunFailed')});
+                if(recoverTaskId && kind === 'image') throw new ImageTaskRecoverSignal({taskId, recoverTaskId, providerId:task.provider_id, kind:'image', message:task.error || tr('smart.errRunFailed')});
                 throw new Error(task.error || tr('smart.errRunFailed'));
             }
         }
         throw new Error(tr('smart.errRunTimeout'));
     })();
-    activeSmartTaskPolls.set(taskId, promise);
+    activeSmartTaskPolls.set(pollKey, promise);
     try {
         return await promise;
     } finally {
-        activeSmartTaskPolls.delete(taskId);
+        activeSmartTaskPolls.delete(pollKey);
     }
 }
 function finalizeSmartPendingTask(node, taskId, images, kind='image'){

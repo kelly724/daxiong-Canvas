@@ -794,13 +794,13 @@ body.studio-theme-dark .output-drag-preview,
     position: fixed;
     left: -10000px;
     top: -10000px;
-    width: 150px;
-    height: 150px;
-    padding: 8px;
-    border-radius: 18px;
+    width: 78px;
+    height: 78px;
+    padding: 4px;
+    border-radius: 14px;
     background: #0f141d;
     border: 1px solid rgba(148,163,184,.18);
-    box-shadow: 0 16px 40px rgba(0,0,0,.28);
+    box-shadow: 0 10px 24px rgba(0,0,0,.22);
     pointer-events: none;
     z-index: -1;
 }
@@ -809,7 +809,7 @@ body.studio-theme-dark .output-drag-preview,
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #0f141d;
 }
 

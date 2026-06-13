@@ -15,12 +15,12 @@
             } catch(e) {}
         })();
     </script>
-    <script src="/static/vendor/js/tailwindcss-cdn.js?v=2026.06.10.1.1779672342"></script>
-    <script src="/static/vendor/js/lucide.js?v=2026.06.10.1.1779672342"></script>
-    <script src="/static/js/theme.js?v=2026.06.10.1.1780456238"></script>
-    <script src="/static/js/i18n.js?v=2026.06.10.1.1780902932"></script>
-    <link rel="stylesheet" href="/static/css/theme.css?v=2026.06.10.1.1779672341">
-    <link rel="stylesheet" href="/static/css/api-settings.css?v=2026.06.10.1.1781076870">
+    <script src="/static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1780949872"></script>
+    <script src="/static/vendor/js/lucide.js?v=2026.06.11.1780949872"></script>
+    <script src="/static/js/theme.js?v=2026.06.11.1780949872"></script>
+    <script src="/static/js/i18n.js?v=2026.06.11.1781293833"></script>
+    <link rel="stylesheet" href="/static/css/theme.css?v=2026.06.11.1781292878">
+    <link rel="stylesheet" href="/static/css/api-settings.css?v=2026.06.11.1781293776">
 </head>
 <body>
     <div class="page">
@@ -82,6 +82,10 @@
                                 <div class="volcengine-hint">
                                     <span class="ms-line">方舟默认请求地址：<span class="inline-code">https://ark.cn-beijing.volces.com/api/v3</span></span>
                                     <span class="ms-line">Seedance 视频生成使用方舟 API Key，验证会请求 <span class="inline-code">/api/v3/models</span>。</span>
+                                </div>
+                                <div class="lovart-hint">
+                                    <span class="ms-line">Lovart 默认请求地址：<span class="inline-code">https://lgw.lovart.ai</span></span>
+                                    <span class="ms-line">Lovart 使用 AK/SK 签名，不是 OpenAI 兼容接口。</span>
                                 </div>
                             </label>
                             <label class="field full api-key-field">
@@ -188,6 +192,24 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="lovart-key-stack" hidden>
+                                    <div class="rh-key-item">
+                                        <div class="rh-key-head">
+                                            <div>
+                                                <div class="rh-key-title">Lovart Secret Key</div>
+                                                <div class="rh-key-desc">Access Key 填在上方 API Key 输入框；Secret Key 只保存到后端 env，不回显明文。</div>
+                                            </div>
+                                        </div>
+                                        <div class="key-input-line">
+                                            <div class="field-frame"><input id="lovartSkInput" type="password" placeholder="Secret Key"></div>
+                                            <div class="key-actions">
+                                                <button class="key-btn" type="button" onclick="saveLovartKeys()" title="保存 Lovart AK/SK"><i data-lucide="check" class="w-4 h-4"></i></button>
+                                                <button class="key-btn key-clear" type="button" onclick="clearLovartKeys()" title="清除 Lovart AK/SK"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                            </div>
+                                        </div>
+                                        <span id="lovartKeyHint" class="hint"></span>
+                                    </div>
+                                </div>
                                 <div class="ms-hint">
                                     <span class="ms-line"><span data-i18n="api.msTokenCn">获取 Token · 国内：</span><a href="https://www.modelscope.cn/my/access/token" target="_blank">https://www.modelscope.cn/my/access/token</a></span>
                                     <span class="ms-line"><span data-i18n="api.msTokenGlobal">获取 Token · 国外：</span><a href="https://www.modelscope.ai/my/access/token" target="_blank">https://www.modelscope.ai/my/access/token</a></span>
@@ -212,6 +234,36 @@
                                 <div id="jimengCredit" class="jimeng-credit"></div>
                                 <div id="jimengLoginBox" class="jimeng-output" hidden></div>
                             </div>
+                            <div id="codexCliPanel" class="jimeng-cli-panel codex-cli-panel" hidden>
+                                <div class="jimeng-cli-head">
+                                    <div>
+                                        <div class="rh-key-title">Codex CLI 本机生图</div>
+                                        <div class="rh-key-desc">复用本机 Codex 登录态，无需把 token 写入项目。</div>
+                                    </div>
+                                    <div id="codexCliStatus" class="jimeng-status-pill">未检测</div>
+                                </div>
+                                <div class="jimeng-actions">
+                                    <button class="action-btn primary-btn" type="button" onclick="configureCodexCliAuth()"><i data-lucide="key-round" class="w-3.5 h-3.5"></i><span>一键使用本机登录态</span></button>
+                                    <button class="action-btn" type="button" onclick="refreshCodexCliStatus()"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>检测状态</span></button>
+                                    <button class="action-btn" type="button" onclick="showCodexCliLoginHelp()"><i data-lucide="terminal" class="w-3.5 h-3.5"></i><span>登录命令</span></button>
+                                </div>
+                                <div id="codexCliInfo" class="jimeng-credit"></div>
+                            </div>
+                            <div id="lovartModePanel" class="jimeng-cli-panel lovart-mode-panel" hidden>
+                                <div class="jimeng-cli-head">
+                                    <div>
+                                        <div class="rh-key-title">Lovart 计费模式</div>
+                                        <div class="rh-key-desc">默认免费模式；生成任务仍会按本次选择携带 unlimited=true/false。</div>
+                                    </div>
+                                    <div id="lovartModeStatus" class="jimeng-status-pill">未检测</div>
+                                </div>
+                                <div class="lovart-mode-actions">
+                                    <label class="lovart-mode-option"><input type="radio" name="lovartMode" value="free" onchange="setLovartMode(true)"><span>免费模式</span></label>
+                                    <label class="lovart-mode-option"><input type="radio" name="lovartMode" value="paid" onchange="setLovartMode(false)"><span>付费模式</span></label>
+                                    <button class="action-btn" type="button" onclick="refreshLovartMode(true)"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>查询余额</span></button>
+                                </div>
+                                <div id="lovartModeInfo" class="jimeng-credit"></div>
+                            </div>
                             <!-- 验证操作行 -->
                             <div class="verify-action-row">
                                 <button id="testUrlBtn" class="action-btn" type="button" onclick="testConnection()">
@@ -227,6 +279,8 @@
                                         <option value="gemini" data-i18n="api.protocolGemini">Gemini 协议</option>
                                         <option value="volcengine">方舟/Ark 任务协议</option>
                                         <option value="jimeng">即梦 CLI</option>
+                                        <option value="codex_cli">Codex CLI</option>
+                                        <option value="lovart">Lovart</option>
                                     </select>
                                 </div>
                                 <div class="field-frame image-request-mode-wrap">
@@ -470,6 +524,6 @@
         </div>
     </div>
 
-    <script src="/static/js/api-settings.js?v=2026.06.10.1.1781168093"></script>
+    <script src="/static/js/api-settings.js?v=2026.06.11.1781293816"></script>
 </body>
 </html>
