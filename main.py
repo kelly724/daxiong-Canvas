@@ -338,6 +338,22 @@ RUNNINGHUB_DEFAULT_IMAGE_MODELS = [
     "seedream-v5-lite/text-to-image",
     "seedream-v5-lite/image-to-image",
 ]
+RUNNINGHUB_VIDEO_HD_APP_ID = "2047787809091620866"
+RUNNINGHUB_VIDEO_HD_BASIC_WORKFLOW_ID = "2019292222763573249"
+RUNNINGHUB_VIDEO_HD_MODEL = f"runninghub/{RUNNINGHUB_VIDEO_HD_APP_ID}"
+RUNNINGHUB_VIDEO_HD_ALIASES = {
+    RUNNINGHUB_VIDEO_HD_MODEL,
+    RUNNINGHUB_VIDEO_HD_APP_ID,
+    f"ai-app/{RUNNINGHUB_VIDEO_HD_APP_ID}",
+    "video_hd_vip",
+    "video_hd.pro",
+}
+RUNNINGHUB_VIDEO_UPSCALER_MODEL = "rhart-video/video-upscaler"
+RUNNINGHUB_DEFAULT_VIDEO_MODELS = [
+    RUNNINGHUB_VIDEO_HD_MODEL,
+    RUNNINGHUB_VIDEO_UPSCALER_MODEL,
+]
+RUNNINGHUB_VIDEO_UPSCALE_RESOLUTIONS = {"720p", "1080p", "2k", "4k"}
 RUNNINGHUB_DEFAULT_APPS = [
     {
         "id": "2058517022748798977",
@@ -555,6 +571,9 @@ def friendly_validation_error(errors):
         else:
             parts.append(f"{label}格式不正确：{msg}")
     return "\n".join(parts) or "请求参数不正确。"
+
+def model_to_dict(model):
+    return model.model_dump() if hasattr(model, "model_dump") else model.dict()
 
 @app.exception_handler(RequestValidationError)
 async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -807,7 +826,7 @@ def default_api_providers():
             "primary": False,
             "image_models": RUNNINGHUB_DEFAULT_IMAGE_MODELS,
             "chat_models": [],
-            "video_models": [],
+            "video_models": RUNNINGHUB_DEFAULT_VIDEO_MODELS,
             "ms_loras": [],
             "ms_defaults_version": 0,
             "rh_apps": RUNNINGHUB_DEFAULT_APPS,
@@ -877,6 +896,7 @@ def merge_default_api_providers(providers):
             if not current.get("protocol") or current.get("protocol") == "openai":
                 current["protocol"] = "runninghub"
             current["image_models"] = model_list_from_values([*(current.get("image_models") or []), *(rh_default.get("image_models") or [])])
+            current["video_models"] = model_list_from_values([*(current.get("video_models") or []), *(rh_default.get("video_models") or []), *RUNNINGHUB_DEFAULT_VIDEO_MODELS])
             current["rh_apps"] = merge_runninghub_system_entries(rh_default.get("rh_apps") or [], current.get("rh_apps") or [], "app")
             current["rh_workflows"] = merge_runninghub_system_entries(rh_default.get("rh_workflows") or [], current.get("rh_workflows") or [], "workflow")
     volc_default = next((d for d in default_api_providers() if d["id"] == "volcengine"), None)
@@ -1126,6 +1146,7 @@ def merge_runninghub_provider_with_static(provider):
     merged = {**static_provider, **provider}
     merged["protocol"] = "runninghub"
     merged["image_models"] = model_list_from_values([*(provider.get("image_models") or []), *(static_provider.get("image_models") or [])])
+    merged["video_models"] = model_list_from_values([*(provider.get("video_models") or []), *(static_provider.get("video_models") or []), *RUNNINGHUB_DEFAULT_VIDEO_MODELS])
     merged["rh_apps"] = merge_runninghub_system_entries(static_provider.get("rh_apps") or [], provider.get("rh_apps") or [], "app")
     merged["rh_workflows"] = merge_runninghub_system_entries(static_provider.get("rh_workflows") or [], provider.get("rh_workflows") or [], "workflow")
     return normalize_provider(merged)
@@ -1223,7 +1244,11 @@ def normalize_provider(item):
         "primary": bool(item.get("primary", False)),
         "image_models": model_list_from_values(item.get("image_models") or (LOVART_IMAGE_MODEL_IDS if provider_id == "lovart" else [])),
         "chat_models": model_list_from_values(item.get("chat_models") or []),
-        "video_models": model_list_from_values(item.get("video_models") or (LOVART_VIDEO_MODEL_IDS if provider_id == "lovart" else [])),
+        "video_models": model_list_from_values(item.get("video_models") or (
+            LOVART_VIDEO_MODEL_IDS if provider_id == "lovart"
+            else RUNNINGHUB_DEFAULT_VIDEO_MODELS if provider_id == "runninghub"
+            else []
+        )),
         "model_protocols": normalize_model_protocols(item.get("model_protocols")),
         "ms_loras": normalize_ms_loras(item.get("ms_loras") or []),
         "ms_defaults_version": int(item.get("ms_defaults_version") or 0),
@@ -7269,10 +7294,16 @@ def runninghub_extract_outputs(data):
     if isinstance(data, list):
         arr = data
     elif isinstance(data, dict):
-        for key in ("outputs", "results", "files", "data"):
+        for key in ("outputs", "results", "result", "output", "files", "data"):
             value = data.get(key)
             if isinstance(value, list):
                 arr = value
+                break
+            if isinstance(value, dict):
+                arr = [value]
+                break
+            if isinstance(value, str):
+                arr = [value]
                 break
         if not arr and (data.get("fileUrl") or data.get("url")):
             arr = [data]
@@ -7281,7 +7312,7 @@ def runninghub_extract_outputs(data):
         if isinstance(item, str):
             outputs.append(item)
         elif isinstance(item, dict):
-            url = item.get("fileUrl") or item.get("file_url") or item.get("url") or item.get("downloadUrl") or item.get("download_url")
+            url = item.get("fileUrl") or item.get("file_url") or item.get("url") or item.get("downloadUrl") or item.get("download_url") or item.get("videoUrl") or item.get("video_url") or item.get("mp4Url") or item.get("mp4_url")
             if isinstance(url, list):
                 outputs.extend([str(u) for u in url if u])
             elif url:
@@ -7482,6 +7513,68 @@ async def wait_for_runninghub_image_task(client, provider, task_id):
         except HTTPException:
             pass
     raise HTTPException(status_code=504, detail=f"RunningHub 生图任务超时：{last_payload}")
+
+def runninghub_video_target_resolution(value):
+    raw = str(value or "").strip().lower()
+    aliases = {
+        "": "1080p",
+        "auto": "1080p",
+        "720": "720p",
+        "1080": "1080p",
+        "2 k": "2k",
+        "4 k": "4k",
+    }
+    target = aliases.get(raw, raw)
+    if target not in RUNNINGHUB_VIDEO_UPSCALE_RESOLUTIONS:
+        raise HTTPException(status_code=400, detail="RunningHub 视频超分分辨率仅支持 720p、1080p、2k、4k")
+    return target
+
+async def runninghub_upload_standard_media(client, provider, url):
+    text = str(url or "").strip()
+    if not text:
+        return ""
+    if text.startswith(("http://", "https://")):
+        return text
+    path = runninghub_local_asset_path(text) or output_file_from_url(text)
+    if not path or not os.path.exists(path):
+        raise HTTPException(status_code=400, detail=f"RunningHub 无法读取本地视频素材：{text}")
+    upload_url = runninghub_endpoint_url(provider, "/openapi/v2/media/upload/binary")
+    api_key = runninghub_api_key(provider)
+    headers = {"Authorization": bearer_auth_value(api_key), "Accept": "application/json"}
+    with open(path, "rb") as fh:
+        files = {"file": (os.path.basename(path), fh, content_type_for_path(path))}
+        response = await client.post(upload_url, headers=headers, files=files, timeout=180)
+    response.raise_for_status()
+    raw = response.json()
+    data = raw.get("data") if isinstance(raw, dict) else None
+    candidates = [raw, data] if isinstance(data, dict) else [raw]
+    for item in candidates:
+        if not isinstance(item, dict):
+            continue
+        value = item.get("download_url") or item.get("downloadUrl") or item.get("url") or item.get("fileUrl") or item.get("file_url")
+        if value:
+            return str(value)
+    raise HTTPException(status_code=502, detail=f"RunningHub 上传视频未返回 download_url：{raw}")
+
+async def wait_for_runninghub_standard_task(client, provider, task_id):
+    query_url = runninghub_endpoint_url(provider, "/openapi/v2/query")
+    deadline = time.monotonic() + 1800
+    last_payload = None
+    while time.monotonic() < deadline:
+        await asyncio.sleep(2)
+        response = await client.post(query_url, headers=runninghub_api_headers(provider), json={"taskId": task_id})
+        response.raise_for_status()
+        raw = response.json()
+        last_payload = raw
+        status = runninghub_query_status(raw)
+        if status in {"success", "succeeded", "completed", "complete", "finished", "finish", "done", "3"}:
+            return raw
+        if status in {"failed", "fail", "error", "canceled", "cancelled", "4"}:
+            raise HTTPException(status_code=502, detail=f"RunningHub 任务失败：{runninghub_fail_reason(raw) or raw}")
+        outputs = runninghub_extract_outputs(raw.get("data") if isinstance(raw, dict) else raw)
+        if outputs:
+            return raw
+    raise HTTPException(status_code=504, detail=f"RunningHub 视频任务超时：{last_payload}")
 
 RUNNINGHUB_ENTRY_MODEL_RE = re.compile(r"^(app|workflow):(.+)$")
 
@@ -7837,6 +7930,174 @@ async def generate_runninghub_provider_image(prompt, size, model, reference_imag
                 raise HTTPException(status_code=502, detail=f"RunningHub 未返回 taskId 或图片结果：{raw}")
         result = await wait_for_runninghub_image_task(client, provider, task_id)
         return runninghub_extract_image(result), result
+
+def is_runninghub_video_hd_model(model):
+    text = str(model or "").strip().lower()
+    aliases = {str(item or "").strip().lower() for item in RUNNINGHUB_VIDEO_HD_ALIASES}
+    return text in aliases
+
+async def generate_runninghub_video_hd_app(payload, provider):
+    source_video = next((str(item or "").strip() for item in (payload.videos or []) if str(item or "").strip()), "")
+    if not source_video:
+        raise HTTPException(status_code=400, detail="RunningHub 视频高清需要连接一个视频输入")
+    level = str(payload.resolution or "").strip().lower()
+    if level in {"basic", "standard", "base", "普通高清"}:
+        return await generate_runninghub_video_hd_basic_workflow(source_video, provider)
+    hd_index = "1" if level in {"1", "sharp", "sharpen", "锐化", "锐化增强"} else "0"
+    use_wallet = False
+    timeout = httpx.Timeout(connect=20.0, read=1800.0, write=240.0, pool=20.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        file_name = await runninghub_upload_local_to_filename(client, provider, source_video, use_wallet)
+        if not file_name:
+            raise HTTPException(status_code=400, detail="RunningHub 视频高清无法上传或读取视频输入")
+        api_key = runninghub_api_key(provider, use_wallet=use_wallet)
+        body = {
+            "apiKey": api_key,
+            "webappId": RUNNINGHUB_VIDEO_HD_APP_ID,
+            "nodeInfoList": [
+                {"nodeId": "10", "fieldName": "index", "fieldValue": hd_index},
+                {"nodeId": "12", "fieldName": "video", "fieldValue": file_name},
+            ],
+        }
+        submit_url = runninghub_endpoint_url(provider, "/task/openapi/ai-app/run")
+        response = await client.post(submit_url, headers=runninghub_app_headers(True, use_wallet), json=body)
+        raw = response.json()
+        if not (isinstance(raw, dict) and raw.get("code") in (0, "0")):
+            raise HTTPException(status_code=502, detail=(raw.get("msg") if isinstance(raw, dict) else "") or f"RunningHub 视频高清提交失败：{raw}")
+        task_id = raw.get("data", {}).get("taskId") if isinstance(raw.get("data"), dict) else ""
+        if not task_id:
+            raise HTTPException(status_code=502, detail=f"RunningHub 视频高清未返回 taskId：{raw}")
+
+        query_url = runninghub_endpoint_url(provider, "/task/openapi/outputs")
+        deadline = time.monotonic() + 1800
+        last_payload = None
+        while time.monotonic() < deadline:
+            await asyncio.sleep(2.5)
+            query_response = await client.post(query_url, headers=runninghub_app_headers(True, use_wallet), json={"apiKey": api_key, "taskId": task_id})
+            query_raw = query_response.json()
+            last_payload = query_raw
+            code = query_raw.get("code") if isinstance(query_raw, dict) else None
+            if code in (0, "0"):
+                outputs = runninghub_extract_outputs(query_raw.get("data"))
+                urls = []
+                for remote in outputs:
+                    if str(remote or "").startswith(("http://", "https://", "/output/", "/assets/")):
+                        urls.append(await runninghub_store_remote_output(client, remote))
+                if not urls:
+                    raise HTTPException(status_code=502, detail=f"RunningHub 视频高清任务无输出：{query_raw}")
+                return {
+                    "videos": urls,
+                    "urls": urls,
+                    "task_id": task_id,
+                    "provider_id": provider.get("id") or "runninghub",
+                    "model": RUNNINGHUB_VIDEO_HD_MODEL,
+                    "raw": query_raw,
+                }
+            if code in (805, "805"):
+                raise HTTPException(status_code=502, detail=f"RunningHub 视频高清任务失败：{runninghub_fail_reason(query_raw) or query_raw}")
+        raise HTTPException(status_code=504, detail=f"RunningHub 视频高清任务超时：{last_payload}")
+
+async def generate_runninghub_video_hd_basic_workflow(source_video, provider):
+    use_wallet = False
+    timeout = httpx.Timeout(connect=20.0, read=1800.0, write=240.0, pool=20.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        file_name = await runninghub_upload_local_to_filename(client, provider, source_video, use_wallet)
+        if not file_name:
+            raise HTTPException(status_code=400, detail="RunningHub 普通高清视频无法上传或读取视频输入")
+        api_key = runninghub_api_key(provider, use_wallet=use_wallet)
+        body = {
+            "apiKey": api_key,
+            "workflowId": RUNNINGHUB_VIDEO_HD_BASIC_WORKFLOW_ID,
+            "addMetadata": True,
+            "nodeInfoList": [
+                {"nodeId": "9", "fieldName": "video", "fieldValue": file_name},
+            ],
+        }
+        submit_url = runninghub_endpoint_url(provider, "/task/openapi/create")
+        response = await client.post(submit_url, headers=runninghub_app_headers(True, use_wallet), json=body)
+        raw = response.json()
+        if not (isinstance(raw, dict) and raw.get("code") in (0, "0")):
+            raise HTTPException(status_code=502, detail=(raw.get("msg") if isinstance(raw, dict) else "") or f"RunningHub 普通高清提交失败：{raw}")
+        task_id = raw.get("data", {}).get("taskId") if isinstance(raw.get("data"), dict) else ""
+        if not task_id:
+            raise HTTPException(status_code=502, detail=f"RunningHub 普通高清未返回 taskId：{raw}")
+
+        query_url = runninghub_endpoint_url(provider, "/task/openapi/outputs")
+        deadline = time.monotonic() + 1800
+        last_payload = None
+        while time.monotonic() < deadline:
+            await asyncio.sleep(2.5)
+            query_response = await client.post(query_url, headers=runninghub_app_headers(True, use_wallet), json={"apiKey": api_key, "taskId": task_id})
+            query_raw = query_response.json()
+            last_payload = query_raw
+            code = query_raw.get("code") if isinstance(query_raw, dict) else None
+            if code in (0, "0"):
+                outputs = runninghub_extract_outputs(query_raw.get("data"))
+                urls = []
+                for remote in outputs:
+                    if str(remote or "").startswith(("http://", "https://", "/output/", "/assets/")):
+                        urls.append(await runninghub_store_remote_output(client, remote))
+                if not urls:
+                    raise HTTPException(status_code=502, detail=f"RunningHub 普通高清任务无输出：{query_raw}")
+                return {
+                    "videos": urls,
+                    "urls": urls,
+                    "task_id": task_id,
+                    "provider_id": provider.get("id") or "runninghub",
+                    "model": RUNNINGHUB_VIDEO_HD_MODEL,
+                    "resolution": "basic",
+                    "raw": query_raw,
+                }
+            if code in (805, "805"):
+                raise HTTPException(status_code=502, detail=f"RunningHub 普通高清任务失败：{runninghub_fail_reason(query_raw) or query_raw}")
+        raise HTTPException(status_code=504, detail=f"RunningHub 普通高清任务超时：{last_payload}")
+
+async def generate_runninghub_video(payload, provider):
+    model = selected_model(payload.model, RUNNINGHUB_VIDEO_UPSCALER_MODEL)
+    if is_runninghub_video_hd_model(model):
+        return await generate_runninghub_video_hd_app(payload, provider)
+    if model != RUNNINGHUB_VIDEO_UPSCALER_MODEL:
+        raise HTTPException(status_code=400, detail=f"RunningHub 暂只支持视频高清模型：{RUNNINGHUB_VIDEO_HD_MODEL} 或 {RUNNINGHUB_VIDEO_UPSCALER_MODEL}")
+    source_video = next((str(item or "").strip() for item in (payload.videos or []) if str(item or "").strip()), "")
+    if not source_video:
+        raise HTTPException(status_code=400, detail="RunningHub 视频超分需要连接一个视频输入")
+    target_resolution = runninghub_video_target_resolution(payload.resolution)
+    endpoint = runninghub_task_endpoint(provider, model)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=1800.0, write=180.0, pool=20.0)) as client:
+        video_url = await runninghub_upload_standard_media(client, provider, source_video)
+        body = {"videoUrl": video_url, "targetResolution": target_resolution}
+        response = await client.post(endpoint, headers=runninghub_api_headers(provider), json=body)
+        response.raise_for_status()
+        raw = response.json()
+        if isinstance(raw, dict) and (raw.get("errorCode") or raw.get("errorMessage")):
+            message = str(raw.get("errorMessage") or raw.get("message") or raw.get("errorCode") or "").rstrip("。.")
+            error_code = str(raw.get("errorCode") or "").strip()
+            if error_code == "1014":
+                message = f"{message}。这不是余额或积分不足，而是当前 API Key 类型不能调用标准模型 API，需要 RunningHub 企业级-共享 API Key。"
+                raise HTTPException(status_code=403, detail=f"RunningHub 视频超分提交失败：{message}")
+            raise HTTPException(status_code=502, detail=f"RunningHub 视频超分提交失败：{message}")
+        task_id = runninghub_extract_task_id(raw)
+        final = raw
+        if task_id:
+            final = await wait_for_runninghub_standard_task(client, provider, task_id)
+        outputs = runninghub_extract_outputs(final.get("data") if isinstance(final, dict) else final)
+        if not outputs:
+            outputs = runninghub_extract_outputs(final)
+        urls = []
+        for remote in outputs:
+            if str(remote or "").startswith(("http://", "https://", "/output/", "/assets/")):
+                urls.append(await runninghub_store_remote_output(client, remote))
+        if not urls:
+            raise HTTPException(status_code=502, detail=f"RunningHub 视频超分未返回视频输出：{final}")
+        return {
+            "videos": urls,
+            "urls": urls,
+            "task_id": task_id,
+            "provider_id": provider.get("id") or "runninghub",
+            "model": model,
+            "resolution": target_resolution,
+            "raw": final,
+        }
 
 async def generate_ai_image(prompt, size, quality, model, reference_images=None, provider_id="comfly"):
     provider = get_api_provider(provider_id)
@@ -11004,7 +11265,7 @@ async def lovart_finalize_video_result(payload: CanvasVideoRequest, provider: Di
             "duration": payload.duration,
             "aspect_ratio": payload.aspect_ratio,
             "resolution": payload.resolution,
-            "reference_images": [ref.dict() for ref in payload.images if ref.url],
+            "reference_images": [model_to_dict(ref) for ref in payload.images if ref.url],
             "reference_videos": [url for url in payload.videos if str(url or "").strip()],
             "reference_audios": [url for url in payload.audios if str(url or "").strip()],
             "unlimited": bool(payload.unlimited),
@@ -11015,7 +11276,7 @@ async def lovart_finalize_video_result(payload: CanvasVideoRequest, provider: Di
 async def build_lovart_video_result(payload: CanvasVideoRequest, provider: Dict[str, Any], model: str, task_id: str = ""):
     assert_no_lovart_template_placeholders(payload.prompt)
     payload.resolution = lovart_video_resolution_preference(payload.resolution)
-    refs = [ref.dict() for ref in payload.images if ref.url]
+    refs = [model_to_dict(ref) for ref in payload.images if ref.url]
     video_refs = lovart_url_references(payload.videos)
     audio_refs = lovart_url_references(payload.audios)
     attachments = lovart_reference_values([*refs, *video_refs, *audio_refs])
@@ -11188,14 +11449,14 @@ async def create_canvas_video_task(payload: CanvasVideoRequest):
             "provider_id": payload.provider_id,
             "model": payload.model,
             "unlimited": bool(payload.unlimited),
-            "payload": payload.dict(),
+            "payload": model_to_dict(payload),
         }
     lovart_record_task(LOVART_STATE_FILE, task_id, {
         "task_id": task_id,
         "kind": "video",
         "model": payload.model,
         "status": "queued",
-        "payload": payload.dict(),
+        "payload": model_to_dict(payload),
     })
     asyncio.create_task(run_canvas_video_task(task_id, payload))
     return {"task_id": task_id, "status": "queued"}
@@ -11218,6 +11479,8 @@ async def canvas_video(payload: CanvasVideoRequest):
         raise HTTPException(status_code=400, detail="Lovart 视频请使用 /api/canvas-video-tasks 异步接口")
     if is_jimeng_provider(provider):
         return await generate_jimeng_video(payload, provider)
+    if is_runninghub_provider(provider):
+        return await generate_runninghub_video(payload, provider)
     base_url = video_api_root(provider)
     if not base_url:
         raise HTTPException(status_code=400, detail=f"{provider.get('name') or provider['id']} 未配置 Base URL")
@@ -14767,7 +15030,7 @@ def sync_runninghub_workflow_to_provider(cfg):
             "primary": False,
             "image_models": RUNNINGHUB_DEFAULT_IMAGE_MODELS,
             "chat_models": [],
-            "video_models": [],
+            "video_models": RUNNINGHUB_DEFAULT_VIDEO_MODELS,
             "ms_loras": [],
             "ms_defaults_version": 0,
             "rh_apps": RUNNINGHUB_DEFAULT_APPS,

@@ -1636,7 +1636,7 @@ function modelscopeImageModels(){
 }
 const DEFAULT_VIDEO_MODELS = ['veo3-fast','veo3','sora','runway','kling','pika','minimax-video','wan-v2','seedance-1.0-pro','jimeng-vide-3.0','jimeng-video-3.0-pro'];
 function videoApiProviders(){
-    const fromConfig = (apiProviders || []).filter(p => p.enabled !== false && p.id !== 'runninghub' && p.id !== 'volcengine' && (p.video_models || []).length);
+    const fromConfig = (apiProviders || []).filter(p => p.enabled !== false && p.id !== 'volcengine' && (p.video_models || []).length);
     if(fromConfig.length) return fromConfig;
     return [{id:'comfly', name:'Comfly', video_models:DEFAULT_VIDEO_MODELS, enabled:true}];
 }
@@ -1712,7 +1712,17 @@ function renderVideoAspectControl(){
     </div>`;
 }
 function renderVideoResolutionControl(){
-    const options = [['', tr('smart.videoResAuto')], ['480p','480P'], ['720p','720P'], ['1080p','1080P']];
+    const isRunningHubHdApp = settings.videoProvider === 'runninghub' && settings.videoModel === 'runninghub/2047787809091620866';
+    const isRunningHubUpscaler = settings.videoProvider === 'runninghub' && settings.videoModel === 'rhart-video/video-upscaler';
+    const options = isRunningHubHdApp
+        ? [['basic','普通高清'], ['quality','画质修复'], ['sharp','锐化增强']]
+        : isRunningHubUpscaler
+            ? [['720p','720P'], ['1080p','1080P'], ['2k','2K'], ['4k','4K']]
+            : [['', tr('smart.videoResAuto')], ['480p','480P'], ['720p','720P'], ['1080p','1080P']];
+    if(isRunningHubHdApp && settings.videoResolution === '0') settings.videoResolution = 'quality';
+    if(isRunningHubHdApp && settings.videoResolution === '1') settings.videoResolution = 'sharp';
+    if(isRunningHubHdApp && !options.some(([v]) => v === settings.videoResolution)) settings.videoResolution = 'quality';
+    if(isRunningHubUpscaler && !options.some(([v]) => v === settings.videoResolution)) settings.videoResolution = '1080p';
     const value = settings.videoResolution || '';
     const labelMap = Object.fromEntries(options);
     return `<div class="smart-control resolution-control">
@@ -1724,6 +1734,14 @@ function renderVideoResolutionControl(){
             </div>
         </div>
     </div>`;
+}
+function renderRunningHubVideoUpscalerNotice(){
+    if(settings.videoProvider !== 'runninghub') return '';
+    if(settings.videoModel === 'runninghub/2047787809091620866'){
+        return `<div class="muted-note">视频高清支持三档：普通高清(basic)走 2019292222763573249；画质修复(quality)和锐化增强(sharp)走 AI App 2047787809091620866。</div>`;
+    }
+    if(settings.videoModel !== 'rhart-video/video-upscaler') return '';
+    return `<div class="muted-note">RH视频超分是 RunningHub 标准模型 API；如果返回 1014/Access Denied，原因是当前 API Key 不是企业级-共享 Key，不是余额或积分不足。</div>`;
 }
 function renderVideoToggleControl(key, label){
     const on = !!settings[key];
@@ -1853,6 +1871,7 @@ function renderApiVideoParams(){
         ${renderVideoModelControl(models)}
         ${isLovartProviderId(settings.videoProvider) ? renderLovartBillingControl(settings.videoProvider, settings.videoModel) : ''}
         ${renderVideoResolutionControl()}
+        ${renderRunningHubVideoUpscalerNotice()}
         ${renderVideoAspectControl()}
         ${renderVideoDurationControl()}
         ${renderVideoToggleControl('videoEnhancePrompt', tr('smart.videoEnhancePrompt'))}
@@ -2701,6 +2720,13 @@ async function uploadCurrentSmartVideosToCloud(){
 function rhRequiredLabel(field){
     return field?.label || field?.fieldName || `#${field?.nodeId || ''}`;
 }
+function rhMissingRequiredMediaMessage(field, media){
+    const label = rhRequiredLabel(field);
+    if(rhFieldKind(field) === 'image' && (media?.video || []).length && !(media?.image || []).length){
+        return `RunningHub 工作流需要图片输入：${label}，当前连接的是视频；这个工作流没有 VIDEO 输入，不能直接处理 mp4。请改用 RunningHub「RH视频超分」视频模型。`;
+    }
+    return `RunningHub 工作流缺少必选图片：${label}`;
+}
 function rhPruneWorkflowForMissingFields(workflowJson, missingFields){
     if(!workflowJson || typeof workflowJson !== 'object' || !missingFields?.length) return null;
     const workflow = JSON.parse(JSON.stringify(workflowJson));
@@ -2734,7 +2760,7 @@ async function rhBuildWorkflowRequestExtras(media, nodeInfoList, sourceSettings=
         const key = rhParamKey(field.nodeId, field.fieldName);
         const idx = indexes[key] || 0;
         const hasInput = Boolean(media.image?.[idx]?.url);
-        if(field.required === true && !hasInput) throw new Error(`RunningHub 工作流缺少必选图片：${rhRequiredLabel(field)}`);
+        if(field.required === true && !hasInput) throw new Error(rhMissingRequiredMediaMessage(field, media));
         if(field.required !== true && !hasInput) missingOptional.push(field);
     }
     if(!missingOptional.length) return {};
@@ -12345,7 +12371,7 @@ async function runApiVideoGeneration(prompt, refs, runSettings=settings, onTaskC
         const refAudios = audioRefsOnly(uploadedRefs).map(ref => effUrl(ref)).filter(Boolean).slice(0, 3);
         if(mismatchedAsset) toast('部分认证素材属于其它平台，已回退为普通素材。切换到对应平台的视频接口才能用 asset:// 认证地址。');
         const payload = {
-            prompt,
+            prompt: (prompt || '').trim() || (runSettings.videoProvider === 'runninghub' ? 'video upscale' : prompt),
             provider_id: runSettings.videoProvider || 'comfly',
             model: runSettings.videoModel || 'veo3-fast',
             duration: Math.max(1, Math.min(60, Number(runSettings.videoDuration) || 5)),
@@ -12816,6 +12842,8 @@ async function confirmSmartLovartPendingTask(taskData={}, kind='image'){
 }
 async function pollSmartCanvasTask(taskId, kind='image'){
     if(!taskId) throw new Error(tr('smart.errRunFailed'));
+    if(String(taskId).startsWith('canvas_vid_')) kind = 'video';
+    else if(String(taskId).startsWith('canvas_img_')) kind = 'image';
     const pollKey = `${kind}:${taskId}`;
     if(activeSmartTaskPolls.has(pollKey)) return activeSmartTaskPolls.get(pollKey);
     const promise = (async () => {
@@ -12852,6 +12880,7 @@ function finalizeSmartPendingTask(node, taskId, images, kind='image'){
     if(!node || !taskId) return;
     node.pendingTasks = smartPendingTasks(node).filter(task => task.taskId !== taskId);
     node.pending = Math.max(0, Number(node.pending || 0) - 1);
+    if(kind === 'video') node.lovartTaskId = taskId;
     const ext = kind === 'video' ? 'mp4' : kind === 'audio' ? 'mp3' : kind === 'text' ? 'txt' : 'png';
     const additions = (images || []).map((item, i) => {
         const url = typeof item === 'string' ? item : item?.url || '';

@@ -548,7 +548,7 @@ function sanitizeImageNodeProviderModel(node){
 }
 function videoApiProviders(){
     const providers = (apiProviders.length ? apiProviders : defaultApiProviders())
-        .filter(p => p.id !== 'modelscope' && !isRunningHubProvider(p) && p.enabled !== false && (p.video_models || []).length);
+        .filter(p => p.id !== 'modelscope' && p.enabled !== false && (p.video_models || []).length);
     return providers.length ? providers : defaultApiProviders();
 }
 function resolveVideoProviderId(id){
@@ -587,7 +587,18 @@ const LOVART_VIDEO_RESOLUTION_OPTIONS = [
     ['720p', '720p'],
     ['1080p', '1080p'],
 ];
-function normalizeVideoResolutionForProvider(providerId, resolution){
+const RUNNINGHUB_VIDEO_RESOLUTION_OPTIONS = [
+    ['720p', '720p'],
+    ['1080p', '1080p'],
+    ['2k', '2K'],
+    ['4k', '4K'],
+];
+const RUNNINGHUB_VIDEO_HD_APP_LEVEL_OPTIONS = [
+    ['basic', '普通高清'],
+    ['quality', '画质修复'],
+    ['sharp', '锐化增强'],
+];
+function normalizeVideoResolutionForProvider(providerId, resolution, model=''){
     const value = String(resolution || '').trim();
     const lower = value.toLowerCase();
     if(isLovartProviderId(providerId)){
@@ -595,18 +606,50 @@ function normalizeVideoResolutionForProvider(providerId, resolution){
         if(lower === '720' || lower === '720p' || lower === '780p') return '720p';
         if(lower === '1080' || lower === '1080p') return '1080p';
     }
+    if(isRunningHubProvider(exactApiProvider(providerId))){
+        if(String(model || '').trim() === 'runninghub/2047787809091620866'){
+            if(lower === 'basic' || lower === 'standard' || lower === 'base' || lower === '普通高清') return 'basic';
+            if(lower === '1' || lower === 'sharp' || lower === 'sharpen' || lower === '锐化' || lower === '锐化增强') return 'sharp';
+            return 'quality';
+        }
+        if(lower === '720' || lower === '720p') return '720p';
+        if(!lower || lower === 'auto' || lower === '1080' || lower === '1080p') return '1080p';
+        if(lower === '2k' || lower === '2 k') return '2k';
+        if(lower === '4k' || lower === '4 k') return '4k';
+    }
     return value;
 }
-function videoResolutionOptions(selectedResolution, providerId){
-    const options = isLovartProviderId(providerId) ? LOVART_VIDEO_RESOLUTION_OPTIONS : VIDEO_RESOLUTION_OPTIONS;
-    const selected = normalizeVideoResolutionForProvider(providerId, selectedResolution);
+function videoResolutionOptions(selectedResolution, providerId, model=''){
+    const options = isRunningHubProvider(exactApiProvider(providerId)) && String(model || '').trim() === 'runninghub/2047787809091620866'
+        ? RUNNINGHUB_VIDEO_HD_APP_LEVEL_OPTIONS
+        : isRunningHubProvider(exactApiProvider(providerId)) ? RUNNINGHUB_VIDEO_RESOLUTION_OPTIONS : isLovartProviderId(providerId) ? LOVART_VIDEO_RESOLUTION_OPTIONS : VIDEO_RESOLUTION_OPTIONS;
+    const selected = normalizeVideoResolutionForProvider(providerId, selectedResolution, model);
     return options.map(([value, label]) => `<option value="${escapeHtml(value)}" ${value === selected ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
+}
+function runningHubVideoUpscalerNoticeHtml(providerId, model){
+    const isRh = isRunningHubProvider(exactApiProvider(providerId));
+    const visible = isRh && (model === 'runninghub/2047787809091620866' || model === 'rhart-video/video-upscaler');
+    const text = model === 'runninghub/2047787809091620866'
+        ? '视频高清支持三档：普通高清(basic)走 2019292222763573249；画质修复(quality)和锐化增强(sharp)走 AI App 2047787809091620866。'
+        : 'RH视频超分是 RunningHub 标准模型 API；如果返回 1014/Access Denied，原因是当前 API Key 不是企业级-共享 Key，不是余额或积分不足。';
+    return `<div class="muted-note runninghub-video-upscale-note" style="${visible ? '' : 'display:none'}">${text}</div>`;
+}
+function refreshRunningHubVideoUpscalerNotice(wrap, node){
+    const note = wrap?.querySelector?.('.runninghub-video-upscale-note');
+    if(!note) return;
+    const isRh = isRunningHubProvider(exactApiProvider(node.apiProvider));
+    const isHdApp = node.model === 'runninghub/2047787809091620866';
+    const isStdUpscaler = node.model === 'rhart-video/video-upscaler';
+    note.style.display = isRh && (isHdApp || isStdUpscaler) ? '' : 'none';
+    note.textContent = isHdApp
+        ? '视频高清支持三档：普通高清(basic)走 2019292222763573249；画质修复(quality)和锐化增强(sharp)走 AI App 2047787809091620866。'
+        : 'RH视频超分是 RunningHub 标准模型 API；如果返回 1014/Access Denied，原因是当前 API Key 不是企业级-共享 Key，不是余额或积分不足。';
 }
 function refreshVideoResolutionSelect(select, node){
     if(!select || !node) return;
-    const normalized = normalizeVideoResolutionForProvider(node.apiProvider, node.resolution);
+    const normalized = normalizeVideoResolutionForProvider(node.apiProvider, node.resolution, node.model);
     if(node.resolution !== normalized) node.resolution = normalized;
-    select.innerHTML = videoResolutionOptions(node.resolution, node.apiProvider);
+    select.innerHTML = videoResolutionOptions(node.resolution, node.apiProvider, node.model);
     select.value = node.resolution || '';
 }
 function lovartModelMeta(providerId, model){
@@ -668,10 +711,10 @@ function bindLovartBillingControl(wrap, node, providerIdGetter, modelGetter){
 function sanitizeVideoNodeProviderModel(node){
     if(!node || node.type !== 'video') return;
     node.apiProvider = resolveVideoProviderId(node.apiProvider || 'comfly');
-    node.resolution = normalizeVideoResolutionForProvider(node.apiProvider, node.resolution);
     const models = providerVideoModels(node.apiProvider);
     if(!models.length) node.model = '';
     else if(!models.includes(node.model)) node.model = models[0] || '';
+    node.resolution = normalizeVideoResolutionForProvider(node.apiProvider, node.resolution, node.model);
 }
 function videoModelOptions(selectedModel, providerId){
     const models = providerVideoModels(providerId);
@@ -8784,10 +8827,11 @@ function renderVideoBody(node){
                 <label class="field" style="flex:1">
                     <div class="setting-title">${tr('canvas.videoResolution')}</div>
                     <select class="select-lite video-resolution compact-select">
-                        ${videoResolutionOptions(node.resolution, node.apiProvider)}
+                        ${videoResolutionOptions(node.resolution, node.apiProvider, node.model)}
                     </select>
                 </label>
             </div>
+            ${runningHubVideoUpscalerNoticeHtml(node.apiProvider, node.model)}
             <div class="gen-settings-row" style="flex-wrap:wrap">
                 <button type="button" class="setting-check ${node.enhancePrompt ? 'active' : ''}" data-video-toggle="enhancePrompt"><span class="check-dot"></span>${tr('canvas.videoEnhancePrompt')}</button>
                 <button type="button" class="setting-check ${node.enableUpsample ? 'active' : ''}" data-video-toggle="enableUpsample"><span class="check-dot"></span>${tr('canvas.videoUpsample')}</button>
@@ -8824,12 +8868,15 @@ function renderVideoBody(node){
         if(!models.includes(node.model)) node.model = models[0] || node.model;
         modelSelect.innerHTML = videoModelOptions(node.model, node.apiProvider);
         refreshVideoResolutionSelect(resolutionSelect, node);
+        refreshRunningHubVideoUpscalerNotice(wrap, node);
         syncLovartBillingControl(wrap, node, node.apiProvider, node.model);
         scheduleSave();
     };
     modelSelect.onchange = e => {
         e.stopPropagation();
         node.model = e.target.value;
+        refreshVideoResolutionSelect(resolutionSelect, node);
+        refreshRunningHubVideoUpscalerNotice(wrap, node);
         syncLovartBillingControl(wrap, node, node.apiProvider, node.model);
         scheduleSave();
     };
@@ -8838,7 +8885,7 @@ function renderVideoBody(node){
     aspectSelect.onchange = e => { e.stopPropagation(); node.aspectRatio = e.target.value; scheduleSave(); };
     resolutionSelect.onchange = e => {
         e.stopPropagation();
-        node.resolution = normalizeVideoResolutionForProvider(node.apiProvider, e.target.value);
+        node.resolution = normalizeVideoResolutionForProvider(node.apiProvider, e.target.value, node.model);
         if(node.resolution !== e.target.value) refreshVideoResolutionSelect(resolutionSelect, node);
         scheduleSave();
     };
@@ -9499,6 +9546,13 @@ function rhFieldValue(node, field, media=null){
 function rhRequiredLabel(field){
     return field?.label || field?.fieldName || `#${field?.nodeId || ''}`;
 }
+function rhMissingRequiredMediaMessage(field, media){
+    const label = rhRequiredLabel(field);
+    if(rhFieldKind(field) === 'image' && (media?.video || []).length && !(media?.image || []).length){
+        return `RunningHub 工作流需要图片输入：${label}，当前连接的是视频；这个工作流没有 VIDEO 输入，不能直接处理 mp4。请改用 RunningHub「RH视频超分」视频模型。`;
+    }
+    return `RunningHub 工作流缺少必选图片：${label}`;
+}
 function rhPruneWorkflowForMissingFields(workflowJson, missingFields){
     if(!workflowJson || typeof workflowJson !== 'object' || !missingFields?.length) return null;
     const workflow = JSON.parse(JSON.stringify(workflowJson));
@@ -9533,7 +9587,7 @@ async function rhBuildWorkflowRequestExtras(node, media, nodeInfoList){
         const idx = indexes[key] || 0;
         const hasInput = Boolean(media.image?.[idx]?.url);
         if(field.required === true && !hasInput){
-            throw new Error(`RunningHub 工作流缺少必选图片：${rhRequiredLabel(field)}`);
+            throw new Error(rhMissingRequiredMediaMessage(field, media));
         }
         if(field.required !== true && !hasInput){
             missingOptional.push(field);
@@ -10686,7 +10740,7 @@ async function runVideoNode(nodeId, opts={}){
             model:node.model || 'veo3-fast',
             duration:Number(node.duration || 5),
             aspect_ratio:node.aspectRatio || '16:9',
-            resolution:normalizeVideoResolutionForProvider(node.apiProvider, node.resolution),
+            resolution:normalizeVideoResolutionForProvider(node.apiProvider, node.resolution, node.model),
             images:refs,
             videos:manualVideoUrlForNode(node)
                 ? [manualVideoUrlForNode(node)]
