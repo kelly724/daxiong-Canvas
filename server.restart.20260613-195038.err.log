@@ -1,0 +1,270 @@
+E:\habiancheng\daxiong-Canvas\main.py:214: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Started server process [62124]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:3000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:31260 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:60680 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:45045 - "WebSocket /ws/stats?client_id=fd17e5bd-1d97-47a6-a419-0ebf26068d74" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:55826 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:50854 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:12308 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     connection closed
+INFO:     127.0.0.1:50060 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+E:\habiancheng\daxiong-Canvas\main.py:10712: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+  "payload": payload.dict(),
+E:\habiancheng\daxiong-Canvas\main.py:10500: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+  refs = [ref.dict() for ref in payload.reference_images if ref.url]
+E:\habiancheng\daxiong-Canvas\main.py:10469: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+  refs = [ref.dict() for ref in payload.reference_images if ref.url]
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:16767 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:31120 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+E:\habiancheng\daxiong-Canvas\main.py:10529: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+  refs = [ref.dict() for ref in payload.reference_images if ref.url]
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:60038 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:16492 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:32166 - "WebSocket /ws/stats?client_id=canvas_smart_tzzmajlzdn3b" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:49734 - "WebSocket /ws/stats?client_id=canvas_smart_0yzvwwqhduk2" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:13311 - "WebSocket /ws/stats?client_id=canvas_smart_d0ko3ifgfd6s" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:39257 - "WebSocket /ws/stats?client_id=canvas_smart_s8ywngltfnfm" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:48817 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:15233 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:11684 - "WebSocket /ws/stats?client_id=76d6670a-b90d-4be9-82b7-7f8d81af2edc" [accepted]
+INFO:     connection open
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     connection closed
+INFO:     127.0.0.1:15528 - "WebSocket /ws/stats?client_id=canvas_smart_y0dwjcbgm2h8" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:32696 - "WebSocket /ws/stats?client_id=canvas_smart_ual23fgvm3pt" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:22281 - "WebSocket /ws/stats?client_id=canvas_smart_wbl8k0wpm4dq" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:32598 - "WebSocket /ws/stats?client_id=canvas_smart_i0sajkanm4x7" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:42649 - "WebSocket /ws/stats?client_id=e7524373-f333-4697-b887-9c92f0389443" [accepted]
+INFO:     connection open
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:43701 - "WebSocket /ws/stats?client_id=43f83445-1f7a-42fc-96cd-431c5053d17c" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:17805 - "WebSocket /ws/stats?client_id=canvas_smart_t3w6l5taqgw6" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:63058 - "WebSocket /ws/stats?client_id=canvas_smart_84286pk5rc8f" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:45225 - "WebSocket /ws/stats?client_id=43f83445-1f7a-42fc-96cd-431c5053d17c" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:60198 - "WebSocket /ws/stats?client_id=43f83445-1f7a-42fc-96cd-431c5053d17c" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:37944 - "WebSocket /ws/stats?client_id=43f83445-1f7a-42fc-96cd-431c5053d17c" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:60532 - "WebSocket /ws/stats?client_id=canvas_smart_f2cqo4mat9ui" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:11895 - "WebSocket /ws/stats?client_id=canvas_smart_b5a5u6eswgcj" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:22158 - "WebSocket /ws/stats?client_id=43f83445-1f7a-42fc-96cd-431c5053d17c" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:18207 - "WebSocket /ws/stats?client_id=43f83445-1f7a-42fc-96cd-431c5053d17c" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:44622 - "WebSocket /ws/stats?client_id=43f83445-1f7a-42fc-96cd-431c5053d17c" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:55184 - "WebSocket /ws/stats?client_id=e7524373-f333-4697-b887-9c92f0389443" [accepted]
+INFO:     connection open
+INFO:     connection closed
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 80, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+INFO:     127.0.0.1:24850 - "WebSocket /ws/stats?client_id=e7524373-f333-4697-b887-9c92f0389443" [accepted]
+INFO:     connection open
+INFO:     connection closed

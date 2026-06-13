@@ -24,7 +24,7 @@
         })();
     </script>
     <script src="/static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964"></script>
-    <script src="/static/js/theme.js?v=2026.06.11.1781322964"></script>
+    <script src="/static/js/theme.js?v=2026.06.11.1781351971"></script>
     <script src="/static/js/i18n.js?v=2026.06.11.1781322969"></script>
     <style>
         @import url('/static/vendor/css/fonts.css?v=2026.06.11.1781322964');
@@ -2173,14 +2173,51 @@
         }
 
         .dash-hero {
+            position: relative;
             min-height: clamp(360px, 41vh, 430px);
             display: grid;
             grid-template-columns: minmax(430px, 43vw) 1fr;
             gap: 34px;
             align-items: center;
+            overflow: hidden;
+            border-radius: 8px;
+            padding: 26px 30px;
+            background: rgba(4, 12, 20, .34);
+            box-shadow:
+                inset 0 0 0 1px rgba(140, 185, 220, .24),
+                inset 0 0 0 2px rgba(8, 18, 28, .48),
+                inset 0 -140px 170px rgba(2, 8, 14, .68),
+                0 18px 48px rgba(0, 0, 0, .18);
+        }
+
+        .dash-hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: .52;
+            filter: saturate(.92) contrast(1.08) brightness(.78);
+            transform: scale(1.02);
+            pointer-events: none;
+        }
+
+        .dash-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, rgba(5, 14, 23, .86) 0%, rgba(5, 14, 23, .48) 46%, rgba(5, 14, 23, .28) 100%),
+                radial-gradient(circle at 18% 12%, rgba(45, 184, 238, .22), transparent 38%),
+                linear-gradient(to bottom, rgba(255,255,255,.05), rgba(255,255,255,0) 26%, rgba(0,0,0,.36));
         }
 
         .dash-copy {
+            position: relative;
+            z-index: 2;
             padding-left: 12px;
             opacity: 0;
             animation: dashUp .82s cubic-bezier(.2,.8,.2,1) .12s forwards;
@@ -2218,7 +2255,7 @@
             height: 100%;
             background:
                 linear-gradient(135deg, rgba(255,255,255,.18), transparent 28%),
-                url('/assets/output/lovart_image_b60a32cccc41.png') center/cover;
+                url('/assets/output/gothic_city_in_dragon_s_bones.png') center/cover;
             filter: saturate(.75) contrast(1.08);
             animation: mediaDrift 10s ease-in-out infinite alternate;
         }
@@ -2241,6 +2278,7 @@
 
         .dash-showcase {
             position: relative;
+            z-index: 2;
             height: 360px;
             opacity: 0;
             animation: dashFade .85s ease .24s forwards;
@@ -2265,7 +2303,8 @@
             filter: brightness(1.08);
         }
 
-        .showcase-card img {
+        .showcase-card img,
+        .showcase-card video {
             display: block;
             width: 100%;
             height: 170px;
@@ -2387,7 +2426,9 @@
         }
 
         .recent-item img,
-        .output-item img {
+        .recent-item video,
+        .output-item img,
+        .output-item video {
             width: 64px;
             height: 48px;
             border-radius: 4px;
@@ -2469,7 +2510,8 @@
             gap: 10px;
         }
 
-        .asset-grid img {
+        .asset-grid img,
+        .asset-grid video {
             width: 100%;
             aspect-ratio: 1 / 1;
             object-fit: cover;
@@ -2606,7 +2648,8 @@
             .dash-showcase { height: 310px; }
             .showcase-card { width: 330px; }
             .showcase-card.three { width: 300px; }
-            .showcase-card img { height: 146px; }
+            .showcase-card img,
+            .showcase-card video { height: 146px; }
             .dash-grid { min-height: 300px; }
         }
 
@@ -2944,6 +2987,7 @@
                 </div>
 
                 <div class="dash-hero">
+                    <video class="dash-hero-bg" src="/assets/output/rh_b53d0b549cfa.mp4" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>
                     <div class="dash-copy">
                         <h1>
                             <span class="dash-title-line">把想法 <span class="dash-title-media" aria-hidden="true"></span></span>
@@ -2957,16 +3001,16 @@
 
                     <div class="dash-showcase" aria-label="画布示例">
                         <article class="showcase-card one">
-                            <img src="/assets/output/lovart_image_b60a32cccc41.png" alt="AI 科幻短片工作流">
-                            <div class="card-meta"><strong>AI 科幻短片工作流</strong><span>2024-12-18 10:42</span><span class="status-pill">运行中</span></div>
+                            <img src="/assets/output/gothic_city_in_dragon_s_bones.png" alt="龙骨城概念工作流">
+                            <div class="card-meta"><strong>龙骨城概念工作流</strong><span>2026-06-10 03:47</span><span class="status-pill">运行中</span></div>
                         </article>
                         <article class="showcase-card two">
-                            <img src="/assets/output/jimeng_288267a3db.png" alt="概念视觉探索">
-                            <div class="card-meta"><strong>概念视觉探索</strong><span>2024-12-16 16:21</span></div>
+                            <img src="/assets/output/gothic_palace_within_a_dragon_skull.png" alt="龙颅宫殿视觉探索">
+                            <div class="card-meta"><strong>龙颅宫殿视觉探索</strong><span>2026-06-10 03:47</span></div>
                         </article>
                         <article class="showcase-card three">
-                            <img src="/assets/output/jimeng_b70037f2a6.png" alt="故事板草稿">
-                            <div class="card-meta"><strong>故事板草稿</strong><span>2024-12-10 09:33</span></div>
+                            <img src="/assets/output/dragon_stomach_market_in_the_abyss.png" alt="深渊集市故事板">
+                            <div class="card-meta"><strong>深渊集市故事板</strong><span>2026-06-10 03:47</span></div>
                         </article>
                     </div>
                 </div>
@@ -2975,10 +3019,10 @@
                     <article class="dash-card">
                         <div class="dash-card-head"><span>最近画布</span><span>↗</span></div>
                         <div class="recent-list">
-                            <button class="recent-item" type="button" onclick="openStudioPage('canvas')"><img src="/assets/output/lovart_image_b60a32cccc41.png" alt=""><span>AI 科幻短片工作流<small>10 分钟前</small></span></button>
-                            <button class="recent-item" type="button" onclick="openStudioPage('canvas')"><img src="/assets/output/jimeng_288267a3db.png" alt=""><span>概念视觉探索<small>2 天前</small></span></button>
-                            <button class="recent-item" type="button" onclick="openStudioPage('online')"><img src="/assets/output/jimeng_b70037f2a6.png" alt=""><span>产品演示动画<small>5 天前</small></span></button>
-                            <button class="recent-item" type="button" onclick="openStudioPage('zimage')"><img src="/assets/output/jimeng_b9c678ada5.png" alt=""><span>品牌视觉延展<small>8 天前</small></span></button>
+                            <button class="recent-item" type="button" onclick="openStudioPage('canvas')"><img src="/assets/output/desolate_gothic_ritual_courtyard.png" alt=""><span>荒城仪式广场<small>10 分钟前</small></span></button>
+                            <button class="recent-item" type="button" onclick="openStudioPage('canvas')"><img src="/assets/output/high_priest_of_the_dragonbone_faith.png" alt=""><span>龙骨高祭司设定<small>2 天前</small></span></button>
+                            <button class="recent-item" type="button" onclick="openStudioPage('online')"><img src="/assets/output/true_dragonblood_saintess_character_design_sheet.png" alt=""><span>龙血圣女角色表<small>5 天前</small></span></button>
+                            <button class="recent-item" type="button" onclick="openStudioPage('zimage')"><img src="/assets/output/black_market_beasts_and_cargo_assets.png" alt=""><span>黑市生物资产<small>8 天前</small></span></button>
                         </div>
                         <div class="dash-card-foot"><span>查看全部</span><span>→</span></div>
                     </article>
@@ -2993,12 +3037,12 @@
                         <div class="dash-card-head"><span>素材库</span><span>＋</span></div>
                         <div class="asset-tabs"><span>全部</span><span>图像</span><span>视频</span><span>音频</span><span>模型</span></div>
                         <div class="asset-grid">
-                            <img src="/assets/output/lovart_image_b60a32cccc41.png" alt="素材预览">
-                            <img src="/assets/output/jimeng_288267a3db.png" alt="素材预览">
-                            <img src="/assets/output/jimeng_b70037f2a6.png" alt="素材预览">
-                            <img src="/assets/output/jimeng_b9c678ada5.png" alt="素材预览">
-                            <img src="/assets/output/lovart_image_39c843cf1142.png" alt="素材预览">
-                            <img src="/static/images/logo.png" alt="素材预览">
+                            <img src="/assets/output/gothic_city_in_dragon_s_bones.png" alt="素材预览">
+                            <img src="/assets/output/gothic_ritual_plaza_in_ruins.png" alt="素材预览">
+                            <img src="/assets/output/captive_baby_dragon_concept_art.png" alt="素材预览">
+                            <img src="/assets/output/half_dragon_noble_character_design_sheet.png" alt="素材预览">
+                            <img src="/assets/output/gothic_biomechanical_sword_concept_art.png" alt="素材预览">
+                            <video src="/assets/output/rh_b53d0b549cfa.mp4" autoplay muted loop playsinline preload="metadata" aria-label="素材视频预览"></video>
                         </div>
                         <div class="dash-card-foot"><span>共 1,248 个素材</span><button type="button" onclick="openStudioPage('asset-manager')">前往素材库 →</button></div>
                     </article>
@@ -3017,10 +3061,10 @@
                     <article class="dash-card">
                         <div class="dash-card-head"><span>输出记录</span></div>
                         <div class="output-list">
-                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/lovart_image_b60a32cccc41.png" alt=""><span>科幻短片_最终版.mp4<small>4K　00:45　3 分钟前</small></span></button>
-                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/jimeng_288267a3db.png" alt=""><span>概念图_组合_03.png<small>2K　12 分钟前</small></span></button>
-                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/jimeng_b70037f2a6.png" alt=""><span>产品动画_演示.mov<small>4K　00:30　1 小时前</small></span></button>
-                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/jimeng_b9c678ada5.png" alt=""><span>品牌KV_最终版.png<small>2K　2 小时前</small></span></button>
+                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><video src="/assets/output/dragonbone_hd_2k.mp4" autoplay muted loop playsinline preload="metadata" aria-label="超分2K视频"></video><span>龙骨遗迹_超分2K.mp4<small>2K　00:45　3 分钟前</small></span></button>
+                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><video src="/assets/output/rh_b53d0b549cfa.mp4" autoplay muted loop playsinline preload="metadata" aria-label="高清视频"></video><span>龙骨遗迹_高清版.mp4<small>HD　00:45　12 分钟前</small></span></button>
+                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/small_snake_girl_in_the_slums.png" alt=""><span>贫民区蛇族少女.png<small>2K　1 小时前</small></span></button>
+                            <button class="output-item" type="button" onclick="openStudioPage('asset-manager')"><img src="/assets/output/great_dragon_creature_design_sheet.png" alt=""><span>巨龙生物设定.png<small>2K　2 小时前</small></span></button>
                         </div>
                         <div class="dash-card-foot"><span>查看全部</span><span>→</span></div>
                     </article>
@@ -3043,16 +3087,16 @@
                 </div>
             </section>
 
-            <iframe id="frame-zimage" data-src="/static/zimage.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
-            <iframe id="frame-enhance" data-src="/static/enhance.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
-            <iframe id="frame-klein" data-src="/static/klein.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
-            <iframe id="frame-angle" data-src="/static/angle.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
-            <iframe id="frame-online" data-src="/static/online.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
-            <iframe id="frame-gpt-chat" data-src="/static/gpt-chat.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
-            <iframe id="frame-canvas" data-src="/static/canvas.html?v=2026.06.11.1781342139" scrolling="yes"></iframe>
-            <iframe id="frame-asset-manager" data-src="/static/asset-manager.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
-            <iframe id="frame-api-settings" data-src="/static/api-settings.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
-            <iframe id="frame-comfyui-settings" data-src="/static/comfyui-settings.html?v=2026.06.11.1781323423" scrolling="yes"></iframe>
+            <iframe id="frame-zimage" data-src="/static/zimage.html?v=2026.06.11.1781369922" scrolling="yes"></iframe>
+            <iframe id="frame-enhance" data-src="/static/enhance.html?v=2026.06.11.1781369921" scrolling="yes"></iframe>
+            <iframe id="frame-klein" data-src="/static/klein.html?v=2026.06.11.1781369922" scrolling="yes"></iframe>
+            <iframe id="frame-angle" data-src="/static/angle.html?v=2026.06.11.1781369921" scrolling="yes"></iframe>
+            <iframe id="frame-online" data-src="/static/online.html?v=2026.06.11.1781369922" scrolling="yes"></iframe>
+            <iframe id="frame-gpt-chat" data-src="/static/gpt-chat.html?v=2026.06.11.1781369922" scrolling="yes"></iframe>
+            <iframe id="frame-canvas" data-src="/static/canvas.html?v=2026.06.11.1781369921" scrolling="yes"></iframe>
+            <iframe id="frame-asset-manager" data-src="/static/asset-manager.html?v=2026.06.11.1781369921" scrolling="yes"></iframe>
+            <iframe id="frame-api-settings" data-src="/static/api-settings.html?v=2026.06.11.1781369921" scrolling="yes"></iframe>
+            <iframe id="frame-comfyui-settings" data-src="/static/comfyui-settings.html?v=2026.06.11.1781369921" scrolling="yes"></iframe>
 
             <div class="nano-monitor" id="nano-monitor">
                 <div class="stat-group">

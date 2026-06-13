@@ -910,7 +910,11 @@ function persistActiveSmartSettings(){
     subject.runSettings = settingsForStorage(settings);
     rememberRecentSmartSettings(settings, subject);
 }
-function backToCanvasList(){ savePromptDraftForCurrent(); window.location.href = '/static/canvas.html?v=2026.05.22.1'; }
+function backToCanvasList(){
+    savePromptDraftForCurrent();
+    const targetWindow = window.parent && window.parent !== window ? window.parent : window;
+    targetWindow.location.href = '/static/canvas.html?v=2026.05.22.1';
+}
 function promptPlainText(){
     return promptInput.innerText.replace(/\u00a0/g, ' ').trim();
 }
@@ -11470,7 +11474,17 @@ async function generateUrlsForCurrentSettings(node, prompt, refs, runSettings=se
         return {urls, kind:mediaKindForUrls(urls, fallbackKind)};
     }
     if(isApiLikeEngine(activeSettings.engine) && activeSettings.apiKind === 'video'){
-        return {urls:await runApiVideoGeneration(prompt, refs, activeSettings), kind:'video'};
+        return {urls:await runApiVideoGeneration(prompt, refs, activeSettings, task => {
+            if(!task?.taskId || !node) return;
+            node.pendingTasks = [{taskId:task.taskId, kind:'video', providerId:task.providerId, model:task.model}];
+            node.pending = Math.max(1, Number(node.pending || 0) || 1);
+            node.runStartedAt = nowMs();
+            node.runTimerHidden = false;
+            node.running = false;
+            render();
+            scheduleSave();
+            saveCanvas().catch(() => {});
+        }), kind:'video'};
     }
     if(isApiLikeEngine(activeSettings.engine)){
         const taskResult = await runApiGeneration(prompt, refs, activeSettings);

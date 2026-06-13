@@ -1,6 +1,293 @@
 [
     {
         "status": "succeeded",
+        "prompt": "4K高清，红色区域圈住的手部，将人物拿刀的手变成正常的手掌，右手不是机械手",
+        "images": [
+            "/assets/output/lovart_image_dc8a9b7f3879.png"
+        ],
+        "timestamp": 1781353128.6270692,
+        "type": "online",
+        "model": "generate_image_gpt_image_2",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_b6ddb86848494ec388dcbfd5a10806b5",
+        "thread_id": "0dd83b68-5757-4040-a997-bd003b37a02c",
+        "request_id": "0dd83b68-5757-4040-a997-bd003b37a02c",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_gpt_image_2",
+            "size": "2048x2048",
+            "quality": "medium",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_84a23ff25516.png",
+                    "name": "character_design_concept_for_adela_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ],
+            "unlimited": false
+        },
+        "raw": {
+            "thread_id": "0dd83b68-5757-4040-a997-bd003b37a02c",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "已完成手部修正。现在人物持刀的手已经变成正常的人类手掌，不再是机械手。右手自然握住刀柄，保持了整体画风和光影效果一致。"
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/NPrPRDqsG6F6TSwo.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "project_id": "989b2ca7f72d4184b2a79aa76f6ca0c5",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "status": "succeeded",
+        "prompt": "红色区域圈住的手部，将人物拿刀的手变成正常的手掌，不是机械手",
+        "images": [
+            "/assets/output/lovart_image_19f947f2516a.png"
+        ],
+        "timestamp": 1781353074.2709548,
+        "type": "online",
+        "model": "generate_image_nano_banana_2",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_2ef050c5620746db9145a75733aa1530",
+        "thread_id": "4e6caa80-904e-44c2-8ee2-2804c24a9d8a",
+        "request_id": "4e6caa80-904e-44c2-8ee2-2804c24a9d8a",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_nano_banana_2",
+            "size": "2048x2048",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_84a23ff25516.png",
+                    "name": "character_design_concept_for_adela_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ],
+            "unlimited": true
+        },
+        "raw": {
+            "thread_id": "4e6caa80-904e-44c2-8ee2-2804c24a9d8a",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "我来帮你修改这张角色设定图。根据你的要求，我需要将红色圈住区域中人物拿刀的手从机械手变成正常的人类手掌。"
+                },
+                {
+                    "type": "assistant",
+                    "text": "已完成修改。武器展示图中人物拿刀的手现在变成了正常的人类手掌，不再是机械手。其他所有细节（服装、武器、配饰等）都保持原样不变。"
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/zgelMWrr13Fephpz.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "project_id": "989b2ca7f72d4184b2a79aa76f6ca0c5",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "status": "succeeded",
+        "prompt": "图中画圈的人物去掉",
+        "images": [
+            "/assets/output/lovart_image_49b4e4905e06.png"
+        ],
+        "timestamp": 1781352973.7816002,
+        "type": "online",
+        "model": "generate_image_nano_banana_2",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_c6c1a109398843f7abc8de0ef22b14c3",
+        "thread_id": "816e5734-5017-4c21-b85a-5118c96f6a46",
+        "request_id": "816e5734-5017-4c21-b85a-5118c96f6a46",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_nano_banana_2",
+            "size": "2048x1152",
+            "quality": "high",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_574c23d251a7.png",
+                    "name": "output-1-current-frame_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ],
+            "unlimited": false
+        },
+        "raw": {
+            "thread_id": "816e5734-5017-4c21-b85a-5118c96f6a46",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "已完成。画圈中的黑袍人物已被移除，场景现在只保留了巨龙骨架和远处的城堡城市，悬崖区域已自然填充为石质纹理，整体氛围保持不变。"
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/i5Ol0hoqpvKK8rPd.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "project_id": "989b2ca7f72d4184b2a79aa76f6ca0c5",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "status": "succeeded",
+        "prompt": "红色区域圈住的手部，将人物拿刀的手变成正常的手掌，不是机械手",
+        "images": [
+            "/assets/output/lovart_image_5589340a4875.png"
+        ],
+        "timestamp": 1781352876.1416862,
+        "type": "online",
+        "model": "generate_image_nano_banana_2",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_317b8cf715a24ba2bfaeb1a6459843c7",
+        "thread_id": "7e72ea6e-e88d-497b-bdf2-acca66495be4",
+        "request_id": "7e72ea6e-e88d-497b-bdf2-acca66495be4",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_nano_banana_2",
+            "size": "2048x2048",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_84a23ff25516.png",
+                    "name": "character_design_concept_for_adela_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ],
+            "unlimited": false
+        },
+        "raw": {
+            "thread_id": "7e72ea6e-e88d-497b-bdf2-acca66495be4",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "我来帮您将红色圈住区域的机械手修改为正常的人类手掌。"
+                },
+                {
+                    "type": "assistant",
+                    "text": "已完成修改。红色圈住区域的机械义肢手现已改为正常的人类手掌，皮肤白皙细腻，手指优雅地握着武器，整体画面风格保持一致。"
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/UTMrOZ8o5j2fT4Kh.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "project_id": "989b2ca7f72d4184b2a79aa76f6ca0c5",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "status": "succeeded",
+        "prompt": "图中画圈的人物去掉",
+        "images": [
+            "/assets/output/lovart_image_cd1d6540698f.png"
+        ],
+        "timestamp": 1781352574.679683,
+        "type": "online",
+        "model": "generate_image_nano_banana_2",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_10bd3c3e9119490aa0e8a7826837aa0a",
+        "thread_id": "afaf2c6f-ab27-468a-94ec-3763387d531c",
+        "request_id": "afaf2c6f-ab27-468a-94ec-3763387d531c",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_nano_banana_2",
+            "size": "2048x1152",
+            "quality": "high",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_574c23d251a7.png",
+                    "name": "output-1-current-frame_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ],
+            "unlimited": false
+        },
+        "raw": {
+            "thread_id": "afaf2c6f-ab27-468a-94ec-3763387d531c",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "我来帮你去掉图中画圈的人物。我需要创建一个遮罩来标记要移除的区域，然后进行图像修复。"
+                },
+                {
+                    "type": "assistant",
+                    "text": "已完成。画圈的白发黑袍人物已被移除，岩石平台现在显示自然的岩石纹理，与周围环境和整体史诗奇幻风格保持一致。"
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/QP0EJKom8THc82xC.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "project_id": "989b2ca7f72d4184b2a79aa76f6ca0c5",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "status": "succeeded",
         "prompt": "外城荒骨高地：血红夕阳、灰白骨粉、冷白机械光。",
         "images": [
             "/assets/output/lovart_image_5ecf1a75b4f2.png"
