@@ -32,6 +32,8 @@ const jimengLoginBox = document.getElementById('jimengLoginBox');
 const codexCliPanel = document.getElementById('codexCliPanel');
 const codexCliStatus = document.getElementById('codexCliStatus');
 const codexCliInfo = document.getElementById('codexCliInfo');
+const codexCliManualPath = document.getElementById('codexCliManualPath');
+const codexCliBinInput = document.getElementById('codexCliBinInput');
 const jimengHelpOverlay = document.getElementById('jimengHelpOverlay');
 const jimengHelpCommand = document.getElementById('jimengHelpCommand');
 const jimengHelpOutput = document.getElementById('jimengHelpOutput');
@@ -2521,6 +2523,10 @@ function setCodexCliStatus(text, ok=null){
     codexCliStatus.classList.toggle('ok', ok === true);
     codexCliStatus.classList.toggle('bad', ok === false);
 }
+function setCodexCliManualPathVisible(visible){
+    if(!codexCliManualPath) return;
+    codexCliManualPath.hidden = !visible;
+}
 function codexCliInfoText(data){
     const checks = data?.checks || {};
     const cache = data?.authCache || {};
@@ -2555,6 +2561,7 @@ async function refreshCodexCliStatus(showInfo=true){
         const checks = data.checks || {};
         const connected = Boolean(data.configured && data.ready && checks.loggedIn);
         const canSync = Boolean(!data.configured && data.available && checks.loggedIn);
+        setCodexCliManualPathVisible(!connected && (!data.available || Boolean(codexCliBinInput?.value.trim())));
         setCodexCliStatus(connected ? '已配置' : (canSync ? '可同步' : data.available ? '需登录' : '未安装'), connected ? true : (canSync ? null : false));
         const item = provider();
         if(item && item.id === 'codex_cli'){
@@ -2573,11 +2580,17 @@ async function refreshCodexCliStatus(showInfo=true){
 async function configureCodexCliAuth(){
     setCodexCliStatus('同步中...');
     try {
-        const data = await fetch('/api/codex-cli/configure-local-auth', {method:'POST'}).then(async r => {
+        const manualPath = (codexCliBinInput?.value || '').trim();
+        const data = await fetch('/api/codex-cli/configure-local-auth', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({codex_cli_bin: manualPath})
+        }).then(async r => {
             const json = await r.json();
             if(!r.ok) throw new Error(json.detail || '配置失败');
             return json;
         });
+        setCodexCliManualPathVisible(false);
         setCodexCliStatus('已配置', true);
         if(codexCliInfo) codexCliInfo.textContent = data.message || codexCliInfoText(data.status || {});
         const item = provider();
@@ -2593,6 +2606,7 @@ async function configureCodexCliAuth(){
         await refreshCodexCliStatus(true);
     } catch(e){
         setCodexCliStatus('未登录', false);
+        setCodexCliManualPathVisible(true);
         if(codexCliInfo) codexCliInfo.textContent = `${e.message || String(e)}\n可在终端执行：codex login`;
     }
 }

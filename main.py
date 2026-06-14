@@ -15,6 +15,7 @@ import subprocess
 import time
 import traceback
 import shutil
+import glob
 import asyncio
 import logging
 import requests
@@ -2739,6 +2740,9 @@ class CodexCliImageStartRequest(BaseModel):
     reference_images: List[str] = []
     timeout_ms: int = 1200000
 
+class CodexCliConfigureRequest(BaseModel):
+    codex_cli_bin: str = ""
+
 class ConversationCreateRequest(BaseModel):
     title: str = "新对话"
 
@@ -2820,6 +2824,7 @@ class LocalAssetUrlImportItem(BaseModel):
     name: str = ""
     data: str = ""
     content_type: str = ""
+    page_url: str = ""
 
 class LocalAssetUrlImportRequest(BaseModel):
     items: List[LocalAssetUrlImportItem] = []
@@ -4914,6 +4919,24 @@ def origin_from_url(value):
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         return ""
     return f"{parsed.scheme}://{parsed.netloc}".lower()
+
+LOCAL_ASSET_REMOTE_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/126.0.0.0 Safari/537.36"
+)
+
+def local_asset_remote_request_headers(page_url: str = "") -> Dict[str, str]:
+    headers = {
+        "User-Agent": LOCAL_ASSET_REMOTE_USER_AGENT,
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,video/*,*/*;q=0.8",
+    }
+    ref = str(page_url or "").strip().replace("\r", "").replace("\n", "")
+    parsed = urllib.parse.urlparse(ref)
+    if parsed.scheme in ("http", "https") and parsed.netloc:
+        headers["Referer"] = ref
+        headers["Origin"] = f"{parsed.scheme}://{parsed.netloc}"
+    return headers
 
 def ensure_same_origin_request(request: Request):
     host = str(request.headers.get("host") or "").lower()
@@ -9353,7 +9376,7 @@ async def import_local_assets_from_urls(payload: LocalAssetUrlImportRequest):
     folder_rel, folder_abs = _local_upload_safe_folder(payload.folder)
     os.makedirs(folder_abs, exist_ok=True)
     timeout = httpx.Timeout(connect=20.0, read=120.0, write=30.0, pool=20.0)
-    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers={"User-Agent": "Infinite-Canvas-Asset-Importer/1.0"}) as client:
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=local_asset_remote_request_headers()) as client:
         for entry in (payload.items or [])[:LOCAL_ASSET_IMPORT_MAX_ITEMS]:
             src_url = str(entry.url or "").strip()
             data_value = str(entry.data or "").strip()
@@ -9400,7 +9423,7 @@ async def import_local_assets_from_urls(payload: LocalAssetUrlImportRequest):
             try:
                 chunks = []
                 total = 0
-                async with client.stream("GET", src_url) as response:
+                async with client.stream("GET", src_url, headers=local_asset_remote_request_headers(entry.page_url)) as response:
                     response.raise_for_status()
                     content_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
                     kind, ext = _local_upload_kind_ext(urllib.parse.urlparse(src_url).path, content_type)
@@ -13108,13 +13131,51 @@ def codex_cli_process_env() -> Dict[str, str]:
             env["CODEX_HOME"] = auth_dir
     return env
 
-def codex_cli_command_path() -> str:
-    configured = codex_cli_env_flag("CODEX_CLI_BIN")
-    if configured:
-        resolved = shutil.which(configured) if os.path.basename(configured) == configured else configured
-        if resolved and (os.path.exists(resolved) or shutil.which(resolved)):
+def codex_cli_resolve_command(candidate: str) -> str:
+    candidate = str(candidate or "").strip().strip('"').strip("'")
+    if not candidate:
+        return ""
+    if os.path.basename(candidate) == candidate:
+        return shutil.which(candidate) or ""
+    expanded = codex_cli_expand_path(candidate)
+    if expanded and os.path.exists(expanded):
+        return expanded
+    return shutil.which(expanded) or ""
+
+def codex_cli_common_command_candidates() -> List[str]:
+    candidates: List[str] = []
+    local_appdata = os.getenv("LOCALAPPDATA", "")
+    appdata = os.getenv("APPDATA", "")
+    userprofile = os.getenv("USERPROFILE", "") or os.path.expanduser("~")
+    for root in [local_appdata, os.getenv("ProgramFiles", ""), os.getenv("ProgramFiles(x86)", "")]:
+        if root:
+            candidates.append(os.path.join(root, "Programs", "OpenAI", "Codex", "bin", "codex.exe"))
+            candidates.append(os.path.join(root, "OpenAI", "Codex", "bin", "codex.exe"))
+    if appdata:
+        candidates.extend([
+            os.path.join(appdata, "npm", "codex.cmd"),
+            os.path.join(appdata, "npm", "codex.exe"),
+        ])
+    if userprofile:
+        candidates.extend([
+            os.path.join(userprofile, ".local", "bin", "codex"),
+            os.path.join(userprofile, ".local", "bin", "codex.exe"),
+        ])
+        nvm_root = os.path.join(userprofile, ".nvm", "versions", "node", "*", "bin", "codex")
+        candidates.extend(glob.glob(nvm_root))
+    candidates.extend([
+        "/opt/homebrew/bin/codex",
+        "/usr/local/bin/codex",
+        "/usr/bin/codex",
+    ])
+    return codex_cli_unique_paths(candidates)
+
+def codex_cli_command_path(command_hint: str = "") -> str:
+    for candidate in [command_hint, codex_cli_env_flag("CODEX_CLI_BIN"), "codex", *codex_cli_common_command_candidates()]:
+        resolved = codex_cli_resolve_command(candidate)
+        if resolved:
             return resolved
-    return shutil.which("codex") or ""
+    return ""
 
 def codex_cli_auth_cache_status() -> Dict[str, Any]:
     auth_path, source = codex_cli_auth_file_path()
@@ -13145,8 +13206,8 @@ def codex_cli_auth_cache_status() -> Dict[str, Any]:
         status["error"] = str(exc)
     return status
 
-def codex_cli_status_payload() -> Dict[str, Any]:
-    cmd = codex_cli_command_path()
+def codex_cli_status_payload(command_hint: str = "") -> Dict[str, Any]:
+    cmd = codex_cli_command_path(command_hint)
     auth_cache = codex_cli_auth_cache_status()
     configured = codex_cli_local_auth_configured()
     checks = {
@@ -13452,8 +13513,9 @@ async def codex_cli_open_login():
     return {"success": True, "message": "请在终端运行 codex login 完成登录。", "command": "codex login"}
 
 @app.post("/api/codex-cli/configure-local-auth")
-async def codex_cli_configure_local_auth():
-    status = codex_cli_status_payload()
+async def codex_cli_configure_local_auth(payload: Optional[CodexCliConfigureRequest] = None):
+    command_hint = (payload.codex_cli_bin if payload else "") or ""
+    status = codex_cli_status_payload(command_hint)
     ready = bool(status.get("ready") and status.get("checks", {}).get("loggedIn"))
     if not ready:
         detail = "未检测到可用的本机 Codex 登录态。请先运行 codex login。"

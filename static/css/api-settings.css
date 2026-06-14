@@ -322,6 +322,9 @@ body.show-lovart .lovart-mode-panel:not([hidden]) { display:flex; }
 .jimeng-status-pill.ok { color:#15803d; border-color:#86efac; background:#f0fdf4; }
 .jimeng-status-pill.bad { color:#b45309; border-color:#fcd34d; background:#fffbeb; }
 .jimeng-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.codex-cli-manual-path { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; }
+.codex-cli-manual-path[hidden] { display:none !important; }
+@media (max-width:720px){ .codex-cli-manual-path { grid-template-columns:1fr; } }
 .jimeng-credit { min-height:20px; color:var(--text); font-size:12px; line-height:1.55; font-weight:800; white-space:pre-wrap; word-break:break-word; }
 .jimeng-output { display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px; align-items:start; padding:10px; border:1px solid var(--line); border-radius:12px; background:var(--panel); }
 .jimeng-output[hidden] { display:none !important; }

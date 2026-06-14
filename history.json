@@ -1,5 +1,230 @@
 [
     {
+        "prompt": "图中画圈的人物去掉",
+        "images": [
+            "/assets/output/jimeng_1a345aba2c.png"
+        ],
+        "timestamp": 1781415377.8484123,
+        "type": "online",
+        "model": "5.0",
+        "provider_id": "jimeng",
+        "provider_name": "即梦 CLI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "jimeng",
+            "model": "5.0",
+            "size": "2048x1152",
+            "quality": "high",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_574c23d251a7.png",
+                    "name": "output-1-current-frame_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": null
+    },
+    {
+        "prompt": "图中画圈的人物去掉",
+        "images": [
+            "/assets/output/jimeng_c693d40aad.png"
+        ],
+        "timestamp": 1781415336.0254426,
+        "type": "online",
+        "model": "5.0",
+        "provider_id": "jimeng",
+        "provider_name": "即梦 CLI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "jimeng",
+            "model": "5.0",
+            "size": "2048x1152",
+            "quality": "high",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_574c23d251a7.png",
+                    "name": "output-1-current-frame_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": null
+    },
+    {
+        "prompt": "图中画圈的人物去掉",
+        "images": [
+            "/assets/output/online_f633ec6d74.png"
+        ],
+        "timestamp": 1781415305.089598,
+        "type": "online",
+        "model": "agnes-image-2.0-flash",
+        "provider_id": "agnes-ai",
+        "provider_name": "Agnes AI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "agnes-ai",
+            "model": "agnes-image-2.0-flash",
+            "size": "2048x1152",
+            "quality": "high",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_574c23d251a7.png",
+                    "name": "output-1-current-frame_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": {
+            "total_tokens": 9216,
+            "input_tokens": 0,
+            "input_tokens_details": {
+                "image_tokens": 0,
+                "text_tokens": 0
+            },
+            "output_tokens": 9216,
+            "output_tokens_details": null
+        }
+    },
+    {
+        "prompt": "图中画圈的人物去掉",
+        "images": [
+            "/assets/output/jimeng_7fb48305c9.png"
+        ],
+        "timestamp": 1781415292.424749,
+        "type": "online",
+        "model": "5.0",
+        "provider_id": "jimeng",
+        "provider_name": "即梦 CLI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "jimeng",
+            "model": "5.0",
+            "size": "2048x1152",
+            "quality": "high",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_574c23d251a7.png",
+                    "name": "output-1-current-frame_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": null
+    },
+    {
+        "timestamp": 1781415168.4405625,
+        "prompt": "masterpiece, best quality, ultra-detailed, high resolution",
+        "images": [
+            "/assets/output/ms_black-forest-labs_FLUX.2-klein-9B_1781415168.png"
+        ],
+        "type": "klein",
+        "model": "black-forest-labs/FLUX.2-klein-9B"
+    },
+    {
+        "timestamp": 1781414302.9482298,
+        "prompt": "masterpiece, best quality, ultra-detailed, high resolution",
+        "images": [
+            "/assets/output/ms_black-forest-labs_FLUX.2-klein-9B_1781414302.png"
+        ],
+        "type": "klein",
+        "model": "black-forest-labs/FLUX.2-klein-9B"
+    },
+    {
+        "timestamp": 1781414272.464835,
+        "prompt": "飞龙在天",
+        "images": [
+            "/assets/output/cloud_1781414272.png"
+        ],
+        "type": "cloud"
+    },
+    {
+        "timestamp": 1781413702.3805714,
+        "prompt": "masterpiece, best quality, ultra-detailed, high resolution",
+        "images": [
+            "/assets/output/ms_black-forest-labs_FLUX.2-klein-9B_1781413702.png"
+        ],
+        "type": "klein",
+        "model": "black-forest-labs/FLUX.2-klein-9B"
+    },
+    {
+        "timestamp": 1781413700.140016,
+        "prompt": "将相机向左旋转49度，仰视34度",
+        "images": [
+            "/assets/output/cloud_angle_1781413700.png"
+        ],
+        "type": "angle"
+    },
+    {
+        "prompt": "巨龙飞天",
+        "images": [
+            "/output/codex-imagegen/codex_img_e43503cb0c64/codex-output-1.png"
+        ],
+        "timestamp": 1781413355.3495204,
+        "type": "online",
+        "model": "codex-cli/gpt-image",
+        "provider_id": "codex_cli",
+        "provider_name": "Codex CLI 本机生图",
+        "task_id": "codex_img_e43503cb0c64",
+        "request_id": "codex_img_e43503cb0c64",
+        "params": {
+            "provider_id": "codex_cli",
+            "model": "codex-cli/gpt-image",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": []
+        },
+        "raw": {
+            "success": true,
+            "task_id": "codex_img_e43503cb0c64",
+            "status": "succeeded",
+            "created_at": 1781413241000,
+            "images": [
+                {
+                    "url": "/output/codex-imagegen/codex_img_e43503cb0c64/codex-output-1.png",
+                    "localPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_e43503cb0c64\\codex-output-1.png"
+                }
+            ],
+            "error": "",
+            "started_at": 1781413241004,
+            "command": [
+                "C:\\Users\\ruoyu\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+                "exec",
+                "--sandbox",
+                "workspace-write",
+                "--cd",
+                "E:\\habiancheng\\daxiong-Canvas",
+                "--output-last-message",
+                "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_e43503cb0c64\\result_message.txt",
+                "--",
+                "请根据下面提示生成图片，并把最终 PNG/JPG/WEBP 图片文件保存到当前任务目录。如果图片工具只能先保存到 Codex 的 generated_images 缓存目录，请在最终回复中原样写出该 PNG/JPG/WEBP 的本机绝对路径。不要只保存 SVG 包装文件。\n任务目录：E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_e43503cb0c64\n画幅比例：1:1\n数量：1\n\n提示词：\n巨龙飞天"
+            ],
+            "pid": 75436,
+            "completed_at": 1781413355349,
+            "recovered": true,
+            "stdoutPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_e43503cb0c64\\stdout.log",
+            "stderrPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_e43503cb0c64\\stderr.log",
+            "promptPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_e43503cb0c64\\prompt.txt"
+        }
+    },
+    {
         "timestamp": 1781379718.52021,
         "prompt": "把这个人衣服换成绿色的，手抬起来，嘴巴的话大笑的。",
         "images": [
