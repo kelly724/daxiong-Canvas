@@ -401,12 +401,10 @@ RUNNINGHUB_DEFAULT_IMAGE_MODELS = [
     "seedream-v5-lite/text-to-image",
     "seedream-v5-lite/image-to-image",
 ]
-RUNNINGHUB_DEFAULT_VIDEO_MODELS = [
-    "google/veo3.1-fast/text-to-video-channel-low-price",
-    "sora-2/text-to-video-official-stable",
-    "seedance-2.0-global/text-to-video",
-    "seedance-2.0-global/image-to-video",
-]
+RUNNINGHUB_DEFAULT_VIDEO_MODELS = []
+RUNNINGHUB_HD_VIDEO_MODEL = "runninghub/2047787809091620866"
+RUNNINGHUB_HD_VIDEO_APP_ID = "2047787809091620866"
+RUNNINGHUB_HD_VIDEO_BASIC_WORKFLOW_ID = "2019292222763573249"
 RUNNINGHUB_DEFAULT_APPS = [
     {
         "id": "2058517022748798977",
@@ -489,18 +487,20 @@ RUNNINGHUB_DEFAULT_WORKFLOWS = [
         "id": "2058554058318897153",
         "workflowId": "2058554058318897153",
         "title": "GPT-Image-2-图片编辑",
-        "note": "",
+        "note": "2026-06-14 使用充值后的 RunningHub Key 复测通过，默认开启。",
         "thumbnail": "",
         "enabled": True,
+        "hidden": False,
         "optionalImageMode": "prune-workflow",
     },
     {
         "id": "2058541134623891458",
         "workflowId": "2058541134623891458",
         "title": "NanoBanana-2-图片编辑",
-        "note": "",
+        "note": "RunningHub 侧 RH_Nano_Banana2_Gemini31Flash 节点会返回 Custom validation failed for node，默认隐藏。",
         "thumbnail": "",
-        "enabled": True,
+        "enabled": False,
+        "hidden": True,
         "optionalImageMode": "prune-workflow",
     },
 ]
@@ -7622,12 +7622,7 @@ def runninghub_registry_fallback():
         {"name_en": "nano-banana/text-to-image-official-stable", "endpoint": "rhart-image-v1-official/text-to-image", "output_type": "image"},
         {"name_en": "nano-banana/edit-official-stable", "endpoint": "rhart-image-v1-official/edit", "output_type": "image"},
     ]
-    video = [
-        {"name_en": "google/veo3.1-fast/text-to-video-channel-low-price", "endpoint": "rhart-video-v3.1-fast/text-to-video", "output_type": "video"},
-        {"name_en": "sora-2/text-to-video-official-stable", "endpoint": "rhart-video-s-official/text-to-video", "output_type": "video"},
-        {"name_en": "seedance-2.0-global/text-to-video", "endpoint": "bytedance/seedance-2.0-global/text-to-video", "output_type": "video"},
-        {"name_en": "seedance-2.0-global/image-to-video", "endpoint": "bytedance/seedance-2.0-global/image-to-video", "output_type": "video"},
-    ]
+    video = []
     return image + video
 
 def runninghub_registry_items_from_raw(raw):
@@ -8459,7 +8454,93 @@ async def wait_for_runninghub_openapi_task(client, provider, task_id, output_kin
             return raw
     raise HTTPException(status_code=504, detail=f"RunningHub 任务超时：{last_payload or task_id}")
 
+def is_runninghub_hd_video_model(model):
+    return str(model or "").strip() == RUNNINGHUB_HD_VIDEO_MODEL
+
+def runninghub_hd_video_level(value):
+    raw = str(value or "").strip().lower()
+    if raw in {"basic", "standard", "base"}:
+        return "basic"
+    if raw in {"sharp", "sharpen"}:
+        return "sharp"
+    return "quality"
+
+def runninghub_first_video_input(payload):
+    for url in (getattr(payload, "videos", None) or []):
+        text = str(url or "").strip()
+        if text:
+            return text
+    for ref in (getattr(payload, "images", None) or []):
+        text = str(getattr(ref, "url", "") or "").strip()
+        if text and is_video_reference_value(text):
+            return text
+    return ""
+
+async def wait_for_runninghub_task_outputs(client, provider, api_key, task_id):
+    query_url = runninghub_endpoint_url(provider, "/task/openapi/outputs")
+    deadline = time.monotonic() + 1800
+    last_payload = None
+    while time.monotonic() < deadline:
+        await asyncio.sleep(2.5)
+        response = await client.post(query_url, headers=runninghub_app_headers(True), json={"apiKey": api_key, "taskId": task_id})
+        response.raise_for_status()
+        raw = response.json()
+        last_payload = raw
+        code = raw.get("code") if isinstance(raw, dict) else None
+        if code in (0, "0"):
+            return raw
+        if code in (805, "805"):
+            raise HTTPException(status_code=502, detail=f"RunningHub task failed: {runninghub_fail_reason(raw) or raw}")
+    raise HTTPException(status_code=504, detail=f"RunningHub task timed out: {last_payload or task_id}")
+
+async def generate_runninghub_hd_video(payload, provider):
+    video_url = runninghub_first_video_input(payload)
+    if not video_url:
+        raise HTTPException(status_code=400, detail="RunningHub video HD requires one video input.")
+    level = runninghub_hd_video_level(payload.resolution)
+    api_key = runninghub_api_key(provider)
+    async with httpx.AsyncClient(timeout=VIDEO_POLL_TIMEOUT) as client:
+        file_name = await runninghub_upload_local_to_filename(client, provider, video_url)
+        if not file_name:
+            raise HTTPException(status_code=400, detail=f"RunningHub could not upload video input: {video_url}")
+        if level == "basic":
+            submit_url = runninghub_endpoint_url(provider, "/task/openapi/create")
+            body = {
+                "apiKey": api_key,
+                "workflowId": RUNNINGHUB_HD_VIDEO_BASIC_WORKFLOW_ID,
+                "addMetadata": True,
+                "nodeInfoList": [{"nodeId": "9", "fieldName": "video", "fieldValue": file_name}],
+            }
+        else:
+            submit_url = runninghub_endpoint_url(provider, "/task/openapi/ai-app/run")
+            switch_index = "0" if level == "sharp" else "1"
+            body = {
+                "apiKey": api_key,
+                "webappId": RUNNINGHUB_HD_VIDEO_APP_ID,
+                "nodeInfoList": [
+                    {"nodeId": "10", "fieldName": "index", "fieldValue": switch_index},
+                    {"nodeId": "12", "fieldName": "video", "fieldValue": file_name},
+                ],
+            }
+        response = await client.post(submit_url, headers=runninghub_app_headers(True), json=body)
+        response.raise_for_status()
+        raw = response.json()
+        if not (isinstance(raw, dict) and raw.get("code") in (0, "0")):
+            raise HTTPException(status_code=502, detail=(raw.get("msg") if isinstance(raw, dict) else "") or f"RunningHub video HD submit failed: {raw}")
+        task_id = raw.get("data", {}).get("taskId") if isinstance(raw.get("data"), dict) else ""
+        if not task_id:
+            raise HTTPException(status_code=502, detail=f"RunningHub did not return taskId: {raw}")
+        result = await wait_for_runninghub_task_outputs(client, provider, api_key, task_id)
+        urls = runninghub_extract_outputs(result.get("data") if isinstance(result, dict) else result)
+        urls = [url for url in urls if str(url).startswith(("http://", "https://", "/output/", "/assets/"))]
+        if not urls:
+            raise HTTPException(status_code=502, detail=f"RunningHub video HD completed without video output: {result}")
+        local_urls = [await save_remote_video_to_output(url, prefix="rh_video_") for url in urls]
+        return {"videos": local_urls, "task_id": task_id, "raw": result}
+
 async def generate_runninghub_video(payload, provider):
+    if is_runninghub_hd_video_model(payload.model):
+        return await generate_runninghub_hd_video(payload, provider)
     model_def = await runninghub_model_definition(provider, payload.model)
     endpoint = runninghub_task_endpoint(provider, model_def.get("endpoint") or payload.model)
     params = model_def.get("params") if isinstance(model_def.get("params"), list) else []

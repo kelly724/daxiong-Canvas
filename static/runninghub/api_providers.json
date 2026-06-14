@@ -1549,9 +1549,10 @@
       {
         "id": "2058554058318897153",
         "title": "GPT-Image-2-图片编辑",
-        "note": "",
+        "note": "2026-06-14 使用充值后的 RunningHub Key 复测通过，默认开启。",
         "thumbnail": "/static/runninghub/thumbnails/workflow-2058554058318897153.jpg?v=1779701158",
         "enabled": true,
+        "hidden": false,
         "fields": [
           {
             "id": "1::filename_prefix",
@@ -1614,10 +1615,10 @@
             "id": "4::skip_error",
             "nodeId": "4",
             "fieldName": "skip_error",
-            "fieldValue": "False",
+            "fieldValue": true,
             "fieldType": "BOOLEAN",
             "label": "skip_error",
-            "enabled": false,
+            "enabled": true,
             "sourceFromUpstream": true,
             "group": "RH GPT Image 2.0 Edit Channel Low Price",
             "note": "",
@@ -1891,9 +1892,10 @@
       {
         "id": "2058541134623891458",
         "title": "NanoBanana-2-图片编辑",
-        "note": "",
+        "note": "RunningHub 侧 RH_Nano_Banana2_Gemini31Flash 节点会返回 Custom validation failed for node，默认隐藏。",
         "thumbnail": "/static/runninghub/thumbnails/workflow-2058541134623891458.jpg?v=1779701153",
-        "enabled": true,
+        "enabled": false,
+        "hidden": true,
         "fields": [
           {
             "id": "1::seed",
@@ -1918,10 +1920,10 @@
             "id": "1::skip_error",
             "nodeId": "1",
             "fieldName": "skip_error",
-            "fieldValue": "False",
+            "fieldValue": true,
             "fieldType": "BOOLEAN",
             "label": "skip_error",
-            "enabled": false,
+            "enabled": true,
             "sourceFromUpstream": true,
             "group": "RH NanoBanana2 gemini-3.1-flash-image-preview 🆕",
             "note": "",

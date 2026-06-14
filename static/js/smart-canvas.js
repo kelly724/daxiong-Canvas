@@ -2513,7 +2513,7 @@ function rhParamValue(field, media=null, sourceSettings=settings, fields=null, r
         if(randomValues[key] === undefined) randomValues[key] = smartRhRandomValue(field);
         return randomValues[key];
     }
-    if(rhFieldRole(field) === 'prompt') return param?.value ?? (media?.prompt || rhDefaultValue(field));
+    if(rhFieldRole(field) === 'prompt') return media?.prompt || param?.value || rhDefaultValue(field);
     return param?.value ?? rhDefaultValue(field);
 }
 function rhUserParamValue(field){
@@ -2760,6 +2760,28 @@ function rhMissingRequiredMediaMessage(field, media){
     }
     return `RunningHub 工作流缺少必选图片：${label}`;
 }
+function rhWorkflowInputHint(ref, fields, media, nodeInfoList=null){
+    const imageFields = sortRunningHubFields(fields || []).filter(field => rhFieldKind(field) === 'image');
+    if(ref?.kind !== 'workflow' || !imageFields.length) return '';
+    const images = media?.image || [];
+    const slots = imageFields.map((field, index) => {
+        const order = Number(field.imageOrder) > 0 ? Number(field.imageOrder) : index + 1;
+        const item = images[index];
+        const key = rhParamKey(field.nodeId, field.fieldName);
+        const submitted = (nodeInfoList || []).find(node => rhParamKey(node.nodeId, node.fieldName) === key)?.fieldValue;
+        const required = field.required === true ? ' required' : '';
+        const label = item?.name || item?.url || 'missing';
+        return `Image ${order}${required}: ${label}${submitted ? ` -> ${submitted}` : ''}`;
+    });
+    const extra = Math.max(0, images.length - imageFields.length);
+    if(extra > 0) slots.push(`Extra images ignored: ${extra}`);
+    return `${runningHubEntryLabel(ref.entry, ref.kind)} workflow ${ref.id} inputs: ${slots.join(' | ')}`;
+}
+function rhErrorWithInputHint(message, ref, fields, media, nodeInfoList=null){
+    const base = String(message || tr('smart.rhFailed'));
+    const hint = rhWorkflowInputHint(ref, fields, media, nodeInfoList);
+    return hint ? `${base}\n${hint}` : base;
+}
 function rhPruneWorkflowForMissingFields(workflowJson, missingFields){
     if(!workflowJson || typeof workflowJson !== 'object' || !missingFields?.length) return null;
     const workflow = JSON.parse(JSON.stringify(workflowJson));
@@ -2835,6 +2857,7 @@ async function rhBuildNodeInfoList(media, sourceSettings=settings, randomValues=
         if(rhFieldRole(field) === 'prompt' && !String(value || '').trim()) value = rhDefaultValue(field);
         if(['image','video','audio'].includes(kind)) value = await rhUploadValueIfNeeded(value, sourceSettings);
         if(['number','slider'].includes(kind) && String(value ?? '').trim() !== '' && !Number.isNaN(Number(value))) value = Number(value);
+        if(kind === 'boolean') value = String(value ?? '').toLowerCase() === 'true';
         // 只对“单值”字段（下拉/选项等）去换行；prompt / text 这类自由文本必须保留换行，
         // 否则多行提示词会被截成第一行（例如“一只红猫\n金色的眼睛”只剩“一只红猫”）。
         if(typeof value === 'string' && !['prompt','text'].includes(rhFieldRole(field)) && /[\r\n]/.test(value)) value = value.split(/\r?\n/).map(s => s.trim()).filter(Boolean)[0] || '';
@@ -5310,6 +5333,10 @@ function restoreMediaPlaybackStates(states){
 }
 function smartRunTaskLabel(run){
     const s = run?.settings || {};
+    if(s.engine === 'runninghub'){
+        const ref = selectedRunningHubRef(s);
+        return ref ? runningHubEntryLabel(ref.entry, ref.kind) : 'RunningHub';
+    }
     if(run?.kind === 'video') return s.videoModel || 'Video';
     if(s.engine === 'comfy'){
         if(s.comfyMode === 'custom') return s.comfyWorkflow || 'ComfyUI';
@@ -5445,6 +5472,7 @@ function smartRunPlatformLabel(run){
     const s = run?.settings || {};
     if(s.engine === 'comfy') return 'ComfyUI';
     if(s.engine === 'modelscope') return 'Modelscope';
+    if(s.engine === 'runninghub') return 'RunningHub';
     if(run?.kind === 'video') return videoProviderById(s.videoProvider || '')?.name || s.videoProvider || 'Video';
     return apiProviderById(s.provider_id || '')?.name || s.provider_id || 'API';
 }
@@ -5452,6 +5480,13 @@ function smartRunRequestMeta(run){
     const s = run?.settings || {};
     if(s.engine === 'comfy') return {workflow_json:s.comfyWorkflow || '', mode:s.comfyMode || 'text'};
     if(s.engine === 'modelscope') return {backend:'Modelscope', model:s.msgenModel || '', custom_model:s.msCustomModel || ''};
+    if(s.engine === 'runninghub'){
+        const ref = selectedRunningHubRef(s);
+        const base = {provider_id:'runninghub', backend:'runninghub', mode:ref?.kind || 'runninghub'};
+        if(ref?.kind === 'workflow') return {...base, workflowId:ref.id, workflow:runningHubEntryLabel(ref.entry, ref.kind)};
+        if(ref?.kind === 'app') return {...base, webappId:ref.id, app:runningHubEntryLabel(ref.entry, ref.kind)};
+        return base;
+    }
     if(run?.kind === 'video') return {provider_id:s.videoProvider || '', model:s.videoModel || '', duration:s.videoDuration || '', aspect_ratio:s.videoAspect || '', resolution:s.videoResolution || ''};
     return {provider_id:s.provider_id || '', model:s.model || '', size:run?.size || '', quality:s.quality || '', n:s.count || 1};
 }
@@ -12650,16 +12685,16 @@ async function runRunningHubGeneration(prompt, refs, runSettings=settings){
         body:JSON.stringify(body)
     }).then(async r => {
         const data = await r.json();
-        if(!r.ok || data.success === false) throw new Error(data.detail || data.error || tr('smart.rhFailed'));
+        if(!r.ok || data.success === false) throw new Error(rhErrorWithInputHint(data.detail || data.error || tr('smart.rhFailed'), ref, fields, media, nodeInfoList));
         return data.data || data;
     });
     const taskId = submit.taskId;
-    if(!taskId) throw new Error(tr('smart.rhNoTaskId'));
+    if(!taskId) throw new Error(rhErrorWithInputHint(tr('smart.rhNoTaskId'), ref, fields, media, nodeInfoList));
     for(let i = 0; i < 720; i++){
         await sleep(2500);
         const data = await fetch(`/api/runninghub/query?taskId=${encodeURIComponent(taskId)}`).then(async r => {
             const json = await r.json();
-            if(!r.ok || json.success === false) throw new Error(json.detail || json.error || tr('smart.rhFailed'));
+            if(!r.ok || json.success === false) throw new Error(rhErrorWithInputHint(json.detail || json.error || tr('smart.rhFailed'), ref, fields, media, nodeInfoList));
             return json.data || json;
         });
         if(data.status === 'SUCCESS'){
@@ -12667,7 +12702,7 @@ async function runRunningHubGeneration(prompt, refs, runSettings=settings){
             if(!urls.length) throw new Error(tr('smart.rhOutputsEmpty'));
             return urls;
         }
-        if(data.status === 'FAILED') throw new Error(data.failReason || tr('smart.rhFailed'));
+        if(data.status === 'FAILED') throw new Error(rhErrorWithInputHint(data.failReason || tr('smart.rhFailed'), ref, fields, media, nodeInfoList));
     }
     throw new Error(tr('smart.rhTimeout'));
 }
