@@ -1,4 +1,5 @@
 import os
+import tempfile
 import unittest
 import uuid
 
@@ -88,6 +89,35 @@ class CodexCliImageHarvestTests(unittest.TestCase):
             generated_root,
             lambda: main.codex_cli_harvest_external_images(task_id),
         )
+
+        self.assertEqual(1, len(images))
+        self.assertEqual("codex-output-1.png", os.path.basename(images[0]["localPath"]))
+        with open(images[0]["localPath"], "rb") as f:
+            self.assertEqual(PNG_BYTES, f.read())
+
+    def test_harvest_recovers_recent_temp_image_from_result_message(self):
+        root = os.path.join(main.BASE_DIR, "output", "_test_codex_cli", uuid.uuid4().hex)
+        generated_root = os.path.join(root, "codex-cache", "generated_images")
+        output_root = os.path.join(root, "project-output")
+        task_id = "codex_img_temp"
+        task_dir = os.path.join(output_root, "codex-imagegen", task_id)
+        temp_source = os.path.join(tempfile.gettempdir(), f"codex-temp-{uuid.uuid4().hex}.png")
+
+        os.makedirs(task_dir, exist_ok=True)
+        with open(temp_source, "wb") as f:
+            f.write(PNG_BYTES)
+        with open(os.path.join(task_dir, "result_message.txt"), "w", encoding="utf-8") as f:
+            f.write(f"saved to `{temp_source}`")
+
+        try:
+            images = self.with_codex_paths(
+                output_root,
+                generated_root,
+                lambda: main.codex_cli_harvest_external_images(task_id),
+            )
+        finally:
+            if os.path.isfile(temp_source):
+                os.remove(temp_source)
 
         self.assertEqual(1, len(images))
         self.assertEqual("codex-output-1.png", os.path.basename(images[0]["localPath"]))

@@ -18,6 +18,7 @@
         "common.project": { zh: "项目主页", en: "Project" },
         "common.moreSettings": { zh: "更多设置", en: "More Settings" },
         "update.available": { zh: "发现更新", en: "Update Available" },
+        "update.githubSync": { zh: "GitHub 同步", en: "GitHub Sync" },
         "update.openProject": { zh: "打开项目", en: "Open Project" },
         "update.oneClick": { zh: "一键更新", en: "Update" },
         "update.versionLine": { zh: "本地 {local} · 最新 {remote}", en: "Local {local} · Latest {remote}" },

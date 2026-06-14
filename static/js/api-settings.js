@@ -2747,10 +2747,14 @@ function currentProviderApiKey(item){
     return keyInput.value.trim();
 }
 function normalizeImageRequestMode(value){
-    return String(value || '').trim().toLowerCase() === 'openai-json' ? 'openai-json' : 'openai';
+    const mode = String(value || '').trim().toLowerCase();
+    return ['openai-json', 'openai-generations-image'].includes(mode) ? mode : 'openai';
 }
 function imageRequestModeLabel(mode){
-    return normalizeImageRequestMode(mode) === 'openai-json' ? 'OpenAI JSON' : 'OpenAI 标准';
+    const normalized = normalizeImageRequestMode(mode);
+    if(normalized === 'openai-json') return 'OpenAI JSON';
+    if(normalized === 'openai-generations-image') return 'Generations image';
+    return 'OpenAI 标准';
 }
 function isRunningHubContext(item, baseUrl=''){
     const protocol = String(protocolInput?.value || item?.protocol || '').trim().toLowerCase();

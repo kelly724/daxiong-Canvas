@@ -239,10 +239,10 @@ class ConnectionManager:
 manager = ConnectionManager()
 GLOBAL_LOOP = None
 APP_VERSION = "2026.06.03"
-GITHUB_REPO_URL = "https://github.com/hero8152/Infinite-Canvas"
-GITHUB_VERSION_URL = "https://raw.githubusercontent.com/hero8152/Infinite-Canvas/main/VERSION"
-GITHUB_TREE_URL = "https://api.github.com/repos/hero8152/Infinite-Canvas/git/trees/main?recursive=1"
-GITHUB_RAW_ROOT = "https://raw.githubusercontent.com/hero8152/Infinite-Canvas/main"
+GITHUB_REPO_URL = "https://github.com/yzhe3778-ai/daxiong-Canvas"
+GITHUB_VERSION_URL = "https://raw.githubusercontent.com/yzhe3778-ai/daxiong-Canvas/main/VERSION"
+GITHUB_TREE_URL = "https://api.github.com/repos/yzhe3778-ai/daxiong-Canvas/git/trees/main?recursive=1"
+GITHUB_RAW_ROOT = "https://raw.githubusercontent.com/yzhe3778-ai/daxiong-Canvas/main"
 GITHUB_UPDATE_NOTES_URL = GITHUB_RAW_ROOT + "/static/update-notes.json"
 MODELSCOPE_REPO_URL = "https://modelscope.ai/studios/daniel8152/Infinite-Canvas"
 MODELSCOPE_RAW_ROOT = "https://www.modelscope.ai/studios/daniel8152/Infinite-Canvas/raw/main"
@@ -339,7 +339,7 @@ JIMENG_LOGIN_SESSION = {
 
 PROVIDER_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{2,40}$")
 SUPPORTED_PROVIDER_PROTOCOLS = {"openai", "apimart", "gemini", "volcengine", "runninghub", "jimeng", "codex_cli", "lovart"}
-SUPPORTED_IMAGE_REQUEST_MODES = {"openai", "openai-json"}
+SUPPORTED_IMAGE_REQUEST_MODES = {"openai", "openai-json", "openai-generations-image"}
 RUNNINGHUB_DEFAULT_BASE_URL = "https://www.runninghub.cn"
 RUNNINGHUB_OPENAPI_BASE_URL = "https://www.runninghub.cn/openapi/v2"
 RUNNINGHUB_MODEL_REGISTRY_URL = "https://raw.githubusercontent.com/HM-RunningHub/ComfyUI_RH_OpenAPI/main/models_registry.json"
@@ -3849,10 +3849,13 @@ def is_apimart_provider(provider):
 
 def detect_image_request_mode(base_url="", models=None):
     base = str(base_url or "").strip().lower()
+    model_ids = [str(model or "").strip().lower() for model in (models or [])]
+    if "yunwu.ai" in base and "gpt-image-2-all" in model_ids:
+        return "openai-generations-image"
     if "apihub.agnes-ai.com" in base:
         return "openai-json"
-    for model in models or []:
-        if str(model or "").strip().lower().startswith("agnes-image-"):
+    for model in model_ids:
+        if model.startswith("agnes-image-"):
             return "openai-json"
     return ""
 
@@ -6899,6 +6902,42 @@ async def upload_local_video_to_cloud(ref_url: str, service: str = "auto") -> Di
 async def upload_local_video_to_temp_sh(ref_url: str) -> Dict[str, str]:
     return await upload_local_video_to_cloud(ref_url, "auto")
 
+async def upload_local_image_to_cloud(ref_url: str, service: str = "auto") -> Dict[str, str]:
+    ref_url = str(ref_url or "").strip()
+    if ref_url.startswith("http://") or ref_url.startswith("https://"):
+        return {"url": ref_url, "source": ref_url, "service": "existing"}
+    public = local_asset_public_url(ref_url)
+    if public:
+        return {"url": public, "source": ref_url, "service": "public-base-url"}
+    path = local_media_path_for_cloud_upload(ref_url, ("image/",))
+    service = str(service or os.getenv("CLOUD_IMAGE_UPLOAD_SERVICE", os.getenv("CLOUD_VIDEO_UPLOAD_SERVICE", "auto")) or "auto").strip().lower()
+    if service in {"litterbox", "catbox"}:
+        return await upload_video_to_litterbox(path, ref_url)
+    if service in {"temp", "temp.sh", "tempsh"}:
+        return await upload_video_to_temp_sh(path, ref_url)
+    errors = []
+    for name, func in (("litterbox", upload_video_to_litterbox), ("temp.sh", upload_video_to_temp_sh)):
+        try:
+            return await func(path, ref_url)
+        except HTTPException as exc:
+            errors.append(f"{name}: {exc.detail}")
+    raise HTTPException(status_code=502, detail="图片云端上传失败：" + "；".join(errors))
+
+async def image_generation_reference_url(ref) -> str:
+    url = str((ref or {}).get("url") or "").strip()
+    if not url:
+        return ""
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    try:
+        uploaded = await upload_local_image_to_cloud(url)
+        return str(uploaded.get("url") or "").strip()
+    except HTTPException as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=f"云雾 gpt-image-2-all 图生图需要公网可访问的图片 URL。本地参考图上传失败：{exc.detail}"
+        ) from exc
+
 async def save_ai_image_to_output(image_data, prefix="online_", category="output"):
     filename = f"{prefix}{uuid.uuid4().hex[:10]}.png"
     path = output_path_for(filename, category)
@@ -8675,7 +8714,12 @@ async def generate_ai_image(prompt, size, quality, model, reference_images=None,
     mask_refs = [ref for ref in refs if str(ref.get("role") or "").strip().lower() == "mask" or str(ref.get("name") or "").lower().endswith("_mask.png")]
     image_refs = [ref for ref in refs if ref not in mask_refs]
     image_request_mode = effective_image_request_mode(provider, model)
-    request_timeout = httpx.Timeout(connect=20.0, read=1800.0, write=120.0, pool=20.0) if (is_gpt2 or is_apimart or image_request_mode == "openai-json") else AI_REQUEST_TIMEOUT
+    if image_request_mode == "openai-generations-image":
+        request_timeout = httpx.Timeout(connect=20.0, read=300.0, write=120.0, pool=20.0)
+    elif is_gpt2 or is_apimart or image_request_mode == "openai-json":
+        request_timeout = httpx.Timeout(connect=20.0, read=1800.0, write=120.0, pool=20.0)
+    else:
+        request_timeout = AI_REQUEST_TIMEOUT
     async with httpx.AsyncClient(timeout=request_timeout) as client:
         response = None
         async def post_openai_edits(edit_files=None):
@@ -8689,7 +8733,12 @@ async def generate_ai_image(prompt, size, quality, model, reference_images=None,
                 files=edit_files if edit_files is not None else {},
             )
 
-        if image_request_mode == "openai-json":
+        if image_request_mode == "openai-generations-image":
+            body = {"model": model, "prompt": prompt, "size": size, "n": 1}
+            if image_refs:
+                body["image"] = [url for url in [await image_generation_reference_url(ref) for ref in image_refs[:5]] if url]
+            response = await client.post(gen_url, headers=api_headers(provider=provider, model=model), json=body)
+        elif image_request_mode == "openai-json":
             # Agnes 等“OpenAI JSON 图片接口”统一走 /images/generations：
             # 不使用 /images/edits，不传顶层 response_format/n/quality；
             # 文生图只传 extra_body.response_format，图生图把参考图放进 extra_body.image。
@@ -13176,6 +13225,14 @@ async def scene_detection_analyze(payload: SceneDetectionRequest):
 
 CODEX_CLI_TASKS: Dict[str, Dict[str, Any]] = {}
 CODEX_CLI_TASK_LOCK = Lock()
+try:
+    CODEX_CLI_STALL_TIMEOUT_SECONDS = max(1, int(float(os.getenv("CODEX_CLI_STALL_TIMEOUT_SECONDS", "300"))))
+except Exception:
+    CODEX_CLI_STALL_TIMEOUT_SECONDS = 300
+try:
+    CODEX_CLI_MAX_RUNTIME_SECONDS = max(1, int(float(os.getenv("CODEX_CLI_MAX_RUNTIME_SECONDS", "300"))))
+except Exception:
+    CODEX_CLI_MAX_RUNTIME_SECONDS = 300
 
 def codex_cli_env_flag(key: str) -> str:
     return (os.getenv(key, "") or read_api_env_value(key)).strip()
@@ -13382,8 +13439,28 @@ def codex_cli_task_url(task_id: str, filename: str) -> str:
 
 CODEX_CLI_IMAGE_EXT_RE = re.compile(r"\.(png|jpe?g|webp)$", re.I)
 CODEX_CLI_SESSION_ID_RE = re.compile(r"session id:\s*([0-9a-fA-F-]{20,})", re.I)
+CODEX_CLI_SAFETY_REFUSAL_PATTERNS = (
+    "图片安全系统拒绝",
+    "安全系统拒绝",
+    "安全规则",
+    "安全策略",
+    "被拦截",
+    "拦截",
+    "content policy",
+    "safety policy",
+    "safety system",
+    "policy violation",
+    "blocked by",
+    "refused",
+    "cannot generate",
+    "can't generate",
+    "not allowed",
+)
 CODEX_CLI_EXTERNAL_IMAGE_ROOTS = [
     os.path.join(os.path.expanduser("~"), ".codex", "generated_images"),
+]
+CODEX_CLI_TEMP_IMAGE_ROOTS = [
+    tempfile.gettempdir(),
 ]
 
 def codex_cli_task_images(task_id: str) -> List[Dict[str, str]]:
@@ -13429,9 +13506,63 @@ def codex_cli_path_is_under(path: str, root: str) -> bool:
     except Exception:
         return False
 
-def codex_cli_allowed_external_image(path: str) -> bool:
+def codex_cli_file_looks_like_image(path: str) -> bool:
+    try:
+        with open(path, "rb") as f:
+            header = f.read(16)
+    except Exception:
+        return False
+    return (
+        header.startswith(b"\x89PNG\r\n\x1a\n")
+        or header.startswith(b"\xff\xd8\xff")
+        or (header.startswith(b"RIFF") and header[8:12] == b"WEBP")
+    )
+
+def codex_cli_temp_image_roots() -> List[str]:
+    roots = [*globals().get("CODEX_CLI_TEMP_IMAGE_ROOTS", [])]
+    for key in ("TEMP", "TMP"):
+        value = os.getenv(key, "")
+        if value:
+            roots.append(value)
+    return codex_cli_unique_paths([root for root in roots if root])
+
+def codex_cli_task_time_window(task_id: str) -> Tuple[float, float]:
+    task_dir = codex_cli_task_dir(task_id)
+    times: List[float] = []
+    if os.path.isdir(task_dir):
+        for root, _, files in os.walk(task_dir):
+            for name in files:
+                path = os.path.join(root, name)
+                try:
+                    times.append(os.path.getmtime(path))
+                except Exception:
+                    continue
+        try:
+            times.append(os.path.getmtime(task_dir))
+        except Exception:
+            pass
+    if not times:
+        now = time.time()
+        return now - 60, now + 60
+    return min(times) - 60, max(times) + 300
+
+def codex_cli_allowed_temp_image(path: str, task_id: str) -> bool:
+    if not task_id or not any(codex_cli_path_is_under(path, root) for root in codex_cli_temp_image_roots()):
+        return False
+    if not codex_cli_file_looks_like_image(path):
+        return False
+    try:
+        mtime = os.path.getmtime(path)
+    except Exception:
+        return False
+    start, end = codex_cli_task_time_window(task_id)
+    return start <= mtime <= end
+
+def codex_cli_allowed_external_image(path: str, task_id: str = "") -> bool:
     roots = globals().get("CODEX_CLI_EXTERNAL_IMAGE_ROOTS", [])
-    return any(codex_cli_path_is_under(path, root) for root in roots if root)
+    if any(codex_cli_path_is_under(path, root) for root in roots if root):
+        return True
+    return codex_cli_allowed_temp_image(path, task_id)
 
 def codex_cli_external_result_text(task_id: str) -> str:
     task_dir = codex_cli_task_dir(task_id)
@@ -13498,7 +13629,7 @@ def codex_cli_harvest_external_images(task_id: str) -> List[Dict[str, str]]:
                 is_in_task_dir = False
             if is_in_task_dir:
                 continue
-            if not codex_cli_allowed_external_image(source_abs):
+            if not codex_cli_allowed_external_image(source_abs, task_id):
                 continue
             ext = os.path.splitext(source_abs)[1].lower()
             if not CODEX_CLI_IMAGE_EXT_RE.search(ext):
@@ -13512,6 +13643,82 @@ def codex_cli_harvest_external_images(task_id: str) -> List[Dict[str, str]]:
         except Exception:
             continue
     return codex_cli_task_images(task_id)
+
+def codex_cli_task_last_activity_time(task_id: str, fallback: float = 0) -> float:
+    task_dir = codex_cli_task_dir(task_id)
+    last_activity = float(fallback or 0)
+    if not os.path.isdir(task_dir):
+        return last_activity
+    for root, _, files in os.walk(task_dir):
+        for name in files:
+            path = os.path.join(root, name)
+            try:
+                last_activity = max(last_activity, os.path.getmtime(path))
+            except Exception:
+                continue
+    return last_activity
+
+def codex_cli_task_started_seconds(task: Dict[str, Any]) -> float:
+    for key in ("started_at", "created_at"):
+        try:
+            value = float(task.get(key) or 0)
+            if value > 0:
+                return value / 1000
+        except Exception:
+            continue
+    return time.time()
+
+def codex_cli_stall_error(timeout_seconds: int = None) -> str:
+    timeout_seconds = int(timeout_seconds or CODEX_CLI_STALL_TIMEOUT_SECONDS)
+    minutes = max(1, int(round(timeout_seconds / 60)))
+    return f"Codex CLI had no output for {minutes} minutes; stopped automatically."
+
+def codex_cli_runtime_error(timeout_seconds: int = None) -> str:
+    timeout_seconds = int(timeout_seconds or CODEX_CLI_MAX_RUNTIME_SECONDS)
+    minutes = max(1, int(round(timeout_seconds / 60)))
+    return f"Codex CLI runtime exceeded {minutes} minutes without producing an image; stopped automatically."
+
+def codex_cli_safety_refusal_error() -> str:
+    return "Codex CLI image generation hit a safety/content-policy refusal; stopped automatically."
+
+def codex_cli_task_has_safety_refusal(task_id: str) -> bool:
+    text = codex_cli_external_result_text(task_id).lower()
+    return any(pattern in text for pattern in CODEX_CLI_SAFETY_REFUSAL_PATTERNS)
+
+def codex_cli_running_task_exceeded_runtime(task: Dict[str, Any], now_seconds: float = None) -> bool:
+    now_seconds = float(now_seconds if now_seconds is not None else time.time())
+    return now_seconds - codex_cli_task_started_seconds(task) >= CODEX_CLI_MAX_RUNTIME_SECONDS
+
+def codex_cli_running_task_is_stalled(task_id: str, task: Dict[str, Any], now_seconds: float = None) -> bool:
+    if task.get("status") != "running" or task.get("images"):
+        return False
+    now_seconds = float(now_seconds if now_seconds is not None else time.time())
+    fallback = codex_cli_task_started_seconds(task)
+    last_activity = codex_cli_task_last_activity_time(task_id, fallback)
+    return now_seconds - last_activity >= CODEX_CLI_STALL_TIMEOUT_SECONDS
+
+def codex_cli_running_task_failure_error(task_id: str, task: Dict[str, Any], now_seconds: float = None) -> str:
+    if task.get("status") != "running" or task.get("images"):
+        return ""
+    if codex_cli_task_has_safety_refusal(task_id):
+        return codex_cli_safety_refusal_error()
+    if codex_cli_running_task_exceeded_runtime(task, now_seconds):
+        return codex_cli_runtime_error()
+    if codex_cli_running_task_is_stalled(task_id, task, now_seconds):
+        return codex_cli_stall_error()
+    return ""
+
+def codex_cli_fail_stalled_running_task(task_id: str, task: Dict[str, Any], now_seconds: float = None) -> bool:
+    error = codex_cli_running_task_failure_error(task_id, task, now_seconds)
+    if not error:
+        return False
+    codex_cli_stop_process(task.get("pid"))
+    failed = {"status": "failed", "error": error, "completed_at": now_ms()}
+    with CODEX_CLI_TASK_LOCK:
+        if task_id in CODEX_CLI_TASKS and CODEX_CLI_TASKS[task_id].get("status") == "running":
+            CODEX_CLI_TASKS[task_id].update(failed)
+    task.update(failed)
+    return True
 
 def codex_cli_stop_process(pid: Any):
     if not pid:
@@ -13538,7 +13745,7 @@ def run_codex_cli_image_task(task_id: str, payload: Dict[str, Any]):
         return
     instruction = (
         "请根据下面提示生成图片，并把最终 PNG/JPG/WEBP 图片文件保存到当前任务目录。"
-        "如果图片工具只能先保存到 Codex 的 generated_images 缓存目录，请在最终回复中原样写出该 PNG/JPG/WEBP 的本机绝对路径。"
+        "如果图片工具只能先保存到 Codex 的 generated_images 缓存目录、系统 Temp 目录或其它本机临时目录，请在最终回复中原样写出该 PNG/JPG/WEBP 的本机绝对路径。"
         "不要只保存 SVG 包装文件。"
         f"\n任务目录：{task_dir}\n"
         f"画幅比例：{payload.get('aspect_ratio') or '1:1'}\n"
@@ -13561,7 +13768,25 @@ def run_codex_cli_image_task(task_id: str, payload: Dict[str, Any]):
             with CODEX_CLI_TASK_LOCK:
                 CODEX_CLI_TASKS[task_id]["pid"] = proc.pid
             timeout = max(30, min(1800, int(payload.get("timeout_ms") or 1200000) // 1000))
-            proc.wait(timeout=timeout)
+            deadline = time.monotonic() + timeout
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(command, timeout)
+                try:
+                    proc.wait(timeout=min(2, remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    image_files = codex_cli_task_images(task_id) or codex_cli_harvest_external_images(task_id)
+                    if image_files:
+                        codex_cli_stop_process(proc.pid)
+                        with CODEX_CLI_TASK_LOCK:
+                            CODEX_CLI_TASKS[task_id].update({"status": "succeeded", "images": image_files, "completed_at": now_ms(), "recovered": True})
+                        return
+                    with CODEX_CLI_TASK_LOCK:
+                        running_task = dict(CODEX_CLI_TASKS.get(task_id) or {})
+                    if codex_cli_fail_stalled_running_task(task_id, running_task):
+                        return
         image_files = codex_cli_task_images(task_id) or codex_cli_harvest_external_images(task_id)
         with CODEX_CLI_TASK_LOCK:
             if CODEX_CLI_TASKS.get(task_id, {}).get("status") == "succeeded":
@@ -13674,6 +13899,8 @@ async def codex_cli_imagegen_status(task_id: str):
                 if task_id in CODEX_CLI_TASKS:
                     CODEX_CLI_TASKS[task_id].update(recovered)
             task.update(recovered)
+        else:
+            codex_cli_fail_stalled_running_task(task_id, task)
     task["stdoutPath"] = os.path.join(codex_cli_task_dir(task_id), "stdout.log")
     task["stderrPath"] = os.path.join(codex_cli_task_dir(task_id), "stderr.log")
     task["promptPath"] = os.path.join(codex_cli_task_dir(task_id), "prompt.txt")

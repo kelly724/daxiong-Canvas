@@ -1,5 +1,552 @@
 [
     {
+        "prompt": "老虎发飙了，扑向猎物",
+        "images": [
+            "/assets/output/online_5dd886d82f.png"
+        ],
+        "timestamp": 1781452290.0911734,
+        "type": "online",
+        "model": "gpt-image-2-all",
+        "provider_id": "custom-api",
+        "provider_name": "云雾",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "custom-api",
+            "model": "gpt-image-2-all",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/output/jimeng_583608342e.png",
+                    "name": "output-1.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": {
+            "total_tokens": 5295,
+            "input_tokens": 1120,
+            "output_tokens": 4175,
+            "input_tokens_details": {
+                "text_tokens": 15,
+                "image_tokens": 1105
+            }
+        }
+    },
+    {
+        "prompt": "A simple red cube on a clean white background, minimal studio product render",
+        "images": [
+            "/assets/output/online_3bd0cda7fc.png"
+        ],
+        "timestamp": 1781451837.9179723,
+        "type": "online",
+        "model": "gpt-image-2-all",
+        "provider_id": "custom-api",
+        "provider_name": "云雾",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "custom-api",
+            "model": "gpt-image-2-all",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": []
+        },
+        "raw_usage": {
+            "total_tokens": 4189,
+            "input_tokens": 14,
+            "output_tokens": 4175,
+            "input_tokens_details": {
+                "text_tokens": 14,
+                "image_tokens": 0
+            }
+        }
+    },
+    {
+        "prompt": "红色圈住的羊群变成犀牛",
+        "images": [
+            "/output/codex-imagegen/codex_img_05a3120cc619/codex-output-1.png"
+        ],
+        "timestamp": 1781451638.3308506,
+        "type": "online",
+        "model": "codex-cli/gpt-image",
+        "provider_id": "codex_cli",
+        "provider_name": "Codex CLI 本机生图",
+        "task_id": "codex_img_05a3120cc619",
+        "request_id": "codex_img_05a3120cc619",
+        "params": {
+            "provider_id": "codex_cli",
+            "model": "codex-cli/gpt-image",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_d94fd9b7118a.png",
+                    "name": "output-1_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw": {
+            "success": true,
+            "task_id": "codex_img_05a3120cc619",
+            "status": "succeeded",
+            "created_at": 1781451470727,
+            "images": [
+                {
+                    "url": "/output/codex-imagegen/codex_img_05a3120cc619/codex-output-1.png",
+                    "localPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_05a3120cc619\\codex-output-1.png"
+                }
+            ],
+            "error": "",
+            "started_at": 1781451470733,
+            "command": [
+                "C:\\Users\\ruoyu\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+                "exec",
+                "--sandbox",
+                "workspace-write",
+                "--cd",
+                "E:\\habiancheng\\daxiong-Canvas",
+                "--output-last-message",
+                "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_05a3120cc619\\result_message.txt",
+                "--image",
+                "E:\\habiancheng\\daxiong-Canvas\\assets\\input\\ai_ref_d94fd9b7118a.png",
+                "--",
+                "请根据下面提示生成图片，并把最终 PNG/JPG/WEBP 图片文件保存到当前任务目录。如果图片工具只能先保存到 Codex 的 generated_images 缓存目录、系统 Temp 目录或其它本机临时目录，请在最终回复中原样写出该 PNG/JPG/WEBP 的本机绝对路径。不要只保存 SVG 包装文件。\n任务目录：E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_05a3120cc619\n画幅比例：1:1\n数量：1\n\n提示词：\n红色圈住的羊群变成犀牛"
+            ],
+            "pid": 79264,
+            "completed_at": 1781451638329,
+            "recovered": true,
+            "stdoutPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_05a3120cc619\\stdout.log",
+            "stderrPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_05a3120cc619\\stderr.log",
+            "promptPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_05a3120cc619\\prompt.txt"
+        }
+    },
+    {
+        "prompt": "红色圈住的羊群变成犀牛",
+        "images": [
+            "/assets/output/jimeng_583608342e.png"
+        ],
+        "timestamp": 1781451562.5830045,
+        "type": "online",
+        "model": "5.0",
+        "provider_id": "jimeng",
+        "provider_name": "即梦 CLI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "jimeng",
+            "model": "5.0",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_d94fd9b7118a.png",
+                    "name": "output-1_paint.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": null
+    },
+    {
+        "prompt": "老虎凶猛地看着前方的猎物，是一群羊",
+        "images": [
+            "/output/codex-imagegen/codex_img_001e2aa92235/codex-output-1.png"
+        ],
+        "timestamp": 1781451242.7227623,
+        "type": "online",
+        "model": "codex-cli/gpt-image",
+        "provider_id": "codex_cli",
+        "provider_name": "Codex CLI 本机生图",
+        "task_id": "codex_img_001e2aa92235",
+        "request_id": "codex_img_001e2aa92235",
+        "params": {
+            "provider_id": "codex_cli",
+            "model": "codex-cli/gpt-image",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/output/codex-imagegen/codex_img_84dc7bc06282/codex-output-1.png",
+                    "name": "output-1.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw": {
+            "success": true,
+            "task_id": "codex_img_001e2aa92235",
+            "status": "succeeded",
+            "created_at": 1781451049396,
+            "images": [
+                {
+                    "url": "/output/codex-imagegen/codex_img_001e2aa92235/codex-output-1.png",
+                    "localPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_001e2aa92235\\codex-output-1.png"
+                }
+            ],
+            "error": "",
+            "started_at": 1781451049402,
+            "command": [
+                "C:\\Users\\ruoyu\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+                "exec",
+                "--sandbox",
+                "workspace-write",
+                "--cd",
+                "E:\\habiancheng\\daxiong-Canvas",
+                "--output-last-message",
+                "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_001e2aa92235\\result_message.txt",
+                "--image",
+                "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_84dc7bc06282\\codex-output-1.png",
+                "--",
+                "请根据下面提示生成图片，并把最终 PNG/JPG/WEBP 图片文件保存到当前任务目录。如果图片工具只能先保存到 Codex 的 generated_images 缓存目录、系统 Temp 目录或其它本机临时目录，请在最终回复中原样写出该 PNG/JPG/WEBP 的本机绝对路径。不要只保存 SVG 包装文件。\n任务目录：E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_001e2aa92235\n画幅比例：1:1\n数量：1\n\n提示词：\n老虎凶猛地看着前方的猎物，是一群羊"
+            ],
+            "pid": 20900,
+            "completed_at": 1781451242721,
+            "recovered": true,
+            "stdoutPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_001e2aa92235\\stdout.log",
+            "stderrPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_001e2aa92235\\stderr.log",
+            "promptPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_001e2aa92235\\prompt.txt"
+        }
+    },
+    {
+        "prompt": "大老虎在喝水",
+        "images": [
+            "/output/codex-imagegen/codex_img_84dc7bc06282/codex-output-1.png",
+            "/output/codex-imagegen/codex_img_84dc7bc06282/codex-output-2.png"
+        ],
+        "timestamp": 1781450984.4937308,
+        "type": "online",
+        "model": "codex-cli/gpt-image",
+        "provider_id": "codex_cli",
+        "provider_name": "Codex CLI 本机生图",
+        "task_id": "codex_img_84dc7bc06282",
+        "request_id": "codex_img_84dc7bc06282",
+        "params": {
+            "provider_id": "codex_cli",
+            "model": "codex-cli/gpt-image",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_2d0473f579b5.png",
+                    "name": "ai_ref_368690ff7047_join.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw": {
+            "success": true,
+            "task_id": "codex_img_84dc7bc06282",
+            "status": "succeeded",
+            "created_at": 1781450816699,
+            "images": [
+                {
+                    "url": "/output/codex-imagegen/codex_img_84dc7bc06282/codex-output-1.png",
+                    "localPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_84dc7bc06282\\codex-output-1.png"
+                },
+                {
+                    "url": "/output/codex-imagegen/codex_img_84dc7bc06282/codex-output-2.png",
+                    "localPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_84dc7bc06282\\codex-output-2.png"
+                }
+            ],
+            "error": "",
+            "started_at": 1781450816705,
+            "command": [
+                "C:\\Users\\ruoyu\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+                "exec",
+                "--sandbox",
+                "workspace-write",
+                "--cd",
+                "E:\\habiancheng\\daxiong-Canvas",
+                "--output-last-message",
+                "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_84dc7bc06282\\result_message.txt",
+                "--image",
+                "E:\\habiancheng\\daxiong-Canvas\\assets\\input\\ai_ref_2d0473f579b5.png",
+                "--",
+                "请根据下面提示生成图片，并把最终 PNG/JPG/WEBP 图片文件保存到当前任务目录。如果图片工具只能先保存到 Codex 的 generated_images 缓存目录、系统 Temp 目录或其它本机临时目录，请在最终回复中原样写出该 PNG/JPG/WEBP 的本机绝对路径。不要只保存 SVG 包装文件。\n任务目录：E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_84dc7bc06282\n画幅比例：1:1\n数量：1\n\n提示词：\n大老虎在喝水"
+            ],
+            "pid": 80144,
+            "completed_at": 1781450984493,
+            "recovered": true,
+            "stdoutPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_84dc7bc06282\\stdout.log",
+            "stderrPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_84dc7bc06282\\stderr.log",
+            "promptPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_84dc7bc06282\\prompt.txt"
+        }
+    },
+    {
+        "prompt": "钢铁侠和蝙蝠侠在图一打斗",
+        "images": [
+            "/output/codex-imagegen/codex_img_6ddd59bce7d8/codex-output-1.png"
+        ],
+        "timestamp": 1781448996.8069038,
+        "type": "online",
+        "model": "codex-cli/gpt-image",
+        "provider_id": "codex_cli",
+        "provider_name": "Codex CLI 本机生图",
+        "task_id": "codex_img_6ddd59bce7d8",
+        "request_id": "codex_img_6ddd59bce7d8",
+        "params": {
+            "provider_id": "codex_cli",
+            "model": "codex-cli/gpt-image",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_2d0473f579b5.png",
+                    "name": "ai_ref_368690ff7047_join.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw": {
+            "success": true,
+            "task_id": "codex_img_6ddd59bce7d8",
+            "status": "succeeded",
+            "created_at": 1781447750251,
+            "images": [
+                {
+                    "url": "/output/codex-imagegen/codex_img_6ddd59bce7d8/codex-output-1.png",
+                    "localPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_6ddd59bce7d8\\codex-output-1.png"
+                }
+            ],
+            "error": "",
+            "started_at": 1781447750254,
+            "command": [
+                "C:\\Users\\ruoyu\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+                "exec",
+                "--sandbox",
+                "workspace-write",
+                "--cd",
+                "E:\\habiancheng\\daxiong-Canvas",
+                "--output-last-message",
+                "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_6ddd59bce7d8\\result_message.txt",
+                "--image",
+                "E:\\habiancheng\\daxiong-Canvas\\assets\\input\\ai_ref_2d0473f579b5.png",
+                "--",
+                "请根据下面提示生成图片，并把最终 PNG/JPG/WEBP 图片文件保存到当前任务目录。如果图片工具只能先保存到 Codex 的 generated_images 缓存目录，请在最终回复中原样写出该 PNG/JPG/WEBP 的本机绝对路径。不要只保存 SVG 包装文件。\n任务目录：E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_6ddd59bce7d8\n画幅比例：1:1\n数量：1\n\n提示词：\n钢铁侠和蝙蝠侠在图一打斗"
+            ],
+            "pid": 86140,
+            "completed_at": 1781448996805,
+            "recovered": true,
+            "stdoutPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_6ddd59bce7d8\\stdout.log",
+            "stderrPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_6ddd59bce7d8\\stderr.log",
+            "promptPath": "E:\\habiancheng\\daxiong-Canvas\\output\\codex-imagegen\\codex_img_6ddd59bce7d8\\prompt.txt"
+        }
+    },
+    {
+        "prompt": "钢铁侠和蝙蝠侠在图一打斗",
+        "images": [
+            "/assets/output/online_1689c055af.png"
+        ],
+        "timestamp": 1781447728.244454,
+        "type": "online",
+        "model": "agnes-image-2.0-flash",
+        "provider_id": "agnes-ai",
+        "provider_name": "Agnes AI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "agnes-ai",
+            "model": "agnes-image-2.0-flash",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_2d0473f579b5.png",
+                    "name": "ai_ref_368690ff7047_join.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": {
+            "total_tokens": 4096,
+            "input_tokens": 0,
+            "input_tokens_details": {
+                "image_tokens": 0,
+                "text_tokens": 0
+            },
+            "output_tokens": 4096,
+            "output_tokens_details": null
+        }
+    },
+    {
+        "prompt": "钢铁侠和蝙蝠侠在图一打斗",
+        "images": [
+            "/assets/output/jimeng_035558ff72.png"
+        ],
+        "timestamp": 1781447626.837503,
+        "type": "online",
+        "model": "5.0",
+        "provider_id": "jimeng",
+        "provider_name": "即梦 CLI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "jimeng",
+            "model": "5.0",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_2d0473f579b5.png",
+                    "name": "ai_ref_368690ff7047_join.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": null
+    },
+    {
+        "prompt": "钢铁侠和蝙蝠侠在图一打斗",
+        "images": [
+            "/assets/output/online_cad267830d.png"
+        ],
+        "timestamp": 1781447625.1069837,
+        "type": "online",
+        "model": "agnes-image-2.0-flash",
+        "provider_id": "agnes-ai",
+        "provider_name": "Agnes AI",
+        "task_id": null,
+        "request_id": null,
+        "params": {
+            "provider_id": "agnes-ai",
+            "model": "agnes-image-2.0-flash",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_2d0473f579b5.png",
+                    "name": "ai_ref_368690ff7047_join.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ]
+        },
+        "raw_usage": {
+            "total_tokens": 4096,
+            "input_tokens": 0,
+            "input_tokens_details": {
+                "image_tokens": 0,
+                "text_tokens": 0
+            },
+            "output_tokens": 4096,
+            "output_tokens_details": null
+        }
+    },
+    {
+        "status": "succeeded",
+        "prompt": "钢铁侠和蝙蝠侠在图一打斗",
+        "images": [
+            "/assets/output/lovart_image_27bef7504b0d.png"
+        ],
+        "timestamp": 1781447613.7480013,
+        "type": "online",
+        "model": "generate_image_midjourney",
+        "provider_id": "lovart",
+        "provider_name": "Lovart",
+        "task_id": "canvas_img_ecdee6922ab34088aba18ee42ff07681",
+        "thread_id": "e1ec6758-2ba6-4c68-8c61-cfad3c00649c",
+        "request_id": "e1ec6758-2ba6-4c68-8c61-cfad3c00649c",
+        "params": {
+            "provider_id": "lovart",
+            "model": "generate_image_midjourney",
+            "size": "1024x1024",
+            "quality": "auto",
+            "n": 1,
+            "reference_images": [
+                {
+                    "url": "/assets/input/ai_ref_2d0473f579b5.png",
+                    "name": "ai_ref_368690ff7047_join.png",
+                    "role": "image_1",
+                    "kind": "",
+                    "mime": ""
+                }
+            ],
+            "unlimited": true
+        },
+        "raw": {
+            "thread_id": "e1ec6758-2ba6-4c68-8c61-cfad3c00649c",
+            "status": "done",
+            "items": [
+                {
+                    "type": "assistant",
+                    "text": "我来分析图一的场景，然后生成钢铁侠和蝙蝠侠在这个场景中打斗的画面。\n\n图一展示了一个黑暗、华丽的哥特式/蒸汽朋克风格场景，有复杂的建筑结构、金色装饰、圆形窗户和宏伟的室内空间。\n\n让我生成钢铁侠和蝙蝠侠在这个场景中战斗的画面："
+                },
+                {
+                    "type": "assistant",
+                    "text": "已生成钢铁侠与蝙蝠侠在图一场景中激烈对决的画面。\n\n画面呈现：\n- **场景**：保留了图一的黑暗哥特式宫殿风格，华丽的拱形天花板、彩色玻璃窗、精致的大理石地面\n- **钢铁侠**：红金色装甲，掌心发射蓝色能量光束，处于攻击姿态\n- **蝙蝠侠**：黑色战术装甲，披风飘扬，在阴影中迎战\n- **氛围**：史诗级战斗张力，科技与黑暗的碰撞，能量光芒照亮阴暗大厅"
+                },
+                {
+                    "type": "generator",
+                    "artifacts": [
+                        {
+                            "type": "image",
+                            "content": "https://a.lovart.ai/artifacts/agent/7bPqKUNaO1Gk9PE3.png"
+                        }
+                    ],
+                    "name": "artifacts"
+                }
+            ],
+            "final_status": "done",
+            "project_id": "989b2ca7f72d4184b2a79aa76f6ca0c5",
+            "generation_succeeded": true
+        }
+    },
+    {
+        "timestamp": 1781447137.4117548,
+        "prompt": "将相机向左旋转60度，仰视26度，使用广角镜头",
+        "images": [
+            "/assets/output/cloud_angle_1781447137.png"
+        ],
+        "type": "angle"
+    },
+    {
+        "timestamp": 1781447123.200739,
+        "prompt": "masterpiece, best quality, ultra-detailed, high resolution",
+        "images": [
+            "/assets/output/ms_black-forest-labs_FLUX.2-klein-9B_1781447123.png"
+        ],
+        "type": "klein",
+        "model": "black-forest-labs/FLUX.2-klein-9B"
+    },
+    {
+        "timestamp": 1781447099.2805104,
+        "prompt": "大佬虎",
+        "images": [
+            "/assets/output/cloud_1781447099.png"
+        ],
+        "type": "cloud"
+    },
+    {
         "prompt": "身穿铠甲",
         "images": [
             "/assets/output/jimeng_8f5bc627ff.png"

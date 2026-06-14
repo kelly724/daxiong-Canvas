@@ -487,6 +487,7 @@ function canvasForStorage(){
         if(Array.isArray(node.images)) node.images = node.images.map(mediaItemForStorage);
         if(node.runSettings) node.runSettings = settingsForStorage(node.runSettings);
     });
+    clean.connections = ensureConnectionsFromLegacyInputs(clean.connections || [], clean.nodes || []);
     return clean;
 }
 function apiErrorMessage(data, fallback='请求失败'){
@@ -4074,6 +4075,32 @@ function mergeSmartConnections(localConns, remoteConns, nodeIds){
     });
     return out;
 }
+function ensureConnectionsFromLegacyInputs(connections=[], nodeList=nodes){
+    const nodeIds = new Set((nodeList || []).map(n => n?.id).filter(Boolean));
+    const out = [];
+    const seen = new Set();
+    const add = conn => {
+        if(!conn || !nodeIds.has(conn.from) || !nodeIds.has(conn.to) || conn.from === conn.to) return;
+        const kind = conn.kind || 'flow';
+        const key = `${conn.from}->${conn.to}:${kind}`;
+        if(seen.has(key)) return;
+        seen.add(key);
+        out.push({...conn, kind});
+    };
+    (connections || []).forEach(add);
+    (nodeList || []).forEach(node => {
+        (Array.isArray(node?.inputNodeIds) ? node.inputNodeIds : []).forEach(fromId => {
+            add({from:fromId, to:node.id, kind:'input'});
+        });
+    });
+    return out;
+}
+function ensureCanvasConnectionsFromLegacyInputs(){
+    if(!canvas) return false;
+    const before = (canvas.connections || []).length;
+    canvas.connections = ensureConnectionsFromLegacyInputs(canvas.connections || [], nodes || []);
+    return canvas.connections.length !== before;
+}
 function applyMergedServerCanvas(serverCanvas){
     if(!serverCanvas || !canvas) return false;
     const remoteNodes = (Array.isArray(serverCanvas.nodes) ? serverCanvas.nodes : []).map(normalizeLegacySmartNode).filter(Boolean);
@@ -4081,6 +4108,7 @@ function applyMergedServerCanvas(serverCanvas){
     const nodeIds = new Set(mergedNodes.map(n => n.id));
     nodes = mergedNodes;
     canvas.connections = mergeSmartConnections(canvas.connections, serverCanvas.connections, nodeIds);
+    ensureCanvasConnectionsFromLegacyInputs();
     canvas.updated_at = Number(serverCanvas.updated_at || canvas.updated_at || 0);
     if(canvas.title !== serverCanvas.title && serverCanvas.title){
         canvas.title = serverCanvas.title;
@@ -4644,6 +4672,7 @@ async function loadCanvas(){
             }
         });
         canvas.connections = Array.isArray(canvas.connections) ? canvas.connections : [];
+        const restoredLegacyConnections = ensureCanvasConnectionsFromLegacyInputs();
         const cleanedDetachedInputs = cleanupDetachedRunInputRefs();
         viewport = {...viewport, ...(canvas.viewport || {})};
         viewport.scale = safeScale(viewport.scale);
@@ -4659,11 +4688,14 @@ async function loadCanvas(){
         updateProviderModels();
         applyViewport();
         render();
-        if(cleanedDetachedInputs) scheduleSave();
+        if(cleanedDetachedInputs || restoredLegacyConnections) scheduleSave();
         resumeSmartPendingTasks();
         resumeJimengPendingNodes();
         startCanvasMetaPoll();
     } catch(e) { toast(tr('smart.toastCanvasFail')); }
+}
+function smartTaskFailureMessage(error){
+    return String(error?.message || error || tr('smart.errRunFailed')).slice(0, 240);
 }
 function scheduleSave(){
     clearTimeout(saveTimer);
@@ -13315,19 +13347,25 @@ async function resumeSmartPendingNode(node){
                     delete node.h;
                 }
             }
+            const message = smartTaskFailureMessage(e);
             failures.push(e);
-            toast((e.message || tr('smart.errRunFailed')).slice(0, 160));
+            node.lastRunError = message;
+            node.runFinishedAt = nowMs();
+            if(!node.runStartedAt) node.runStartedAt = node.runFinishedAt;
+            node.runElapsedMs = Math.max(0, node.runFinishedAt - Number(node.runStartedAt || node.runFinishedAt));
+            toast(message.slice(0, 160));
             render();
             scheduleSave();
         }
     }));
-    if(failures.length && !(node.images || []).length){
-        throw failures[0];
-    }
+    if(failures.length) console.warn('Smart canvas pending task failed', failures[0]);
 }
 function resumeSmartPendingTasks(){
     nodes.filter(node => smartPendingTasks(node).length).forEach(node => {
-        resumeSmartPendingNode(node);
+        resumeSmartPendingNode(node).catch(error => {
+            console.warn('Smart canvas pending resume failed', error);
+            toast(smartTaskFailureMessage(error).slice(0, 160));
+        });
     });
 }
 function updateSelectionBox(event){
