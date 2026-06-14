@@ -1968,7 +1968,8 @@ async function createSmartCanvas(){
 }
 function openSmartCanvasPage(id){
     if(!id) return;
-    window.location.href = `/static/smart-canvas.html?id=${encodeURIComponent(id)}&v=2026.06.14.space-pan`;
+    const targetWindow = window.parent && window.parent !== window ? window.parent : window;
+    targetWindow.location.href = `/static/smart-canvas.html?id=${encodeURIComponent(id)}&v=2026.06.14.space-pan`;
 }
 function toggleEmojiPicker(id, event){
     event?.preventDefault();

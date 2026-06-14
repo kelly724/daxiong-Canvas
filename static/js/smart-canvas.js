@@ -912,7 +912,11 @@ function persistActiveSmartSettings(){
     subject.runSettings = settingsForStorage(settings);
     rememberRecentSmartSettings(settings, subject);
 }
-function backToCanvasList(){ savePromptDraftForCurrent(); window.location.href = '/static/canvas.html?v=2026.06.14.space-pan'; }
+function backToCanvasList(){
+    savePromptDraftForCurrent();
+    const targetWindow = window.parent && window.parent !== window ? window.parent : window;
+    targetWindow.location.href = '/static/canvas.html?v=2026.06.14.space-pan';
+}
 function promptPlainText(){
     return promptInput.innerText.replace(/\u00a0/g, ' ').trim();
 }
