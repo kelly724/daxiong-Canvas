@@ -14,7 +14,7 @@ function canvasMediaPreviewUrl(url, size=512){
     const raw = String(url || '');
     if(!raw || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
     if(!raw.startsWith('/output/') && !raw.startsWith('/assets/')) return raw;
-    if(!/\.(png|jpe?g|webp|gif|bmp|avif|tiff?|mp4|webm|mov|m4v)(\?|#|$)/i.test(raw)) return raw;
+    if(!/\.(png|jpe?g|webp|gif|bmp|avif|tiff?|mp4|webm|mov|m4v|avi|mkv|flv)(\?|#|$)/i.test(raw)) return raw;
     const width = Math.max(64, Math.min(2048, Math.round(Number(size) || 512)));
     return `/api/media-preview?w=${width}&url=${encodeURIComponent(raw)}`;
 }
@@ -22,6 +22,16 @@ function canvasPreviewImgHtml(url, size=512, attrs=''){
     const original = String(url || '');
     const preview = canvasMediaPreviewUrl(original, size);
     return `<img src="${escapeAttr(preview)}" data-preview-src="${escapeAttr(preview)}" data-original-src="${escapeAttr(original)}" data-url="${escapeAttr(original)}"${attrs ? ` ${attrs}` : ''}>`;
+}
+function loadCanvasOriginalImageDimensions(url){
+    const src = String(url || '');
+    if(!src || /^data:/i.test(src) || /^blob:/i.test(src)) return Promise.resolve(null);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve({w:img.naturalWidth || 0, h:img.naturalHeight || 0});
+        img.onerror = () => resolve(null);
+        img.src = src;
+    });
 }
 function canvasVideoPreviewHtml(url, size=512, attrs=''){
     const original = String(url || '');
@@ -222,6 +232,7 @@ let knifeChanged = false;
 let knifeNeedsRender = false;
 let selectDrag = null;
 let isRKeyDown = false;
+let isSpacePanDown = false;
 let menuPoint = null;
 let linkCreateState = null;
 let internalDrag = false;
@@ -375,7 +386,11 @@ const MANAGED_CHAT_MODELS_KEY = 'canvas_chat_models_ordered';
 const CANVAS_THEME_KEY = 'canvas_theme';
 const QUICK_TOOLBAR_COLLAPSED_KEY = 'canvas_quick_toolbar_collapsed';
 const CANVAS_SESSION_VIEWPORTS_KEY = 'canvas_session_viewports_v1';
+const CANVAS_SESSION_DRAFTS_KEY = 'canvas_session_drafts_v1';
+const CANVAS_LAST_OPEN_ID_KEY = 'canvas_last_open_id_v1';
+const CANVAS_DRAFT_MAX_CHARS = 4_000_000;
 let canvasSessionViewportFallback = {};
+let canvasSessionDraftFallback = {};
 const DEFAULT_VIDEO_MODELS = [
     // Veo
     'veo2', 'veo2-fast', 'veo2-pro',
@@ -430,6 +445,70 @@ function saveLocalViewport(){
         sessionStorage.setItem(CANVAS_SESSION_VIEWPORTS_KEY, JSON.stringify(map));
     } catch(e) {}
 }
+function rememberOpenCanvas(id){
+    try {
+        if(id) localStorage.setItem(CANVAS_LAST_OPEN_ID_KEY, id);
+        else localStorage.removeItem(CANVAS_LAST_OPEN_ID_KEY);
+    } catch(e) {}
+}
+function loadCanvasDraftMap(){
+    try {
+        const data = JSON.parse(sessionStorage.getItem(CANVAS_SESSION_DRAFTS_KEY) || '{}');
+        return data && typeof data === 'object' ? data : {};
+    } catch(e) {
+        return canvasSessionDraftFallback;
+    }
+}
+function saveCanvasDraftMap(map){
+    canvasSessionDraftFallback = map || {};
+    try {
+        const text = JSON.stringify(canvasSessionDraftFallback);
+        if(text.length <= CANVAS_DRAFT_MAX_CHARS) sessionStorage.setItem(CANVAS_SESSION_DRAFTS_KEY, text);
+    } catch(e) {}
+}
+function persistCanvasDraftSnapshot(){
+    if(!canvas?.id) return;
+    try {
+        const map = loadCanvasDraftMap();
+        const draft = {
+            canvasId:canvas.id,
+            title:canvas.title,
+            icon:canvas.icon || 'layers',
+            nodes:serializableCanvasNodes(),
+            connections:(connections || []).map(c => ({...c})),
+            viewport:{...viewport},
+            baseUpdatedAt:Number(lastCanvasUpdatedAt || canvas.updated_at || 0),
+            updatedAt:Date.now()
+        };
+        const text = JSON.stringify(draft);
+        if(text.length > CANVAS_DRAFT_MAX_CHARS) return;
+        map[canvas.id] = draft;
+        saveCanvasDraftMap(map);
+    } catch(e) {}
+}
+function clearCanvasDraftSnapshot(id=canvas?.id){
+    if(!id) return;
+    const map = loadCanvasDraftMap();
+    if(!map[id]) return;
+    delete map[id];
+    saveCanvasDraftMap(map);
+}
+function restoreCanvasDraftIfNewer(remoteUpdatedAt=0){
+    if(!canvas?.id) return false;
+    const draft = loadCanvasDraftMap()[canvas.id];
+    if(!draft || !Array.isArray(draft.nodes) || !Array.isArray(draft.connections)) return false;
+    const draftUpdatedAt = Number(draft.updatedAt || 0);
+    if(!draftUpdatedAt || draftUpdatedAt <= Number(remoteUpdatedAt || 0)) {
+        clearCanvasDraftSnapshot(canvas.id);
+        return false;
+    }
+    canvas.title = draft.title || canvas.title;
+    canvas.icon = draft.icon || canvas.icon;
+    canvas.nodes = draft.nodes;
+    canvas.connections = draft.connections;
+    canvas.viewport = draft.viewport || canvas.viewport;
+    return true;
+}
 function applyTheme(theme){
     const dark = theme === 'dark';
     document.documentElement.classList.toggle('studio-theme-dark', dark);
@@ -443,10 +522,12 @@ function applyQuickToolbarState(){
     if(!toolbar) return;
     const collapsed = localStorage.getItem(QUICK_TOOLBAR_COLLAPSED_KEY) === '1';
     toolbar.classList.toggle('collapsed', collapsed);
+    toolbar.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     const btn = toolbar.querySelector('.toolbar-toggle');
     if(btn){
         btn.title = collapsed ? '展开快捷菜单' : '折叠快捷菜单';
         btn.setAttribute('aria-label', btn.title);
+        btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     }
     refreshIcons();
 }
@@ -1070,7 +1151,45 @@ function screenToWorld(clientX, clientY){
 }
 function applyViewport(){
     world.style.transform = `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
+    refreshCanvasZoomLabel();
     scheduleMinimapRender();
+}
+function refreshCanvasZoomLabel(){
+    const label = document.getElementById('canvasZoomLabel');
+    if(!label) return;
+    const scale = safeViewportScale(viewport?.scale || 1);
+    label.textContent = `${Math.round(scale * 100)}%`;
+}
+function applyZoomAtScreenPoint(clientX, clientY, nextScale){
+    if(!board) return;
+    const before = screenToWorld(clientX, clientY);
+    const rect = board.getBoundingClientRect();
+    viewport.scale = Math.max(0.08, Math.min(8, Number(nextScale) || safeViewportScale(viewport.scale)));
+    viewport.x = clientX - rect.left - before.x * viewport.scale;
+    viewport.y = clientY - rect.top - before.y * viewport.scale;
+    applyViewport();
+    renderLinks();
+    renderSelectionHub();
+    scheduleViewportSave();
+}
+function adjustCanvasZoom(factor){
+    if(!canvas || !board) return;
+    const rect = board.getBoundingClientRect();
+    applyZoomAtScreenPoint(rect.left + rect.width / 2, rect.top + rect.height / 2, safeViewportScale(viewport.scale) * (Number(factor) || 1));
+}
+function resetCanvasZoom(){
+    if(!canvas || !board) return;
+    const view = currentWorldViewRect();
+    const rect = board.getBoundingClientRect();
+    const cx = view.x + view.w / 2;
+    const cy = view.y + view.h / 2;
+    viewport.scale = 1;
+    viewport.x = rect.width / 2 - cx * viewport.scale;
+    viewport.y = rect.height / 2 - cy * viewport.scale;
+    applyViewport();
+    renderLinks();
+    renderSelectionHub();
+    scheduleViewportSave();
 }
 function estimatedNodeRect(n){
     const el = nodesEl?.querySelector?.(`.node[data-id="${CSS.escape(n.id)}"]`);
@@ -1266,6 +1385,7 @@ function refreshGeometryAfterLayout(){
 function scheduleSave(){
     if(!canvas || applyingRemoteCanvas) return;
     localCanvasDirty = true;
+    persistCanvasDraftSnapshot();
     setStatus('Saving...');
     clearTimeout(saveTimer);
     if(savingCanvasNow){
@@ -1315,29 +1435,33 @@ function serializableCanvasNode(node){
 function serializableCanvasNodes(list=nodes){
     return (list || []).map(serializableCanvasNode);
 }
+function canvasSavePayload(){
+    sanitizeConnections();
+    return {
+        title:canvas.title,
+        icon:canvas.icon || '🧩',
+        nodes:serializableCanvasNodes(),
+        connections,
+        viewport,
+        logs:canvas.logs || [],
+        client_id:CLIENT_ID,
+        base_updated_at:Number(lastCanvasUpdatedAt || canvas.updated_at || 0)
+    };
+}
 async function saveCanvas(){
     if(!canvas || applyingRemoteCanvas) return;
     if(savingCanvasNow){
         saveCanvasAgain = true;
+        persistCanvasDraftSnapshot();
         return;
     }
-    sanitizeConnections();
     savingCanvasNow = true;
     saveCanvasAgain = false;
     try {
         const res = await fetch(`/api/canvases/${canvas.id}`, {
             method:'PUT',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-                title:canvas.title,
-                icon:canvas.icon || '🧩',
-                nodes:serializableCanvasNodes(),
-                connections,
-                viewport,
-                logs:canvas.logs || [],
-                client_id:CLIENT_ID,
-                base_updated_at:Number(lastCanvasUpdatedAt || canvas.updated_at || 0)
-            })
+            body:JSON.stringify(canvasSavePayload())
         });
         if(res.status === 409){
             const data = await res.json().catch(() => ({}));
@@ -1360,6 +1484,8 @@ async function saveCanvas(){
         canvas.updated_at = Number(canvas.updated_at || Date.now());
         lastCanvasUpdatedAt = canvas.updated_at;
         localCanvasDirty = Boolean(saveCanvasAgain);
+        if(localCanvasDirty) persistCanvasDraftSnapshot();
+        else clearCanvasDraftSnapshot(canvas.id);
         if(currentCanvasTime) currentCanvasTime.textContent = formatCanvasTime(canvas.updated_at);
         setStatus('Saved');
         loadCanvasList(false);
@@ -1374,6 +1500,25 @@ async function saveCanvas(){
             setTimeout(saveCanvas, 0);
         }
     }
+}
+
+function flushCanvasBeforeUnload(){
+    if(!canvas || applyingRemoteCanvas) return;
+    if(saveTimer){
+        clearTimeout(saveTimer);
+        saveTimer = null;
+    }
+    persistCanvasDraftSnapshot();
+    if(!localCanvasDirty && !saveCanvasAgain) return;
+    try {
+        const body = JSON.stringify(canvasSavePayload());
+        fetch(`/api/canvases/${canvas.id}`, {
+            method:'PUT',
+            headers:{'Content-Type':'application/json'},
+            body,
+            keepalive:true
+        }).catch(() => {});
+    } catch(e) {}
 }
 
 async function loadConfig(){
@@ -1443,6 +1588,21 @@ async function loadCanvasList(openFirst=true){
         setStatus(tr('canvas.canvasListFailed'));
         console.error(e);
     }
+}
+async function restoreLastOpenCanvasOnBoot(){
+    const params = new URLSearchParams(location.search || '');
+    const requestedId = params.get('id') || '';
+    let rememberedId = '';
+    try { rememberedId = localStorage.getItem(CANVAS_LAST_OPEN_ID_KEY) || ''; } catch(e) {}
+    const id = requestedId || rememberedId;
+    if(!id || canvas) return Boolean(canvas);
+    const item = canvases.find(entry => entry.id === id);
+    if(!item || (item.kind || 'classic') === 'smart') {
+        if(!requestedId) rememberOpenCanvas('');
+        return false;
+    }
+    await openCanvas(id);
+    return Boolean(canvas?.id === id);
 }
 async function loadTrashList(){
     try {
@@ -1788,6 +1948,7 @@ async function createCanvas(){
         connections = canvas.connections || [];
         viewport = localViewportForCanvas(canvas.id, canvas.viewport || {x:0, y:0, scale:1});
         canvas.viewport = {...viewport};
+        rememberOpenCanvas(canvas.id);
         resetTransientRunState(nodes);
         sanitizeConnections();
         selected.clear();
@@ -1807,8 +1968,7 @@ async function createSmartCanvas(){
 }
 function openSmartCanvasPage(id){
     if(!id) return;
-    const targetWindow = window.parent && window.parent !== window ? window.parent : window;
-    targetWindow.location.href = `/static/smart-canvas.html?id=${encodeURIComponent(id)}&v=2026.05.22.1`;
+    window.location.href = `/static/smart-canvas.html?id=${encodeURIComponent(id)}&v=2026.06.14.space-pan`;
 }
 function toggleEmojiPicker(id, event){
     event?.preventDefault();
@@ -1924,19 +2084,24 @@ async function openCanvas(id){
         const data = await res.json();
         resetCascadeRuntimeState();
         canvas = data.canvas;
-        const touched = await touchCanvasOpened(canvas.id);
-        if(touched?.updated_at) canvas.updated_at = Number(touched.updated_at);
+        const remoteUpdatedAt = Number(canvas.updated_at || 0);
         if((canvas.kind || 'classic') === 'smart'){
             openSmartCanvasPage(canvas.id);
             return;
+        }
+        const restoredDraft = restoreCanvasDraftIfNewer(remoteUpdatedAt);
+        if(!restoredDraft){
+            const touched = await touchCanvasOpened(canvas.id);
+            if(touched?.updated_at) canvas.updated_at = Number(touched.updated_at);
         }
         canvas.logs = canvas.logs || [];
         nodes = canvas.nodes || [];
         connections = canvas.connections || [];
         viewport = localViewportForCanvas(canvas.id, canvas.viewport || {x:0, y:0, scale:1});
         canvas.viewport = {...viewport};
-        lastCanvasUpdatedAt = Number(canvas.updated_at || 0);
-        localCanvasDirty = false;
+        lastCanvasUpdatedAt = restoredDraft ? remoteUpdatedAt : Number(canvas.updated_at || 0);
+        localCanvasDirty = restoredDraft;
+        rememberOpenCanvas(canvas.id);
         resetTransientRunState(nodes);
         sanitizeConnections();
         pruneMissingComfyWorkflows();
@@ -1947,7 +2112,12 @@ async function openCanvas(id){
         render();
         resumeCanvasImageTasks();
         startCanvasRemotePolling();
-        setStatus('Ready');
+        if(restoredDraft){
+            setStatus('Restored unsaved changes');
+            scheduleSave();
+        } else {
+            setStatus('Ready');
+        }
     } catch(e) {
         setStatus(tr('canvas.openFailed'));
         console.error(e);
@@ -2095,6 +2265,7 @@ function handleCanvasUpdatedMessage(data){
 async function returnToCanvasManager(){
     clearTimeout(saveTimer);
     if(canvas && localCanvasDirty) await saveCanvas();
+    rememberOpenCanvas('');
     stopCanvasRemotePolling();
     canvas = null;
     nodes = [];
@@ -2142,6 +2313,8 @@ async function deleteCanvas(id, event){
         pendingDeleteCanvasId = null;
         canvases = canvases.filter(item => item.id !== id);
         if(deletingCurrent){
+            clearCanvasDraftSnapshot(id);
+            rememberOpenCanvas('');
             canvas = null;
             nodes = [];
             connections = [];
@@ -6370,6 +6543,18 @@ function renderNode(node){
                 }, true);
             }
             body.addEventListener('dblclick', openPreview, true);
+            if(loadedImg && mediaKind === 'image' && !node.natural_w && !node.natural_h && !node._naturalSizeLoading){
+                const original = loadedImg.dataset.originalSrc || node.url;
+                node._naturalSizeLoading = true;
+                loadCanvasOriginalImageDimensions(original).then(size => {
+                    node._naturalSizeLoading = false;
+                    if(!size || node.natural_w || node.natural_h) return;
+                    node.natural_w = size.w;
+                    node.natural_h = size.h;
+                    refreshGeometryAfterLayout();
+                    scheduleSave();
+                }).catch(() => { node._naturalSizeLoading = false; });
+            }
             if(loadedImg && loadedImg.complete && loadedImg.naturalHeight > 0){
                 requestAnimationFrame(refreshGeometry);
             } else if(loadedImg) {
@@ -6587,6 +6772,12 @@ function bindOutputWrap(wrap, node){
             openOutputLightbox(video.dataset.url, node);
         };
     }
+    wrap.addEventListener('click', e => {
+        const fallbackVideo = e.target.closest?.('video[data-output-video-fallback]');
+        if(!fallbackVideo || !wrap.contains(fallbackVideo)) return;
+        e.stopPropagation();
+        openOutputLightbox(fallbackVideo.dataset.url, node);
+    });
     if(fileCard){
         fileCard.onclick = e => {
             e.stopPropagation();
@@ -8786,7 +8977,7 @@ function renderVideoBody(node){
     wrap.className = 'generator-body';
     const inputSources = generatorSources(node);
     const ordered = orderedSources(node, inputSources);
-    const imageInputs = ordered.filter(src => src.refs?.length);
+    const mediaInputs = ordered.filter(src => src.refs?.some(ref => ['image','video','audio'].includes(mediaKindForRef(ref))));
     const promptInputs = ordered.filter(src => src.prompt && !src.refs?.length);
     sanitizeVideoNodeProviderModel(node);
     node.model = node.model || 'veo3-fast';
@@ -8926,7 +9117,7 @@ function renderVideoBody(node){
         };
     });
     const list = wrap.querySelector('.video-img-list');
-    renderVideoImageInputs(list, node, imageInputs);
+    renderVideoImageInputs(list, node, mediaInputs);
     renderPromptPreview(wrap.querySelector('.prompt-list'), promptInputs);
     wrap.querySelector('.gen-btn').onclick = e => { e.stopPropagation(); runCanvasGenerate(node.id); };
     bindCascadeButtons(wrap, node.id);
@@ -8972,11 +9163,19 @@ function renderVideoImageInputs(list, node, imageInputs){
         item.className = 'input-item video-input-item';
         item.draggable = true;
         item.dataset.sourceId = src.id;
-        const frameLabel = node.useFrameRoles && i === 0 ? tr('canvas.videoRoleFirstFrame') : node.useFrameRoles && i === 1 ? tr('canvas.videoRoleLastFrame') : '';
-        const previewHtml = src.preview && !isMissingAssetUrl(src.preview) ? canvasPreviewImgHtml(src.preview, 256) : (src.preview ? missingAssetHtml(src.preview, true) : '<i data-lucide="image" class="w-6 h-6 text-slate-400"></i>');
+        const kind = mediaKindForRef(src.refs?.[0] || {url:src.preview || ''});
+        const frameLabel = kind === 'image' && node.useFrameRoles && i === 0 ? tr('canvas.videoRoleFirstFrame') : kind === 'image' && node.useFrameRoles && i === 1 ? tr('canvas.videoRoleLastFrame') : '';
+        const previewHtml = kind === 'video'
+            ? canvasVideoPreviewHtml(src.preview || src.refs?.[0]?.url || '', 256)
+            : kind === 'audio'
+            ? `<div class="video-input-audio"><i data-lucide="file-audio" class="w-6 h-6"></i><span>${escapeHtml(src.label || 'Audio')}</span></div>`
+            : src.preview && !isMissingAssetUrl(src.preview)
+            ? canvasPreviewImgHtml(src.preview, 256)
+            : (src.preview ? missingAssetHtml(src.preview, true) : '<i data-lucide="image" class="w-6 h-6 text-slate-400"></i>');
+        const typeLabel = kind === 'audio' ? `音频${i + 1}` : kind === 'video' ? `视频${i + 1}` : `图${i + 1}`;
         item.innerHTML = `
             <div class="video-input-thumb">
-                <span class="input-index">${i + 1}</span>
+                <span class="input-index">${typeLabel}</span>
                 ${previewHtml}
                 <span class="input-label">${escapeHtml(src.label)}</span>
             </div>
@@ -9972,6 +10171,7 @@ async function runRhNode(nodeId, opts={}){
     if(out) out._pending = [...(out._pending || []), makePendingForRun(pendingId, run, node, {refs:media.refs, cascadeTargetId})];
     if(!opts.cascade) node.running = true;
     refreshRunNodes(node, out);
+    let runningHubTaskId = '';
     try {
         const nodeInfoList = await rhBuildNodeInfoList(node, media);
         const workflowExtras = mode === 'workflow' ? await rhBuildWorkflowRequestExtras(node, media, nodeInfoList) : {};
@@ -9990,7 +10190,16 @@ async function runRhNode(nodeId, opts={}){
         });
         const taskId = submit.taskId;
         if(!taskId) throw new Error(tr('canvas.rhNoTaskId'));
+        runningHubTaskId = taskId;
         run.request = {task_id:taskId, webappId:node.webappId, workflowId:node.workflowId, backend:'runninghub', mode};
+        const pending = pendingById(out, pendingId);
+        if(pending){
+            pending.canvasTaskType = 'runninghub';
+            pending.canvasTaskId = taskId;
+            pending.recoverTaskId = taskId;
+            pending.providerId = 'runninghub';
+        }
+        scheduleSave();
         let result = null;
         for(let i = 0; i < 720; i++){
             if(cascadeTargetId) ensureCascadeActive(cascadeTargetId);
@@ -10011,7 +10220,7 @@ async function runRhNode(nodeId, opts={}){
         if(!outputs.length) throw new Error(tr('canvas.rhOutputsEmpty'));
         const meta = collectRunMeta(out, pendingId);
         if(out) out._pending = (out._pending || []).filter(p => p.id !== pendingId);
-        appendOutputImages(out, outputs, media.refs[0], [meta]);
+        appendOutputImagesForRun(out, outputs, media.refs[0], [meta]);
         mergeGeneratedOutputs(node, outputs, Boolean(opts.cascade));
         addGenerationLog({run, outputs, runMs:meta.runMs || 0});
         node.runStatus = 'done';
@@ -10021,14 +10230,27 @@ async function runRhNode(nodeId, opts={}){
     } catch(err) {
         const meta = collectRunMeta(out, pendingId);
         addGenerationLog({run, outputs:[], runMs:meta.runMs || 0, error:err.message || String(err)});
-        if(out) out._pending = (out._pending || []).filter(p => p.id !== pendingId);
         if(isCascadeAbortError(err)){
+            if(out) out._pending = (out._pending || []).filter(p => p.id !== pendingId);
             if(opts.cascade) throw err;
             return;
+        }
+        const pending = pendingById(out, pendingId);
+        if(out && pending && runningHubTaskId){
+            pending.canvasTaskType = 'runninghub';
+            pending.canvasTaskId = runningHubTaskId;
+            pending.recoverTaskId = runningHubTaskId;
+            pending.providerId = 'runninghub';
+            pending.failed = true;
+            pending.querying = false;
+            pending.error = err.message || String(err) || tr('canvas.rhFailed');
+        } else if(out) {
+            out._pending = (out._pending || []).filter(p => p.id !== pendingId);
         }
         node.runStatus = 'failed';
         node.runError = err.message || String(err);
         refreshRunNodes(node, out);
+        scheduleSave();
         if(opts.cascade) throw err;
         alert(err.message || tr('canvas.rhFailed'));
     } finally {
@@ -10251,6 +10473,21 @@ function latestGeneratedOutputItem(node){
 function outputHasUrl(out, url){
     return Boolean(url && (out?.images || []).some(item => outputUrlValue(item) === url));
 }
+function outputRunTaskId(item){
+    const req = item && typeof item === 'object' ? item.run?.request || {} : {};
+    return req.task_id || req.taskId || '';
+}
+function outputRunBackend(item){
+    const run = item && typeof item === 'object' ? item.run || {} : {};
+    return run.request?.backend || (run.taskLabel === 'RunningHub' ? 'runninghub' : '');
+}
+function outputHasRunTask(out, taskId, backend=''){
+    return Boolean(taskId && (out?.images || []).some(item => {
+        if(outputRunTaskId(item) !== taskId) return false;
+        const itemBackend = outputRunBackend(item);
+        return !backend || !itemBackend || itemBackend === backend;
+    }));
+}
 function appendOutputImagesWithoutDuplicates(out, images, compareRef=null, metas=[], layout=null){
     const unique = (images || []).filter(item => {
         const url = outputUrlValue(item);
@@ -10258,6 +10495,14 @@ function appendOutputImagesWithoutDuplicates(out, images, compareRef=null, metas
     });
     appendOutputImages(out, unique, compareRef, metas, layout);
     return unique.length;
+}
+function appendOutputImagesForRun(out, images, compareRef=null, metas=[], layout=null){
+    const meta = (metas || []).find(item => item?.run) || {};
+    const run = meta.run || {};
+    const taskId = run.request?.task_id || run.request?.taskId || '';
+    const backend = run.request?.backend || (run.taskLabel === 'RunningHub' ? 'runninghub' : '');
+    if(taskId && backend === 'runninghub' && outputHasRunTask(out, taskId, backend)) return 0;
+    return appendOutputImagesWithoutDuplicates(out, images, compareRef, metas, layout);
 }
 function syncLatestGeneratedOutputToConnection(fromId, toId){
     const source = nodes.find(n => n.id === fromId);
@@ -10433,6 +10678,9 @@ function refreshGeneratorInputViews(){
         const el = nodesEl.querySelector(`.node[data-id="${gen.id}"]`);
         if(!el) return;
         const sources = orderedSources(gen, generatorSources(gen));
+        const mediaInputs = sources
+            .map(src => ({...src, refs:(src.refs || []).filter(ref => ['image','video','audio'].includes(mediaKindForRef(ref)))}))
+            .filter(src => src.refs?.length);
         const imageInputs = sources
             .map(src => ({...src, refs:imageRefsOnly(src.refs || [])}))
             .filter(src => src.refs?.length);
@@ -10444,7 +10692,7 @@ function refreshGeneratorInputViews(){
             ltxSyncConnectedImagesToTimeline(gen);
             renderComfyImages(el.querySelector('.input-list'), gen, imageInputs);
         }
-        if(gen.type === 'video') renderVideoImageInputs(el.querySelector('.video-img-list'), gen, imageInputs);
+        if(gen.type === 'video') renderVideoImageInputs(el.querySelector('.video-img-list'), gen, mediaInputs);
         if(gen.type === 'rh'){
             const media = rhMediaSources(gen);
             renderRhPromptFields(el.querySelector('.rh-prompt-list'), gen, rhActiveFields(gen));
@@ -10723,8 +10971,10 @@ async function runVideoNode(nodeId, opts={}){
     const sources = orderedSources(node, generatorSources(node));
     const prompt = sources.map(s => s.prompt).filter(Boolean).join('\n\n');
     const allRefs = sources.flatMap(s => s.refs || []);
-    const refs = applyUploadedUrlToRefs(imageRefsOnly(allRefs), node);
-    const videoRefs = applyUploadedUrlToRefs(videoRefsOnly(allRefs), node);
+    const mediaRefs = applyUploadedUrlToRefs((allRefs || []).filter(ref => ['image','video','audio'].includes(mediaKindForRef(ref))), node);
+    const refs = imageRefsOnly(mediaRefs);
+    const videoRefs = videoRefsOnly(mediaRefs);
+    const audioRefs = audioRefsOnly(mediaRefs);
     if(node.useFrameRoles && refs[0]) refs[0] = {...refs[0], role:'first_frame'};
     if(node.useFrameRoles && refs[1]) refs[1] = {...refs[1], role:'last_frame'};
     if(!prompt){ alert(tr('canvas.videoNeedsPrompt')); return; }
@@ -10746,6 +10996,7 @@ async function runVideoNode(nodeId, opts={}){
             videos:manualVideoUrlForNode(node)
                 ? [manualVideoUrlForNode(node)]
                 : videoRefs.map(ref => tempShUploadedUrlForNode(node, ref.url)),
+            audios:audioRefs.map(ref => ref.url).filter(Boolean),
             enhance_prompt:Boolean(node.enhancePrompt),
             enable_upsample:Boolean(node.enableUpsample),
             watermark:Boolean(node.watermark),
@@ -12799,6 +13050,25 @@ function findPendingTask(taskId){
     }
     return null;
 }
+function runningHubTaskIdForPending(pending){
+    return pending?.canvasTaskId || pending?.recoverTaskId || pending?.run?.request?.task_id || '';
+}
+function isRunningHubPending(pending){
+    return pending?.canvasTaskType === 'runninghub'
+        || pending?.providerId === 'runninghub'
+        || pending?.run?.request?.backend === 'runninghub';
+}
+function findRunningHubPendingTask(taskId){
+    if(!taskId) return null;
+    for(const out of nodes.filter(n => n.type === 'output')){
+        const pending = (out._pending || []).find(p => {
+            if(!isRunningHubPending(p)) return false;
+            return runningHubTaskIdForPending(p) === taskId;
+        });
+        if(pending) return {out, pending};
+    }
+    return null;
+}
 async function createCanvasImageTask(payload, options={}){
     const res = await cascadeFetch('/api/canvas-image-tasks', {
         method:'POST',
@@ -12890,6 +13160,29 @@ async function queryRecoverPendingOutput(pendingId){
     pending.recoverTaskId = taskId;
     refreshNodes([out.id]);
     try {
+        if(isRunningHubPending(pending)){
+            pending.canvasTaskType = 'runninghub';
+            pending.canvasTaskId = taskId;
+            pending.providerId = 'runninghub';
+            const cascadeTargetId = String(pending.cascadeTargetId || '');
+            const res = await cascadeFetch(`/api/runninghub/query?taskId=${encodeURIComponent(taskId)}`, {}, {cascadeTargetId});
+            if(!res.ok) throw new Error(await responseErrorMessage(res, tr('canvas.rhFailed')));
+            const json = await res.json();
+            if(json.success === false) throw new Error(json.detail || json.error || tr('canvas.rhFailed'));
+            const data = json.data || json;
+            if(data.status === 'SUCCESS'){
+                completeRunningHubTask(taskId, data);
+                return;
+            }
+            if(data.status === 'FAILED'){
+                pending.error = data.failReason || tr('canvas.rhFailed');
+                showErrorModal(pending.error, tr('canvas.apiFailed'));
+            } else {
+                pending.error = `RunningHub 状态：${data.status || '处理中'}，请稍后再查询`;
+                setStatus(pending.error);
+            }
+            return;
+        }
         const res = await fetch('/api/image-task-query', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
@@ -13005,6 +13298,88 @@ async function pollCanvasVideoTask(taskId, options={}){
         const message = normalizeCanvasTaskError(err, tr('canvas.videoFailed'));
         if(isCascadeAbortError(err)) return 'aborted';
         failCanvasImageTask(taskId, message);
+        return 'failed';
+    } finally {
+        activeCanvasTaskPolls.delete(pollKey);
+    }
+}
+function completeRunningHubTask(taskId, result){
+    const found = findRunningHubPendingTask(taskId);
+    if(!found) return;
+    const {out, pending} = found;
+    const run = pending.run || {};
+    run.request = {...(run.request || {}), task_id:(run.request?.task_id || taskId), backend:'runninghub'};
+    const runMs = nowMs() - Number(pending.startedAt || nowMs());
+    const outputs = (result?.urls || []).map(url => isVideoUrl(outputUrlValue(url)) ? {url:outputUrlValue(url), kind:'video'} : outputUrlValue(url)).filter(Boolean);
+    if(!outputs.length){
+        failRunningHubTask(taskId, tr('canvas.rhOutputsEmpty'));
+        return;
+    }
+    const alreadyCompleted = outputHasRunTask(out, taskId, 'runninghub');
+    out._pending = (out._pending || []).filter(p => p.id !== pending.id);
+    const added = appendOutputImagesForRun(out, outputs, run?.refs?.[0], [{runMs, run}]);
+    const node = nodes.find(n => n.id === run?.node?.id);
+    if(node){
+        mergeGeneratedOutputs(node, outputs, Boolean(pending.appendGenerated));
+        node.runStatus = 'done';
+        node.runError = '';
+        node.running = false;
+    }
+    if(!alreadyCompleted || added) addGenerationLog({run, outputs, runMs});
+    refreshRunNodes(node, out);
+    scheduleSave();
+}
+function failRunningHubTask(taskId, message){
+    const found = findRunningHubPendingTask(taskId);
+    if(!found) return;
+    const {out, pending} = found;
+    const run = pending.run || {};
+    const node = nodes.find(n => n.id === run?.node?.id);
+    pending.failed = true;
+    pending.querying = false;
+    pending.error = message || tr('canvas.rhFailed');
+    pending.recoverTaskId = taskId;
+    pending.providerId = 'runninghub';
+    pending.canvasTaskType = 'runninghub';
+    pending.canvasTaskId = taskId;
+    if(node){
+        node.runStatus = 'failed';
+        node.runError = pending.error;
+        node.running = false;
+    }
+    addGenerationLog({run, outputs:[], runMs:nowMs() - Number(pending.startedAt || nowMs()), error:pending.error});
+    refreshRunNodes(node, out);
+    scheduleSave();
+}
+async function pollRunningHubTask(taskId, options={}){
+    const pollKey = `runninghub:${taskId}`;
+    if(!taskId) return 'failed';
+    if(activeCanvasTaskPolls.has(pollKey)) return 'running';
+    activeCanvasTaskPolls.add(pollKey);
+    try {
+        while(true){
+            const found = findRunningHubPendingTask(taskId);
+            if(!found) return 'missing';
+            const cascadeTargetId = String(options?.cascadeTargetId || found?.pending?.cascadeTargetId || '');
+            if(cascadeTargetId) ensureCascadeActive(cascadeTargetId);
+            const res = await cascadeFetch(`/api/runninghub/query?taskId=${encodeURIComponent(taskId)}`, {}, {cascadeTargetId});
+            if(!res.ok) throw new Error(await responseErrorMessage(res, tr('canvas.rhFailed')));
+            const json = await res.json();
+            if(json.success === false) throw new Error(json.detail || json.error || tr('canvas.rhFailed'));
+            const data = json.data || json;
+            if(data.status === 'SUCCESS'){
+                completeRunningHubTask(taskId, data);
+                return 'succeeded';
+            }
+            if(data.status === 'FAILED'){
+                failRunningHubTask(taskId, data.failReason || tr('canvas.rhFailed'));
+                return 'failed';
+            }
+            await sleep(2500);
+        }
+    } catch(err) {
+        if(isCascadeAbortError(err)) return 'aborted';
+        failRunningHubTask(taskId, err.message || tr('canvas.rhFailed'));
         return 'failed';
     } finally {
         activeCanvasTaskPolls.delete(pollKey);
@@ -13163,6 +13538,9 @@ function resumeCanvasImageTasks(){
             if(p.canvasTaskType === 'online-image' && p.canvasTaskId && !p.failed) pollCanvasImageTask(p.canvasTaskId, {cascadeTargetId:p.cascadeTargetId || ''});
             if(p.canvasTaskType === 'lovart-video' && p.canvasTaskId && !p.failed) pollCanvasVideoTask(p.canvasTaskId, {cascadeTargetId:p.cascadeTargetId || ''});
             if(p.canvasTaskType === 'codex-cli-image' && p.canvasTaskId && !p.failed) pollCodexCliPendingTask(p.id, p.canvasTaskId, {cascadeTargetId:p.cascadeTargetId || ''});
+            if((p.canvasTaskType === 'runninghub' || p.run?.request?.backend === 'runninghub') && runningHubTaskIdForPending(p) && !p.failed) {
+                pollRunningHubTask(runningHubTaskIdForPending(p), {cascadeTargetId:p.cascadeTargetId || ''});
+            }
         });
     });
 }
@@ -13179,7 +13557,7 @@ function renderOutputMedia(item, useGridLayout=false, outputIndex=0){
         return `<div class="output-img-wrap" data-output-url="${safe}" data-missing-url="${safe}"${indexAttr}${gridStyle}>${missingAssetHtml(url, true)}${timePill}<button class="output-del" title="${tr('common.delete')}">×</button></div>`;
     }
     if(kind === 'video'){
-        return `<div class="output-img-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}>${canvasVideoPreviewHtml(url, useGridLayout ? 512 : 768, 'alt="video output"')}${timePill}<button class="output-download" type="button" title="下载视频"><i data-lucide="download" class="w-3.5 h-3.5"></i></button><button class="canvas-video-play output-video-play" type="button" title="播放"><i data-lucide="play"></i></button><div class="output-video-badge"><i data-lucide="play" class="w-3 h-3"></i>VIDEO</div><button class="output-del" title="${tr('common.delete')}">×</button></div>`;
+        return `<div class="output-img-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}>${canvasVideoPreviewHtml(url, useGridLayout ? 512 : 768, 'alt="video output" data-video-fallback-attrs="controls data-output-video-fallback=&quot;1&quot;"')}${timePill}<button class="output-download" type="button" title="下载视频"><i data-lucide="download" class="w-3.5 h-3.5"></i></button><button class="canvas-video-play output-video-play" type="button" title="播放"><i data-lucide="play"></i></button><div class="output-video-badge"><i data-lucide="play" class="w-3 h-3"></i>VIDEO</div><button class="output-del" title="${tr('common.delete')}">×</button></div>`;
     }
     if(kind === 'audio'){
         return `<div class="output-img-wrap output-audio-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}><div class="output-audio-card"><i data-lucide="file-audio" class="w-7 h-7"></i><span>${escapeHtml(outputImageName(url))}</span><audio src="${safe}" data-url="${safe}" controls preload="metadata"></audio></div>${timePill}<button class="output-del" title="${tr('common.delete')}">×</button></div>`;
@@ -14654,6 +15032,10 @@ async function importWorkflowFile(file){
 }
 function startNodeDrag(e, node){
     if(e.button !== 0) return;
+    if(isSpacePanDown && !isSpacePanIgnoredTarget(e.target)){
+        startBoardPan(e);
+        return;
+    }
     if(startKnifeDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
@@ -14923,8 +15305,15 @@ function canConnect(fromId, toId){
     if(from.type === 'llm' || from.type === 'ai-text' || from.type === 'storyboard-script' || from.type === 'storyboard' || from.type === 'scene-detection') return CANVAS_GENERATOR_TYPES.includes(to.type) || to.type === 'llm' || to.type === 'ai-text' || to.type === 'storyboard-script' || to.type === 'storyboard' || to.type === 'scene-detection';
     return CANVAS_GENERATOR_TYPES.includes(to.type) && ['image','prompt','source-text','comment-note','loop','group','promptGroup','output','llm','ai-text','storyboard-script','storyboard','scene-detection'].includes(from.type);
 }
-function sanitizeConnections(){
-    connections = (connections || []).filter(c => canConnect(c.from, c.to));
+function sanitizeConnections(options={}){
+    const strict = Boolean(options.strict);
+    const nodeIds = new Set((nodes || []).map(n => n.id));
+    connections = (connections || []).filter(c => {
+        if(!c || !c.from || !c.to || c.from === c.to) return false;
+        if(!nodeIds.has(c.from) || !nodeIds.has(c.to)) return false;
+        if(!c.id) c.id = uid('c');
+        return strict ? canConnect(c.from, c.to) : true;
+    });
 }
 function endDrag(event=null){
     const hadContentDrag = Boolean(dragNode || resizeNode || llmPaneDrag || knifeChanged || tempLink);
@@ -15046,19 +15435,29 @@ function updateGroupMembership(movedNodes){
 function portPoint(id, kind){
     const n = nodes.find(x => x.id === id);
     const el = nodesEl.querySelector(`.node[data-id="${id}"]`);
-    if(!n || !el) return {x:0,y:0};
+    if(!n) return {x:0,y:0};
+    if(!el){
+        const w = n.w || 260, h = n.h || 160;
+        const nx = Number(n.x) || 0, ny = Number(n.y) || 0;
+        return kind === 'out' ? {x:nx + w, y:ny + h / 2} : {x:nx, y:ny + h / 2};
+    }
     const port = el.querySelector(`.port.${kind}`);
     if(port){
         const r = port.getBoundingClientRect();
         return screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
     }
     const w = el.offsetWidth || n.w || 260, h = el.offsetHeight || n.h || 160;
-    return kind === 'out' ? {x:n.x + w, y:n.y + h / 2} : {x:n.x, y:n.y + h / 2};
+    const nx = Number(n.x) || 0, ny = Number(n.y) || 0;
+    return kind === 'out' ? {x:nx + w, y:ny + h / 2} : {x:nx, y:ny + h / 2};
+}
+function canResolvePort(id){
+    return Boolean(nodes.find(x => x.id === id));
 }
 function renderLinks(){
     linksEl.innerHTML = '';
     linkControlsEl.innerHTML = '';
     connections.forEach(c => {
+        if(!canResolvePort(c.from) || !canResolvePort(c.to)) return;
         const a = portPoint(c.from, 'out'), b = portPoint(c.to, 'in');
         linksEl.appendChild(pathEl(a.x, a.y, b.x, b.y, 'link'));
         const btn = linkDeleteButton(c, a, b);
@@ -15270,6 +15669,32 @@ function isEditableTarget(target){
     const tag = target?.tagName;
     return tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable || target?.closest?.('select, option');
 }
+function isSpacePanKey(e){
+    return e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar';
+}
+function hasOpenCanvasOverlay(){
+    return Boolean(
+        document.getElementById('imageEditModal')?.classList.contains('open') ||
+        promptTemplateModal?.classList.contains('open') ||
+        outputLightbox?.classList.contains('open') ||
+        assetManagerModal?.classList.contains('open') ||
+        workflowTransferModal?.classList.contains('open') ||
+        logModal?.classList.contains('open') ||
+        errorModal?.classList.contains('open')
+    );
+}
+function setSpacePanMode(active){
+    isSpacePanDown = Boolean(active && canvas && !zoomPreviewState && !hasOpenCanvasOverlay());
+    document.body.classList.toggle('canvas-space-pan', isSpacePanDown);
+}
+function canUseSpacePan(e){
+    return canvas && !zoomPreviewState && !e.ctrlKey && !e.metaKey && !e.altKey && !isEditableTarget(e.target) && !hasOpenCanvasOverlay();
+}
+function isSpacePanIgnoredTarget(target){
+    return isEditableTarget(target) || Boolean(target?.closest?.(
+        '.topbar, .canvas-gate, #createMenu, #linkCreateMenu, #nodeInputMenu, #nodeOutputMenu, #imageNodeMenu, .minimap, #canvasAssetPanel, #assetManagerModal, #workflowTransferModal, #logModal, #promptTemplateModal, #imageEditModal, #outputLightbox, #errorModal'
+    ));
+}
 minimap?.addEventListener('mousedown', e => {
     if(!canvas || e.button !== 0) return;
     e.preventDefault();
@@ -15329,6 +15754,11 @@ function startBoardPan(e, opts={}){
     };
     return true;
 }
+board.addEventListener('mousedown', e => {
+    if(!isSpacePanDown || e.button !== 0) return;
+    if(isSpacePanIgnoredTarget(e.target)) return;
+    if(startBoardPan(e)) e.stopImmediatePropagation?.();
+}, true);
 
 board.onmousedown = e => {
     if(!canvas) return;
@@ -15460,6 +15890,11 @@ window.addEventListener('paste', e => {
 window.addEventListener('keydown', e => {
     if(!canvas) return;
     const key = String(e.key || '').toLowerCase();
+    if(isSpacePanKey(e) && canUseSpacePan(e)){
+        e.preventDefault();
+        if(!e.repeat) setSpacePanMode(true);
+        return;
+    }
     if(key === 'r' && !isEditableTarget(e.target)) isRKeyDown = true;
     if(e.key === 'Escape' && document.getElementById('imageEditModal').classList.contains('open')) { closeImageEditor(); return; }
     if(e.key === 'Escape' && promptTemplateModal?.classList.contains('open')) { closePromptTemplateModal(); return; }
@@ -15520,10 +15955,11 @@ window.addEventListener('keydown', e => {
     }
 });
 window.addEventListener('keyup', e => {
+    if(isSpacePanKey(e)) setSpacePanMode(false);
     if(String(e.key || '').toLowerCase() === 'r') isRKeyDown = false;
     if(e.key === 'Shift') setKnifeMode(false);
 });
-window.addEventListener('blur', () => { isRKeyDown = false; setKnifeMode(false); });
+window.addEventListener('blur', () => { isRKeyDown = false; setSpacePanMode(false); setKnifeMode(false); });
 window.addEventListener('blur', () => {
     if(selectDrag){
         selectionBox.style.display = 'none';
@@ -15587,5 +16023,8 @@ window.onload = async () => {
     await loadConfig();
     pruneMissingComfyWorkflows();
     await loadCanvasList(false);
-    setCanvasMode(false);
+    const restoredCanvas = await restoreLastOpenCanvasOnBoot();
+    if(!restoredCanvas) setCanvasMode(false);
 };
+window.addEventListener('pagehide', flushCanvasBeforeUnload);
+window.addEventListener('beforeunload', flushCanvasBeforeUnload);

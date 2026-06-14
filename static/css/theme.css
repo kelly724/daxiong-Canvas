@@ -1750,13 +1750,24 @@ body .shell #saveState {
 }
 
 body .shell .toolbar {
-    justify-self: stretch;
+    justify-self: end;
+    width: fit-content;
+    max-width: min(920px, 100%);
     min-width: 0;
     min-height: 54px;
     padding: 7px;
     border-radius: 18px;
     gap: 8px;
     pointer-events: auto;
+    overflow: hidden;
+    transition: max-width .2s var(--ease), width .2s var(--ease), padding .16s ease;
+}
+
+body .shell .toolbar.collapsed {
+    width: fit-content;
+    max-width: 100%;
+    min-height: 50px;
+    padding: 6px;
 }
 
 body .shell .toolbar-command-label {
@@ -1811,8 +1822,34 @@ body .shell .toolbar-items::-webkit-scrollbar {
 
 body .shell .toolbar-fixed {
     flex: 0 0 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
     padding-left: 8px;
     border-left: 1px solid rgba(148, 163, 184, .16);
+}
+
+body .shell .toolbar-view,
+body .shell .toolbar-panels {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+body .shell .toolbar-view {
+    padding-right: 7px;
+    border-right: 1px solid rgba(148, 163, 184, .14);
+}
+
+body .shell .toolbar.collapsed .toolbar-fixed {
+    padding-left: 0;
+    border-left: 0;
+}
+
+body .shell .toolbar.collapsed .toolbar-command-label {
+    display: none;
 }
 
 body .shell .tool-btn {
@@ -1824,6 +1861,22 @@ body .shell .tool-btn {
     color: var(--muted);
     font-weight: 850;
     letter-spacing: 0;
+}
+
+body .shell .toolbar-icon-btn {
+    width: 38px;
+    min-width: 38px;
+    padding: 0;
+}
+
+body .shell .toolbar-zoom-label {
+    width: 54px;
+    min-width: 54px;
+    padding: 0 8px;
+    color: #e0f2fe;
+    font-size: 11px;
+    font-weight: 950;
+    font-variant-numeric: tabular-nums;
 }
 
 body .shell .tool-btn:hover,
@@ -1868,6 +1921,8 @@ body .shell .toolbar-items .tool-btn:focus-visible span {
 }
 
 body .shell .board {
+    position: absolute;
+    inset: 0;
     background-color: var(--page);
     background-image:
         linear-gradient(rgba(125, 211, 252, .05) 1px, transparent 1px),
@@ -2247,6 +2302,32 @@ body .shell .canvas-delete {
         display: none;
     }
 
+    body .shell .toolbar {
+        justify-self: start;
+        max-width: 100%;
+    }
+
+    body .shell .toolbar-fixed {
+        flex-wrap: wrap;
+    }
+
+    body .shell .toolbar-view {
+        order: 2;
+        width: 100%;
+        padding: 6px 0 0;
+        border-right: 0;
+        border-top: 1px solid rgba(148, 163, 184, .14);
+    }
+
+    body .shell .toolbar-panels .tool-btn {
+        width: 38px;
+        padding: 0;
+    }
+
+    body .shell .toolbar-panels .tool-btn span {
+        display: none;
+    }
+
     body .shell .gate-head {
         flex-direction: column;
     }
@@ -2288,4 +2369,481 @@ body .shell .canvas-delete {
         width: auto;
         max-width: none;
     }
+}
+
+/* Homepage-aligned palette for sidebar feature pages. */
+:root {
+    --bg: #080a0f !important;
+    --bg-base: #080a0f !important;
+    --page: #080a0f !important;
+    --stage-bg: #0c111a !important;
+    --card: rgba(17, 24, 39, .90) !important;
+    --card-solid: #111722 !important;
+    --soft: #0c111a !important;
+    --soft-2: #172031 !important;
+    --panel: rgba(17, 24, 39, .92) !important;
+    --accent: #edf4ff !important;
+    --text: #edf4ff !important;
+    --text-main: #edf4ff !important;
+    --text-soft: #c9d6e8 !important;
+    --muted: #8190a7 !important;
+    --subtle: #66768f !important;
+    --line: rgba(148, 163, 184, .16) !important;
+    --line-2: rgba(125, 211, 252, .24) !important;
+    --stage-border: rgba(125, 211, 252, .22) !important;
+    --primary: #7dd3fc !important;
+    --primary-2: #22c55e !important;
+    --danger: #f87171 !important;
+    --chat-bg: #080a0f !important;
+    --chat-panel: rgba(17, 24, 39, .94) !important;
+    --chat-panel-2: #0c111a !important;
+    --chat-soft: #172031 !important;
+    --chat-text: #edf4ff !important;
+    --chat-muted: #8190a7 !important;
+    --chat-line: rgba(148, 163, 184, .16) !important;
+    --chat-line-2: rgba(125, 211, 252, .24) !important;
+    --chat-strong: linear-gradient(135deg, #7dd3fc, #22c55e) !important;
+    --chat-strong-text: #06121d !important;
+    --chat-active-bg: rgba(125, 211, 252, .14) !important;
+    --chat-active-text: #edf4ff !important;
+    --chat-active-border: rgba(125, 211, 252, .36) !important;
+    --chat-user-bg: rgba(125, 211, 252, .18) !important;
+    --chat-user-text: #edf4ff !important;
+}
+
+html,
+body {
+    background:
+        radial-gradient(circle at 15% 8%, rgba(125, 211, 252, .16), transparent 30%),
+        radial-gradient(circle at 85% 4%, rgba(248, 113, 113, .10), transparent 28%),
+        #080a0f !important;
+    color: #edf4ff !important;
+}
+
+body {
+    color-scheme: dark;
+}
+
+body .container-box,
+body .layout-container,
+body .asset-page,
+body .settings-page,
+body .api-settings-page,
+body .comfyui-settings-page,
+body .chat-shell,
+body .main-content,
+body main {
+    background: transparent !important;
+    color: #edf4ff !important;
+}
+
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6,
+body strong,
+body label,
+body .font-bold,
+body .font-black,
+body .text-black,
+body .text-gray-950,
+body .text-gray-900,
+body .text-gray-800,
+body .text-slate-950,
+body .text-slate-900,
+body .text-slate-800 {
+    color: #edf4ff !important;
+}
+
+body p,
+body span,
+body small,
+body .text-gray-700,
+body .text-gray-600,
+body .text-gray-500,
+body .text-gray-400,
+body .text-slate-700,
+body .text-slate-600,
+body .text-slate-500,
+body .text-slate-400,
+body .text-neutral-500 {
+    color: #8190a7 !important;
+}
+
+body .text-white,
+body .active,
+body .selected,
+body .current,
+body button:hover,
+body a:hover {
+    color: #edf4ff !important;
+}
+
+body .border-black,
+body .border-gray-100,
+body .border-gray-200,
+body .border-gray-300,
+body .border-slate-100,
+body .border-slate-200,
+body .border-slate-300,
+body .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+body .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+body .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+body .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(148, 163, 184, .16) !important;
+}
+
+body .bg-white,
+body .bg-white\/90,
+body .bg-white\/95,
+body .bg-gray-50,
+body .bg-gray-50\/50,
+body .bg-gray-100,
+body .bg-slate-50,
+body .bg-slate-100,
+body .sidebar,
+body .content-head,
+body .block,
+body .provider-onboarding-card,
+body .upload-item,
+body .result-frame,
+body .masonry-item,
+body .engine-panel,
+body .tool-panel,
+body .control-panel,
+body .setting-card,
+body .settings-card,
+body .setting-row,
+body .provider-card,
+body .provider-card.provider-card-banner,
+body .provider-card.provider-card-sortable,
+body .provider-row,
+body .onboarding-step-panel,
+body .onboarding-rh-source-group,
+body .onboarding-key-field,
+body .onboarding-key-btn,
+body .workflow-card,
+body .workflow-row,
+body .console-card,
+body .asset-card,
+body .asset-panel,
+body .asset-detail,
+body .asset-shell,
+body .history-popover,
+body .model-picker-popover,
+body .model-picker-scope,
+body .model-picker-button,
+body .topbar,
+body .chat-rail,
+body .composer,
+body .composer-body,
+body .bubble.assistant,
+body .thread-item,
+body .add-btn,
+body .api-link-btn,
+body .hbm-btn,
+body .canvas-pin-btn,
+body .modal-panel,
+body .popover,
+body .dropdown,
+body .card,
+body .panel {
+    background: rgba(17, 24, 39, .90) !important;
+    border-color: rgba(148, 163, 184, .16) !important;
+    color: #edf4ff !important;
+    box-shadow: 0 18px 54px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+
+body .upload-item:hover,
+body .masonry-item:hover,
+body .asset-card:hover,
+body .setting-row:hover,
+body .provider-card:hover,
+body .workflow-row:hover,
+body .thread-item:hover {
+    background: rgba(23, 32, 49, .94) !important;
+    border-color: rgba(125, 211, 252, .30) !important;
+}
+
+body input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+body textarea,
+body select,
+body .onboarding-key-field input,
+body .select-shell,
+body .input-shell,
+body .search-box,
+body .prompt-box {
+    background: #0c111a !important;
+    border-color: rgba(148, 163, 184, .20) !important;
+    color: #edf4ff !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03) !important;
+}
+
+body input::placeholder,
+body textarea::placeholder {
+    color: #66768f !important;
+}
+
+body input[type=range]::-webkit-slider-runnable-track {
+    background: #223044 !important;
+}
+
+body input[type=range]::-moz-range-track {
+    background: #223044 !important;
+}
+
+body input[type=range]::-webkit-slider-thumb {
+    background: #7dd3fc !important;
+}
+
+body input[type=range]::-moz-range-thumb {
+    background: #7dd3fc !important;
+}
+
+body .mode-switcher,
+body .engine-switch,
+body .provider-switch,
+body .mode-switch,
+body .mode-glider,
+body .ratio-grid,
+body .resolution-toggle,
+body .mini-ratio,
+body .tabs,
+body .tab-list,
+body .toolbar,
+body .toolbar-fixed {
+    background: rgba(12, 17, 26, .86) !important;
+    border-color: rgba(148, 163, 184, .16) !important;
+    color: #8190a7 !important;
+}
+
+body .glass-btn,
+body .primary-btn,
+body .generate-btn,
+body .run-btn,
+body .send-btn,
+body .rail-new,
+body button.active,
+body .engine-btn.active,
+body .mode-btn.active,
+body .resolution-option.active,
+body .model-pill.active,
+body .tab.active,
+body [aria-selected="true"] {
+    background: linear-gradient(135deg, #7dd3fc, #22c55e) !important;
+    border-color: rgba(125, 211, 252, .60) !important;
+    color: #06121d !important;
+    box-shadow: 0 14px 34px rgba(34, 197, 94, .18), 0 0 0 1px rgba(125, 211, 252, .12) !important;
+}
+
+body .glass-btn *,
+body .primary-btn *,
+body .generate-btn *,
+body .run-btn *,
+body .send-btn *,
+body .rail-new *,
+body button.active *,
+body .engine-btn.active *,
+body .mode-btn.active *,
+body .resolution-option.active *,
+body .model-pill.active *,
+body .tab.active *,
+body [aria-selected="true"] * {
+    color: #06121d !important;
+}
+
+body .tag,
+body .pill,
+body .badge,
+body .model-pill,
+body .status-pill,
+body .chip,
+body .provider-mark,
+body .provider-protocol-pill {
+    background: rgba(125, 211, 252, .10) !important;
+    border-color: rgba(125, 211, 252, .24) !important;
+    color: #c9d6e8 !important;
+}
+
+body .provider-card.provider-card-banner.active,
+body .provider-card.provider-card-sortable.active,
+body .provider-card.active,
+body.show-recommend-mode .provider-card.active {
+    background: rgba(125, 211, 252, .14) !important;
+    border-color: rgba(125, 211, 252, .30) !important;
+    color: #edf4ff !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+
+body .provider-card.provider-card-banner.active *,
+body .provider-card.provider-card-sortable.active *,
+body .provider-card.active *,
+body.show-recommend-mode .provider-card.active * {
+    color: #edf4ff !important;
+}
+
+body .hbm-btn.hbm-primary {
+    background: linear-gradient(135deg, #7dd3fc, #22c55e) !important;
+    border-color: rgba(125, 211, 252, .60) !important;
+    color: #06121d !important;
+}
+
+body:not(.studio-theme-dark) .sidebar,
+body:not(.studio-theme-dark) .content-head,
+body:not(.studio-theme-dark) .block,
+body:not(.studio-theme-dark) .provider-onboarding-card,
+body:not(.studio-theme-dark) .provider-card,
+body:not(.studio-theme-dark) .provider-card.provider-card-banner,
+body:not(.studio-theme-dark) .provider-card.provider-card-sortable,
+body:not(.studio-theme-dark) .provider-mark,
+body:not(.studio-theme-dark) .provider-protocol-pill,
+body:not(.studio-theme-dark) .onboarding-step-panel,
+body:not(.studio-theme-dark) .onboarding-rh-source-group,
+body:not(.studio-theme-dark) .onboarding-key-field,
+body:not(.studio-theme-dark) .onboarding-key-btn,
+body:not(.studio-theme-dark) .onboarding-key-field input,
+body:not(.studio-theme-dark) .add-btn,
+body:not(.studio-theme-dark) .api-link-btn,
+html:not(.studio-theme-dark) body:not(.theme-dark) .sidebar,
+html:not(.studio-theme-dark) body:not(.theme-dark) .content-head,
+html:not(.studio-theme-dark) body:not(.theme-dark) .block,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-onboarding-card,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-card,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-card.provider-card-banner,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-card.provider-card-sortable,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-mark,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-protocol-pill,
+html:not(.studio-theme-dark) body:not(.theme-dark) .onboarding-step-panel,
+html:not(.studio-theme-dark) body:not(.theme-dark) .onboarding-rh-source-group,
+html:not(.studio-theme-dark) body:not(.theme-dark) .onboarding-key-field,
+html:not(.studio-theme-dark) body:not(.theme-dark) .onboarding-key-btn,
+html:not(.studio-theme-dark) body:not(.theme-dark) .onboarding-key-field input,
+html:not(.studio-theme-dark) body:not(.theme-dark) .add-btn,
+html:not(.studio-theme-dark) body:not(.theme-dark) .api-link-btn {
+    background: rgba(17, 24, 39, .90) !important;
+    border-color: rgba(148, 163, 184, .16) !important;
+    color: #edf4ff !important;
+    box-shadow: 0 18px 54px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+
+body:not(.studio-theme-dark) .provider-card.provider-card-banner.active,
+body:not(.studio-theme-dark) .provider-card.provider-card-sortable.active,
+body:not(.studio-theme-dark) .provider-card.active,
+body:not(.studio-theme-dark).show-recommend-mode .provider-card.active,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-card.provider-card-banner.active,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-card.provider-card-sortable.active,
+html:not(.studio-theme-dark) body:not(.theme-dark) .provider-card.active,
+html:not(.studio-theme-dark) body:not(.theme-dark).show-recommend-mode .provider-card.active {
+    background: rgba(125, 211, 252, .14) !important;
+    border-color: rgba(125, 211, 252, .30) !important;
+    color: #edf4ff !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+
+body table,
+body thead,
+body tbody,
+body tr,
+body th,
+body td {
+    border-color: rgba(148, 163, 184, .16) !important;
+    color: #c9d6e8 !important;
+}
+
+body thead,
+body th {
+    background: rgba(12, 17, 26, .92) !important;
+    color: #edf4ff !important;
+}
+
+body img,
+body video,
+body canvas {
+    border-color: rgba(148, 163, 184, .14) !important;
+}
+
+body #lightbox.gallery-lightbox,
+body .gallery-lightbox {
+    background: rgba(8, 10, 15, .94) !important;
+}
+
+/* Keep API provider list readable on the homepage-aligned dark surface. */
+body .sidebar .side-section-title,
+body .sidebar .provider-card,
+body .sidebar .provider-card *,
+body .sidebar .provider-name,
+body .sidebar .provider-meta,
+body .sidebar .provider-logo-fallback,
+body .sidebar .provider-protocol-pill,
+body .sidebar .provider-drag-handle,
+body .sidebar .provider-mark,
+body .sidebar .add-btn,
+body .sidebar .add-btn *,
+body .sidebar .api-link-btn,
+body .sidebar .api-link-btn * {
+    color: #f8fbff !important;
+    opacity: 1 !important;
+}
+
+body .sidebar .provider-meta,
+body .sidebar .provider-card.active .provider-meta,
+body .sidebar .provider-card.missing-key .provider-meta {
+    color: #e2ecff !important;
+}
+
+body .sidebar .provider-protocol-pill,
+body .sidebar .provider-mark {
+    background: rgba(125, 211, 252, .14) !important;
+    border-color: rgba(125, 211, 252, .28) !important;
+}
+
+body .sidebar .provider-card-banner .ms-icon-light {
+    display: none !important;
+}
+
+body .sidebar .provider-card-banner .ms-icon-dark {
+    display: block !important;
+}
+
+html body .sidebar .provider-protocol-pill,
+html body .sidebar .provider-mark,
+html body .sidebar .provider-drag-handle,
+html body .sidebar .add-btn,
+html body .sidebar .add-btn *,
+html body .sidebar .api-link-btn,
+html body .sidebar .api-link-btn *,
+html.studio-theme-dark body .sidebar .provider-protocol-pill,
+html.studio-theme-dark body .sidebar .provider-mark,
+html.studio-theme-dark body .sidebar .provider-drag-handle,
+html.studio-theme-dark body .sidebar .add-btn,
+html.studio-theme-dark body .sidebar .add-btn *,
+html.studio-theme-dark body .sidebar .api-link-btn,
+html.studio-theme-dark body .sidebar .api-link-btn *,
+body.studio-theme-dark .sidebar .provider-protocol-pill,
+body.studio-theme-dark .sidebar .provider-mark,
+body.studio-theme-dark .sidebar .provider-drag-handle,
+body.studio-theme-dark .sidebar .add-btn,
+body.studio-theme-dark .sidebar .add-btn *,
+body.studio-theme-dark .sidebar .api-link-btn,
+body.studio-theme-dark .sidebar .api-link-btn * {
+    color: #f8fbff !important;
+    opacity: 1 !important;
+}
+
+html body .sidebar .provider-protocol-pill,
+html body .sidebar .provider-mark,
+html body .sidebar .add-btn,
+html body .sidebar .api-link-btn,
+html.studio-theme-dark body .sidebar .provider-protocol-pill,
+html.studio-theme-dark body .sidebar .provider-mark,
+html.studio-theme-dark body .sidebar .add-btn,
+html.studio-theme-dark body .sidebar .api-link-btn,
+body.studio-theme-dark .sidebar .provider-protocol-pill,
+body.studio-theme-dark .sidebar .provider-mark,
+body.studio-theme-dark .sidebar .add-btn,
+body.studio-theme-dark .sidebar .api-link-btn {
+    background: rgba(125, 211, 252, .14) !important;
+    border-color: rgba(125, 211, 252, .28) !important;
 }

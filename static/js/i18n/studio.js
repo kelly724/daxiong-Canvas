@@ -19,6 +19,8 @@
         "studio.processing": { zh: "处理中...", en: "Processing..." },
         "studio.uploading": { zh: "上传中...", en: "Uploading..." },
         "studio.uploadFailed": { zh: "上传失败", en: "Upload Failed" },
+        "studio.comfyRequired": { zh: "启动 ComfyUI 或切换 ModelScope", en: "Start ComfyUI or switch to ModelScope" },
+        "studio.connectingComfy": { zh: "正在连接 ComfyUI...", en: "Connecting to ComfyUI..." },
         "studio.localModel": { zh: "本地", en: "Local" },
         "studio.cloudProcessing": { zh: "云端处理中...", en: "Cloud Processing..." },
         "studio.submittingModelscope": { zh: "正在提交到 ModelScope...", en: "Submitting to ModelScope..." },

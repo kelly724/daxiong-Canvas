@@ -1,5 +1,5 @@
 (function(){
-    const VERSION = '2026.06.13.node-custom-name';
+    const VERSION = '2026.06.14.node-custom-name.enhance-upload';
     const scripts = [
         '/static/js/i18n-core.js',
         '/static/js/i18n/common.js',

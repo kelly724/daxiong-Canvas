@@ -73,10 +73,12 @@ let dragState = null;
 let loopInsertPreview = null;
 let selectionState = null;
 let isRKeyDown = false;
+let isSpacePanDown = false;
 let selectionJustFinished = false;
 let resizeState = null;
 let llmInstructionResizeState = null;
 let thumbDragState = null;
+let thumbReorderSelection = null;
 let uploadTargetId = '';
 let pendingGroupUploadPoint = null;
 let mentionRange = null;
@@ -376,7 +378,7 @@ function smartMediaPreviewUrl(itemOrUrl, size=512){
     const raw = String(url || '');
     if(!raw || raw.startsWith('data:') || raw.startsWith('blob:')) return displayUrl;
     if(!raw.startsWith('/output/') && !raw.startsWith('/assets/')) return displayUrl;
-    if(!/\.(png|jpe?g|webp|gif|bmp|avif|tiff?|mp4|webm|mov|m4v)(\?|#|$)/i.test(raw)) return displayUrl;
+    if(!/\.(png|jpe?g|webp|gif|bmp|avif|tiff?|mp4|webm|mov|m4v|avi|mkv|flv)(\?|#|$)/i.test(raw)) return displayUrl;
     const width = Math.max(64, Math.min(2048, Math.round(Number(size) || 512)));
     return `/api/media-preview?w=${width}&url=${encodeURIComponent(raw)}`;
 }
@@ -910,11 +912,7 @@ function persistActiveSmartSettings(){
     subject.runSettings = settingsForStorage(settings);
     rememberRecentSmartSettings(settings, subject);
 }
-function backToCanvasList(){
-    savePromptDraftForCurrent();
-    const targetWindow = window.parent && window.parent !== window ? window.parent : window;
-    targetWindow.location.href = '/static/canvas.html?v=2026.05.22.1';
-}
+function backToCanvasList(){ savePromptDraftForCurrent(); window.location.href = '/static/canvas.html?v=2026.06.14.space-pan'; }
 function promptPlainText(){
     return promptInput.innerText.replace(/\u00a0/g, ' ').trim();
 }
@@ -960,6 +958,7 @@ function clearSelection(){
     selectedId = '';
     selectedIds = [];
     selectedImage = {nodeId:'', index:-1};
+    clearThumbReorderSelection();
 }
 function clearImageClickTimer(){
     if(imageClickTimer){
@@ -987,6 +986,32 @@ function selectedNodeIds(){
 function isEditableTarget(target){
     const el = target || document.activeElement;
     return !!el?.closest?.('input, textarea, select, option, [contenteditable="true"], .prompt-node-control, .prompt-input');
+}
+function isSpacePanKey(e){
+    return e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar';
+}
+function hasOpenSmartOverlay(){
+    return Boolean(
+        imageEditModal?.classList.contains('open') ||
+        smartLogModal?.classList.contains('open') ||
+        smartShortcutModal?.classList.contains('open') ||
+        smartWorkflowTransferModal?.classList.contains('open') ||
+        assetDialogBackdrop && !assetDialogBackdrop.hidden ||
+        promptPresetPanel?.classList.contains('open') ||
+        promptTemplatePanel?.classList.contains('open')
+    );
+}
+function setSpacePanMode(active){
+    isSpacePanDown = Boolean(active && canvas && !zoomPreviewState && !hasOpenSmartOverlay());
+    shell.classList.toggle('space-pan', isSpacePanDown);
+}
+function canUseSpacePan(e){
+    return canvas && !zoomPreviewState && !e.ctrlKey && !e.metaKey && !e.altKey && !isEditableTarget(e.target) && !hasOpenSmartOverlay();
+}
+function isSpacePanIgnoredTarget(target){
+    return isEditableTarget(target) || Boolean(target?.closest?.(
+        '.composer,.smart-back,.asset-panel,.asset-toggle,.smart-log-toggle,.smart-shortcut-toggle,.smart-workflow-toggle,.workflow-transfer-panel,.log-modal,.shortcut-modal,.image-edit-modal,.create-menu,.smart-minimap,.prompt-preset-panel,.prompt-template-panel'
+    ));
 }
 function safeScale(value){
     const n = Number(value);
@@ -4159,7 +4184,7 @@ function assetMediaKind(item){
     if(item.kind === 'audio' || item.type === 'audio') return 'audio';
     const url = String(item.url || item.thumbnail || '').toLowerCase().split('?')[0];
     const name = String(item.name || '').toLowerCase();
-    if(/\.(mp4|webm|mov|m4v|avi|mkv)$/.test(url) || /\.(mp4|webm|mov|m4v|avi|mkv)$/.test(name)) return 'video';
+    if(/\.(mp4|webm|mov|m4v|avi|mkv|flv)$/.test(url) || /\.(mp4|webm|mov|m4v|avi|mkv|flv)$/.test(name)) return 'video';
     if(/\.(mp3|wav|m4a|aac|ogg|flac)$/.test(url) || /\.(mp3|wav|m4a|aac|ogg|flac)$/.test(name)) return 'audio';
     if(/\.(json|zip)$/.test(url) || /\.(json|zip)$/.test(name)) return 'workflow';
     return 'image';
@@ -4237,7 +4262,7 @@ function renderAssetLibrary(){
                        <button class="asset-mini-btn" type="button" data-delete-asset="${escapeHtml(item.id)}" title="${escapeHtml(tr('common.delete'))}"><i data-lucide="trash-2"></i></button>`}
             </div>
         </div>
-    `).join('') : `<div class="asset-empty">${escapeHtml(localMode ? '暂无本地素材，拖入图片即可保存' : (smartClass ? '这个智能分类下暂无素材' : (workflowMode ? '暂无工作流资产' : tr('smart.assetEmpty'))))}</div>`;
+    `).join('') : `<div class="asset-empty">${escapeHtml(localMode ? '暂无本地素材，拖入图片、视频或音频即可保存' : (smartClass ? '这个智能分类下暂无素材' : (workflowMode ? '暂无工作流资产' : tr('smart.assetEmpty'))))}</div>`;
     if(workflowMode) bindWorkflowAssetItemEvents();
     else bindAssetItemEvents();
     bindSmartPreviewImageFallbacks(assetGrid);
@@ -4295,6 +4320,10 @@ function showAssetHoverPreview(event, item){
     let media = assetHoverPreview.querySelector('img,video');
     const name = assetHoverPreview.querySelector('.asset-hover-name');
     const kind = assetMediaKind(item);
+    if(kind === 'audio' || kind === 'workflow'){
+        hideAssetHoverPreview();
+        return;
+    }
     if(kind === 'video' && media?.tagName?.toLowerCase() !== 'video'){
         media?.replaceWith(document.createElement('video'));
         media = assetHoverPreview.querySelector('video');
@@ -4986,18 +5015,20 @@ function updateNodeElementDuringResize(node){
 }
 function isVideoMediaItem(img){
     if(!img) return false;
-    if(img.kind === 'video') return true;
+    const kind = String(img.kind || img.mediaKind || img.type || '').toLowerCase();
+    if(kind === 'video') return true;
     const url = String(img.url || '').toLowerCase();
-    return /\.(mp4|webm|mov|m4v)(\?|$)/.test(url);
+    return url.startsWith('data:video/') || /\.(mp4|webm|mov|m4v|avi|mkv|flv)(\?|#|$)/.test(url);
 }
 function isInlineVideoActive(img){
     return Boolean(img && img._inlineVideoActive);
 }
 function isAudioMediaItem(img){
     if(!img) return false;
-    if(img.kind === 'audio') return true;
+    const kind = String(img.kind || img.mediaKind || img.type || '').toLowerCase();
+    if(kind === 'audio') return true;
     const url = String(img.url || '').toLowerCase();
-    return /\.(mp3|wav|m4a|aac|ogg|flac)(\?|$)/.test(url);
+    return url.startsWith('data:audio/') || /\.(mp3|wav|m4a|aac|ogg|flac)(\?|#|$)/.test(url);
 }
 function isTextMediaItem(img){
     if(!img) return false;
@@ -5012,7 +5043,7 @@ function isFileMediaItem(img){
 function mediaKindForFile(file){
     const type = String(file?.type || '').toLowerCase();
     const name = String(file?.name || '').toLowerCase();
-    if(type.startsWith('video/') || /\.(mp4|webm|mov|m4v|avi|mkv)(\?|$)/.test(name)) return 'video';
+    if(type.startsWith('video/') || /\.(mp4|webm|mov|m4v|avi|mkv|flv)(\?|$)/.test(name)) return 'video';
     if(type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|ogg|flac)(\?|$)/.test(name)) return 'audio';
     if(type.startsWith('text/') || /\.(txt|json|csv|srt|vtt|md)(\?|$)/.test(name)) return 'text';
     return 'image';
@@ -5718,7 +5749,7 @@ function nodeBodyHtml(node, layout){
     if(imgs.length > 1){
         const visibleRows = Math.max(1, Math.min(MEDIA_GROUP_MAX_VISIBLE_ROWS, Number(layout.visibleRows || layout.rows || 1)));
         const maxHeight = visibleRows * Number(layout.thumb || 96) + Math.max(0, visibleRows - 1) * 8;
-        return `<div class="thumb-grid" data-thumb-scroll="1" style="--thumb-cols:${layout.cols}; --thumb-size:${layout.thumb}px; --thumb-max-height:${maxHeight}px">${imgs.map((img, i) => `<div class="thumb-item ${selectedImage.nodeId === node.id && selectedImage.index === i ? 'image-selected' : ''}" data-image-index="${i}" data-media-signature="${escapeAttr(`${mediaKindForItem(img)}:${img?.url || ''}`)}">${thumbMediaHtml(img)}${imageResolutionBadgeHtml(img)}<button class="mini-x image-delete" type="button" data-image-index="${i}" title="${escapeHtml(tr('smart.deleteImage'))}"><i data-lucide="trash-2"></i></button></div>`).join('')}</div>`;
+        return `<div class="thumb-grid" data-thumb-scroll="1" style="--thumb-cols:${layout.cols}; --thumb-size:${layout.thumb}px; --thumb-max-height:${maxHeight}px">${imgs.map((img, i) => `<div class="thumb-item ${selectedImage.nodeId === node.id && selectedImage.index === i ? 'image-selected' : ''} ${thumbReorderSelection?.nodeId === node.id && thumbReorderSelection.index === i ? 'thumb-reorder-selected' : ''}" data-image-index="${i}" data-media-signature="${escapeAttr(`${mediaKindForItem(img)}:${img?.url || ''}`)}">${thumbMediaHtml(img)}${imageResolutionBadgeHtml(img)}<button class="mini-x image-delete" type="button" data-image-index="${i}" title="${escapeHtml(tr('smart.deleteImage'))}"><i data-lucide="trash-2"></i></button></div>`).join('')}</div>`;
     }
     if(imgs[0]) return `<div class="image-wrap ${selectedImage.nodeId === node.id && selectedImage.index === 0 ? 'image-selected' : ''}" data-image-index="0" data-media-signature="${escapeAttr(`${mediaKindForItem(imgs[0])}:${imgs[0]?.url || ''}`)}" style="--node-img-w:${layout.width}px;--node-img-h:${layout.height}px">${singleMediaHtml(imgs[0], layout.width, layout.height)}${imageResolutionBadgeHtml(imgs[0])}<button class="mini-x image-delete" type="button" data-image-index="0" title="${escapeHtml(tr('smart.deleteImage'))}"><i data-lucide="trash-2"></i></button></div>`;
     return `<div class="node-drop" data-upload-action="files">
@@ -6570,6 +6601,7 @@ function bindNodeEvents(){
                 suppressImageClickUntil = Date.now() + 260;
                 const imageIndex = Number(item.dataset.imageIndex || 0);
                 const owner = nodes.find(n => n.id === id);
+                if(smartGridSplitLayout(owner)) return;
                 if(mediaKindForItem(owner?.images?.[imageIndex] || {}) === 'video'){
                     smartActivateVideoPreview(item);
                     return;
@@ -6588,6 +6620,11 @@ function bindNodeEvents(){
                 if(Date.now() < suppressImageClickUntil) return;
                 const imageIndex = Number(item.dataset.imageIndex || 0);
                 const owner = nodes.find(n => n.id === id);
+                if(smartGridSplitLayout(owner)){
+                    clearImageClickTimer();
+                    if(e.detail < 2) handleSmartGridThumbClick(item, owner);
+                    return;
+                }
                 if(mediaKindForItem(owner?.images?.[imageIndex] || {}) === 'video'){
                     clearImageClickTimer();
                     suppressImageClickUntil = Date.now() + 260;
@@ -6630,6 +6667,7 @@ function bindNodeEvents(){
             suppressImageClickUntil = Date.now() + 260;
             const imageIndex = Number(item.dataset.imageIndex || 0);
             const owner = nodes.find(n => n.id === id);
+            if(smartGridSplitLayout(owner)) return;
             if(mediaKindForItem(owner?.images?.[imageIndex] || {}) === 'video'){
                 smartActivateVideoPreview(item);
                 return;
@@ -6648,7 +6686,7 @@ function bindNodeEvents(){
                 const node = nodes.find(n => n.id === id);
                 if(!node || (node.images || []).length <= 1) return;
                 e.preventDefault(); e.stopPropagation();
-                thumbDragState = {nodeId:id, imgIndex:Number(item.dataset.imageIndex || 0), startX:e.clientX, startY:e.clientY, detached:false};
+                thumbDragState = {nodeId:id, imgIndex:Number(item.dataset.imageIndex || 0), startX:e.clientX, startY:e.clientY, detached:false, reorder:Boolean(smartGridSplitLayout(node)), targetIndex:Number(item.dataset.imageIndex || 0), started:false};
                 capturePendingUndo();
             });
         });
@@ -6663,6 +6701,11 @@ function bindNodeEvents(){
             capturePendingUndo();
         });
         const beginNodeDrag = e => {
+            if(isSpacePanDown && e.button === 0 && !isSpacePanIgnoredTarget(e.target)){
+                closeCreateMenu();
+                if(startSmartCanvasPan(e)) e.stopImmediatePropagation?.();
+                return;
+            }
             if(e.button !== 0 || e.target.closest('.mini-x, .smart-node-floating-menu, .node-resize-handle, .thumb-item, .node-port, select, input, button')) return;
             if(e.target.closest('.prompt-node-pill, textarea:not(.prompt-node-text)')) return;
             e.preventDefault(); e.stopPropagation();
@@ -6885,6 +6928,210 @@ function deleteImage(id, imageIndex){
     if(selectedImage.index < 0) selectedImage = {nodeId:'', index:-1};
     render();
     scheduleSave();
+}
+function smartGridSplitLayout(node){
+    const images = node?.images || [];
+    if(images.length <= 1) return null;
+    const grids = images
+        .map(img => img?.grid)
+        .filter(grid => grid?.type === 'grid-split' && grid.groupId);
+    if(grids.length < 2) return null;
+    const groupCounts = grids.reduce((acc, grid) => {
+        acc.set(grid.groupId, (acc.get(grid.groupId) || 0) + 1);
+        return acc;
+    }, new Map());
+    const primaryGroupId = [...groupCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || grids[0].groupId;
+    const primaryGrids = grids.filter(grid => grid.groupId === primaryGroupId);
+    const grid = primaryGrids[0] || grids[0];
+    return {
+        type:'grid-split',
+        groupId:primaryGroupId,
+        rows:Math.max(1, ...primaryGrids.map(item => Number(item.rows || 1) || 1)),
+        cols:Math.max(1, ...primaryGrids.map(item => Number(item.cols || 1) || 1), Number(grid.cols || 1) || 1)
+    };
+}
+function smartGridSlotForIndex(layout, index){
+    const cols = Math.max(1, Number(layout?.cols || 1));
+    return {
+        type:'grid-split',
+        groupId:layout?.groupId || '',
+        rows:Math.max(1, Number(layout?.rows || 1)),
+        cols,
+        row:Math.floor(Math.max(0, index) / cols),
+        col:Math.max(0, index) % cols,
+        w:1,
+        h:1
+    };
+}
+function smartGridSlots(node, layout){
+    return (node?.images || []).map((item, index) => {
+        const grid = item?.grid || {};
+        const fallback = smartGridSlotForIndex(layout, index);
+        return {
+            ...fallback,
+            ...grid,
+            type:'grid-split',
+            groupId:layout?.groupId || grid.groupId || fallback.groupId,
+            rows:Math.max(1, Number(layout?.rows || grid.rows || fallback.rows)),
+            cols:Math.max(1, Number(layout?.cols || grid.cols || fallback.cols)),
+            row:Number.isFinite(Number(grid.row)) ? Number(grid.row) : fallback.row,
+            col:Number.isFinite(Number(grid.col)) ? Number(grid.col) : fallback.col,
+            w:Math.max(1, Number(grid.w || fallback.w || 1)),
+            h:Math.max(1, Number(grid.h || fallback.h || 1))
+        };
+    }).sort((a, b) => (Number(a.row || 0) - Number(b.row || 0)) || (Number(a.col || 0) - Number(b.col || 0)));
+}
+function syncSmartGridImagesToSlots(node, slots, layout){
+    if(!node || !layout) return;
+    node.images = (node.images || []).map((item, index) => {
+        const slot = slots[index] || smartGridSlotForIndex(layout, index);
+        return {
+            ...item,
+            grid:{
+                ...slot,
+                type:'grid-split',
+                groupId:layout.groupId,
+                rows:Math.max(1, Number(layout.rows || slot.rows || 1)),
+                cols:Math.max(1, Number(layout.cols || slot.cols || 1))
+            }
+        };
+    });
+}
+function clearThumbReorderSelection(nodeId=''){
+    world.querySelectorAll('.thumb-reorder-selected').forEach(el => {
+        if(!nodeId || el.closest(`.image-node[data-id="${CSS.escape(nodeId)}"]`)) el.classList.remove('thumb-reorder-selected');
+    });
+    if(!nodeId || thumbReorderSelection?.nodeId === nodeId) thumbReorderSelection = null;
+}
+function setThumbReorderSelection(nodeId, index){
+    clearThumbReorderSelection();
+    thumbReorderSelection = {nodeId, index};
+    const item = world.querySelector(`.image-node[data-id="${CSS.escape(nodeId)}"] .thumb-item[data-image-index="${CSS.escape(String(index))}"]`);
+    item?.classList.add('thumb-reorder-selected');
+}
+function clearThumbReorderPreview(){
+    world.querySelectorAll('.thumb-reorder-source,.thumb-reorder-target').forEach(el => el.classList.remove('thumb-reorder-source', 'thumb-reorder-target'));
+    document.body.classList.remove('smart-thumb-reorder');
+}
+function setThumbReorderPreview(nodeId, sourceIndex, targetIndex){
+    const nodeEl = world.querySelector(`.image-node[data-id="${CSS.escape(nodeId)}"]`);
+    if(!nodeEl) return;
+    clearThumbReorderPreview();
+    document.body.classList.add('smart-thumb-reorder');
+    nodeEl.querySelectorAll('.thumb-item[data-image-index]').forEach(item => {
+        const index = Number(item.dataset.imageIndex);
+        item.classList.toggle('thumb-reorder-source', index === sourceIndex);
+        item.classList.toggle('thumb-reorder-target', index === targetIndex && targetIndex !== sourceIndex);
+    });
+}
+function thumbItemFromPoint(nodeId, x, y){
+    const direct = document.elementFromPoint(x, y)?.closest?.(`.image-node[data-id="${CSS.escape(nodeId)}"] .thumb-item[data-image-index]`);
+    if(direct) return direct;
+    const nodeEl = world.querySelector(`.image-node[data-id="${CSS.escape(nodeId)}"]`);
+    const nodeRect = nodeEl?.getBoundingClientRect();
+    if(!nodeRect || x < nodeRect.left || x > nodeRect.right || y < nodeRect.top || y > nodeRect.bottom) return null;
+    let best = null;
+    let bestDistance = Infinity;
+    nodeEl.querySelectorAll('.thumb-item[data-image-index]').forEach(item => {
+        const rect = item.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = x - cx;
+        const dy = y - cy;
+        const distance = dx * dx + dy * dy;
+        if(distance < bestDistance){
+            bestDistance = distance;
+            best = item;
+        }
+    });
+    return best;
+}
+function removeThumbReorderGhost(state=thumbDragState){
+    state?.ghost?.remove?.();
+    if(state) state.ghost = null;
+}
+function moveThumbReorderGhost(state, event){
+    if(!state?.ghost) return;
+    state.ghost.style.transform = `translate(${Math.round(event.clientX + 12)}px, ${Math.round(event.clientY + 12)}px)`;
+}
+function createThumbReorderGhost(state, event){
+    if(state?.ghost) return;
+    const ghost = document.createElement('div');
+    ghost.className = 'thumb-reorder-ghost';
+    ghost.textContent = String(Number(state.imgIndex || 0) + 1);
+    document.body.appendChild(ghost);
+    state.ghost = ghost;
+    moveThumbReorderGhost(state, event);
+}
+function swapSmartGridImages(node, fromIndex, toIndex, options={}){
+    const images = node?.images || [];
+    if(!node || !Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) return false;
+    if(fromIndex < 0 || toIndex < 0 || fromIndex >= images.length || toIndex >= images.length || fromIndex === toIndex) return false;
+    const layout = smartGridSplitLayout(node);
+    if(!layout) return false;
+    if(options.pending) commitPendingUndo(); else pushUndo();
+    [images[fromIndex], images[toIndex]] = [images[toIndex], images[fromIndex]];
+    clearThumbReorderSelection(node.id);
+    selectedId = node.id;
+    selectedIds = [];
+    selectedImage = {nodeId:'', index:-1};
+    render();
+    scheduleSave();
+    toast('九宫格已重新排序');
+    return true;
+}
+function handleSmartGridThumbClick(item, node){
+    if(!node || !smartGridSplitLayout(node)) return false;
+    const index = Number(item?.dataset?.imageIndex || 0);
+    const selected = thumbReorderSelection;
+    if(selected?.nodeId === node.id && selected.index !== index){
+        clearThumbReorderSelection(node.id);
+        swapSmartGridImages(node, Number(selected.index), index);
+        return true;
+    }
+    if(selected?.nodeId === node.id && selected.index === index){
+        clearThumbReorderSelection(node.id);
+        toast('已取消选择');
+        return true;
+    }
+    setThumbReorderSelection(node.id, index);
+    selectedId = node.id;
+    selectedIds = [];
+    selectedImage = {nodeId:'', index:-1};
+    syncSelectionUi();
+    toast(`已选择第 ${index + 1} 格，点击另一个格子交换`);
+    return true;
+}
+function moveSmartThumbReorder(event){
+    const state = thumbDragState;
+    if(!state?.reorder) return;
+    const source = nodes.find(n => n.id === state.nodeId);
+    if(!source || !smartGridSplitLayout(source)) return;
+    if(!state.started){
+        state.started = true;
+        clearThumbReorderSelection(state.nodeId);
+        createThumbReorderGhost(state, event);
+        setThumbReorderPreview(state.nodeId, state.imgIndex, state.imgIndex);
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    moveThumbReorderGhost(state, event);
+    const target = thumbItemFromPoint(state.nodeId, event.clientX, event.clientY);
+    const targetIndex = target ? Number(target.dataset.imageIndex || 0) : state.imgIndex;
+    state.targetIndex = Number.isInteger(targetIndex) ? targetIndex : state.imgIndex;
+    setThumbReorderPreview(state.nodeId, state.imgIndex, state.targetIndex);
+}
+function finishSmartThumbReorder(event){
+    const state = thumbDragState;
+    if(!state?.reorder) return false;
+    const node = nodes.find(n => n.id === state.nodeId);
+    const changed = state.started && node && Number.isInteger(state.targetIndex) && state.targetIndex !== state.imgIndex;
+    if(changed) swapSmartGridImages(node, state.imgIndex, state.targetIndex, {pending:true});
+    else discardPendingUndo();
+    removeThumbReorderGhost(state);
+    clearThumbReorderPreview();
+    thumbDragState = null;
+    return true;
 }
 function currentEditImage(){
     const node = nodes.find(n => n.id === cropState?.nodeId);
@@ -9503,7 +9750,7 @@ function isSupportedUploadFile(file){
     const type = String(file?.type || '').toLowerCase();
     const name = String(file?.name || '').toLowerCase();
     return type.startsWith('image/') || type.startsWith('video/') || type.startsWith('audio/')
-        || /\.(png|jpe?g|webp|gif|mp4|webm|mov|m4v|mp3|wav|m4a|aac|ogg|flac)(\?|$)/.test(name);
+        || /\.(png|jpe?g|webp|gif|mp4|webm|mov|m4v|avi|mkv|flv|mp3|wav|m4a|aac|ogg|flac)(\?|$)/.test(name);
 }
 function dataTransferItemEntry(item){
     try { return item?.webkitGetAsEntry?.() || null; } catch { return null; }
@@ -9542,6 +9789,7 @@ function uploadTitleForItems(items, fallback='Upload'){
     return list.length > 1 ? 'Group' : 'Image';
 }
 const SMART_IMAGE_DROP_EXT_RE = /\.(png|jpe?g|webp|gif)$/i;
+const SMART_MEDIA_DROP_EXT_RE = /\.(png|jpe?g|webp|gif|mp4|webm|mov|m4v|avi|mkv|flv|mp3|wav|m4a|aac|ogg|flac)$/i;
 const SMART_IMAGE_DROP_TEXT_TYPES = [
     'text/uri-list',
     'text/plain',
@@ -9555,7 +9803,7 @@ const SMART_IMAGE_DROP_TEXT_TYPES = [
     'FileName',
     'FileNameW'
 ];
-const SMART_IMAGE_DROP_TYPE_HINT_RE = /^(?:files?|image\/.+|text\/(?:uri-list|html|plain|x-moz-url|x-file-url)|downloadurl|public\.(?:file-url|url)|uniformresourcelocator|filenamew?)$|application\/x-qt-(?:windows-mime|image)|application\/x-moz-file|com\.eagle/i;
+const SMART_IMAGE_DROP_TYPE_HINT_RE = /^(?:files?|image\/.+|video\/.+|audio\/.+|text\/(?:uri-list|html|plain|x-moz-url|x-file-url)|downloadurl|public\.(?:file-url|url)|uniformresourcelocator|filenamew?)$|application\/x-qt-(?:windows-mime|image)|application\/x-moz-file|com\.eagle/i;
 function smartImageFilesFromDataTransfer(dataTransfer){
     return [...(dataTransfer?.files || [])].filter(isSupportedUploadFile);
 }
@@ -9595,7 +9843,7 @@ function smartDropTextFragments(value){
         const item = line.trim();
         if(item) fragments.push(item);
     });
-    const downloadUrl = text.match(/^image\/[^\s:]+:(.+)$/i);
+    const downloadUrl = text.match(/^(?:image|video|audio)\/[^\s:]+:(.+)$/i);
     if(downloadUrl) fragments.push(downloadUrl[1]);
     return fragments;
 }
@@ -9617,7 +9865,28 @@ function smartDropTextCandidates(dataTransfer){
 }
 function isRemoteSmartImageDropValue(value){
     const text = String(value || '').trim();
-    return /^https?:\/\/.+/i.test(text) || /^data:image\//i.test(text) || /^blob:/i.test(text);
+    return /^https?:\/\/.+/i.test(text) || /^data:(?:image|video|audio)\//i.test(text) || /^blob:/i.test(text);
+}
+function smartMediaKindFromUrl(url, fallback='image'){
+    const text = String(url || '').trim().toLowerCase();
+    if(text.startsWith('data:video/')) return 'video';
+    if(text.startsWith('data:audio/')) return 'audio';
+    if(text.startsWith('data:image/')) return 'image';
+    if(isVideoMediaItem({url:text})) return 'video';
+    if(isAudioMediaItem({url:text})) return 'audio';
+    if(isTextMediaItem({url:text})) return 'text';
+    return fallback;
+}
+async function uploadSmartDataUrl(dataUrl, name='media'){
+    const contentType = String(dataUrl || '').match(/^data:([^;,]+)/i)?.[1] || '';
+    const response = await fetch('/api/ai/upload-base64', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({data:dataUrl, name:name || 'media', content_type:contentType})
+    });
+    if(!response.ok) throw new Error(await smartResponseErrorMessage(response, tr('smart.toastUploadFail')));
+    const data = await response.json();
+    return data.files || [];
 }
 function isLocalSmartImageDropValue(value){
     const text = String(value || '').trim();
@@ -9638,15 +9907,52 @@ function isLocalSmartImageDropValue(value){
     const isPosixPath = clean.startsWith('/');
     return (isWindowsPath || isPosixPath) && SMART_IMAGE_DROP_EXT_RE.test(clean);
 }
+function isLocalSmartMediaDropValue(value){
+    const text = String(value || '').trim();
+    if(!text) return false;
+    let path = text;
+    if(/^file:/i.test(path)){
+        try {
+            const url = new URL(path);
+            if(url.protocol !== 'file:') return false;
+            path = decodeURIComponent(url.pathname || path);
+        } catch(_) {
+            return false;
+        }
+    }
+    if(/^\/[a-zA-Z]:[\\/]/.test(path)) path = path.slice(1);
+    const clean = path.split(/[?#]/, 1)[0];
+    const isWindowsPath = /^[a-zA-Z]:[\\/]/.test(clean);
+    const isPosixPath = clean.startsWith('/');
+    return (isWindowsPath || isPosixPath) && SMART_MEDIA_DROP_EXT_RE.test(clean);
+}
 function smartLocalImagePathsFromDataTransfer(dataTransfer){
     return uniqueSmartDropValues(smartDropTextCandidates(dataTransfer).filter(isLocalSmartImageDropValue));
 }
+function smartUnsupportedLocalMediaPathsFromDataTransfer(dataTransfer){
+    return uniqueSmartDropValues(smartDropTextCandidates(dataTransfer).filter(value => isLocalSmartMediaDropValue(value) && !isLocalSmartImageDropValue(value)));
+}
 function smartImageNameFromUrl(url){
     try {
+        const raw = String(url || '');
+        if(/^data:/i.test(raw)){
+            const mime = raw.match(/^data:([^;,]+)/i)?.[1]?.toLowerCase() || '';
+            const kind = smartMediaKindFromUrl(raw, 'media');
+            const ext = mime.includes('mpeg') ? 'mp3'
+                : mime.includes('mp4') ? (kind === 'audio' ? 'm4a' : 'mp4')
+                : mime.includes('wav') ? 'wav'
+                : mime.includes('ogg') ? 'ogg'
+                : mime.includes('webm') ? 'webm'
+                : mime.includes('jpeg') ? 'jpg'
+                : mime.includes('webp') ? 'webp'
+                : mime.includes('gif') ? 'gif'
+                : 'png';
+            return `data-${kind}.${ext}`;
+        }
         const clean = String(url || '').split('?', 1)[0].split('#', 1)[0];
-        return decodeURIComponent(clean.split('/').pop() || 'image');
+        return decodeURIComponent(clean.split('/').pop() || 'media');
     } catch(_) {
-        return 'image';
+        return 'media';
     }
 }
 function smartImageDropPayload(dataTransfer){
@@ -9654,6 +9960,8 @@ function smartImageDropPayload(dataTransfer){
     if(files.length) return {type:'files', files};
     const localPaths = smartLocalImagePathsFromDataTransfer(dataTransfer);
     if(localPaths.length) return {type:'localPaths', localPaths};
+    const unsupportedLocalMediaPaths = smartUnsupportedLocalMediaPathsFromDataTransfer(dataTransfer);
+    if(unsupportedLocalMediaPaths.length) return {type:'unsupportedLocalMedia', paths:unsupportedLocalMediaPaths};
     const url = smartDropTextCandidates(dataTransfer).find(isRemoteSmartImageDropValue) || '';
     if(url) return {type:'url', url};
     return {type:'none'};
@@ -9755,9 +10063,15 @@ async function handleSmartImageDropPayload(payload, targetId='', opts={}){
         else if(payload.type === 'localPaths') {
             if(!opts.skipUndo) pushUndo();
             appendImagesToSmartNode(await importSmartLocalImages(payload.localPaths), targetId, opts);
+        } else if(payload.type === 'unsupportedLocalMedia') {
+            toast('本地音频/视频路径需要直接拖拽文件本体，暂不支持纯路径导入');
         } else if(payload.type === 'url') {
             if(!opts.skipUndo) pushUndo();
-            appendImagesToSmartNode([{url:payload.url, name:smartImageNameFromUrl(payload.url), kind:'image'}], targetId, opts);
+            if(/^data:(?:image|video|audio)\//i.test(String(payload.url || ''))){
+                appendImagesToSmartNode(await uploadSmartDataUrl(payload.url, smartImageNameFromUrl(payload.url)), targetId, opts);
+            } else {
+                appendImagesToSmartNode([{url:payload.url, name:smartImageNameFromUrl(payload.url), kind:smartMediaKindFromUrl(payload.url)}], targetId, opts);
+            }
         }
     } catch(e) {
         toast(e.message || tr('smart.toastUploadFail'));
@@ -13139,6 +13453,21 @@ shell.addEventListener('click', e => {
     if(nodeEl?.dataset?.id) exitZoomPreviewToNode(nodeEl.dataset.id);
     else exitZoomPreview(screenToWorld(e));
 }, true);
+function startSmartCanvasPan(e){
+    if(e.button !== 0 && e.button !== 1) return false;
+    e.preventDefault();
+    e.stopPropagation();
+    didPan = false;
+    panState = {button:e.button, startX:e.clientX, startY:e.clientY, ox:viewport.x, oy:viewport.y};
+    shell.classList.add('panning');
+    return true;
+}
+shell.addEventListener('mousedown', e => {
+    if(!isSpacePanDown || e.button !== 0) return;
+    if(isSpacePanIgnoredTarget(e.target)) return;
+    closeCreateMenu();
+    if(startSmartCanvasPan(e)) e.stopImmediatePropagation?.();
+}, true);
 shell.onmousedown = e => {
     if(zoomPreviewState && e.button === 0 && !e.target.closest('.composer,.smart-back,.asset-panel,.asset-toggle,.smart-log-toggle,.smart-shortcut-toggle,.smart-workflow-toggle,.log-modal,.shortcut-modal,.image-edit-modal,.create-menu,.smart-minimap')) return;
     if(e.target.closest('.image-node,.composer,.smart-back,.asset-panel,.asset-toggle,.smart-log-toggle,.smart-shortcut-toggle,.smart-workflow-toggle,.log-modal,.shortcut-modal,.create-menu,.smart-minimap')) return;
@@ -13158,10 +13487,7 @@ shell.onmousedown = e => {
         return;
     }
     if(e.button !== 0 && e.button !== 1) return;
-    e.preventDefault();
-    didPan = false;
-    panState = {button:e.button, startX:e.clientX, startY:e.clientY, ox:viewport.x, oy:viewport.y};
-    shell.classList.add('panning');
+    startSmartCanvasPan(e);
 };
 shell.oncontextmenu = e => {
     if((e.ctrlKey || e.metaKey) || isRKeyDown){
@@ -13319,6 +13645,16 @@ window.onmousemove = e => {
         const dx = e.clientX - thumbDragState.startX;
         const dy = e.clientY - thumbDragState.startY;
         const source = nodes.find(n => n.id === thumbDragState.nodeId);
+        if(thumbDragState.reorder && Math.abs(dx) + Math.abs(dy) > 6){
+            const sourceEl = world.querySelector(`.image-node[data-id="${CSS.escape(thumbDragState.nodeId)}"]`);
+            const rect = sourceEl?.getBoundingClientRect();
+            const inside = rect && e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+            if(inside || thumbDragState.started){
+                moveSmartThumbReorder(e);
+                return;
+            }
+            thumbDragState.reorder = false;
+        }
         if(!thumbDragState.detached && Math.abs(dx) + Math.abs(dy) > 6){
             if(source && (source.images || []).length > 1){
                 const img = source.images[thumbDragState.imgIndex];
@@ -13435,6 +13771,10 @@ window.onmouseup = e => {
         scheduleSave();
     }
     if(thumbDragState){
+        if(thumbDragState.reorder){
+            finishSmartThumbReorder(e);
+            return;
+        }
         if(!thumbDragState.detached) discardPendingUndo();
         thumbDragState = null;
     }
@@ -13590,6 +13930,11 @@ window.addEventListener('paste', e => {
 });
 window.addEventListener('keydown', e => {
     const key = String(e.key || '').toLowerCase();
+    if(isSpacePanKey(e) && canUseSpacePan(e)){
+        e.preventDefault();
+        if(!e.repeat) setSpacePanMode(true);
+        return;
+    }
     if(key === 'r' && !isEditableTarget(e.target)) isRKeyDown = true;
     if(imageEditModal.classList.contains('open') && imageEditMode === 'preview' && !isEditableTarget(e.target)){
         if(e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
@@ -13658,9 +14003,11 @@ window.addEventListener('keydown', e => {
     }
 });
 window.addEventListener('keyup', e => {
+    if(isSpacePanKey(e)) setSpacePanMode(false);
     if(String(e.key || '').toLowerCase() === 'r') isRKeyDown = false;
 });
 window.addEventListener('blur', () => {
+    setSpacePanMode(false);
     isRKeyDown = false;
 });
 engineSelect.onchange = () => {
@@ -14055,8 +14402,15 @@ async function handleAssetPanelDrop(e){
                 const imported = await importSmartLocalImages(payload.localPaths);
                 for(const file of imported) if(file?.url) await addUrlToAssetLibrary(file.url, file.name || '');
             }
+        } else if(payload.type === 'unsupportedLocalMedia') {
+            toast('本地音频/视频路径需要直接拖拽文件本体，暂不支持纯路径导入');
         } else if(payload.type === 'url') {
-            await addUrlToAssetLibrary(payload.url, smartImageNameFromUrl(payload.url));
+            if(/^data:(?:image|video|audio)\//i.test(String(payload.url || '')) && !assetLibraryIsLocal()){
+                const uploaded = await uploadSmartDataUrl(payload.url, smartImageNameFromUrl(payload.url));
+                for(const file of uploaded) if(file?.url) await addUrlToAssetLibrary(file.url, file.name || '');
+            } else {
+                await addUrlToAssetLibrary(payload.url, smartImageNameFromUrl(payload.url));
+            }
         }
     } catch(err) {
         toast(err.message || tr('smart.assetAddFail'));

@@ -16,12 +16,28 @@
             } catch(e) {}
         })();
     </script>
-    <script src="/static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1781322964"></script>
-    <script src="/static/vendor/js/lucide.js?v=2026.06.11.1781322964"></script>
-    <script src="/static/js/theme.js?v=2026.06.11.1781351971"></script>
-    <script src="/static/js/i18n.js?v=2026.06.11.1781322969"></script>
-    <link rel="stylesheet" href="/static/css/canvas.css?v=2026.06.11.1781332703">
-    <link rel="stylesheet" href="/static/css/theme.css?v=2026.06.11.1781351971">
+    <script>
+        (function(){
+            if(window.self !== window.top) return;
+            try {
+                var target = new URL('/', window.location.origin);
+                target.searchParams.set('page', 'canvas');
+                var current = new URL(window.location.href);
+                var canvasId = current.searchParams.get('id') || current.searchParams.get('canvasId');
+                if(canvasId) target.searchParams.set('id', canvasId);
+                if(window.location.hash) target.hash = window.location.hash;
+                window.location.replace(target.toString());
+            } catch(e) {
+                window.location.replace('/?page=canvas');
+            }
+        })();
+    </script>
+    <script src="/static/vendor/js/tailwindcss-cdn.js?v=2026.06.11.1780949872"></script>
+    <script src="/static/vendor/js/lucide.js?v=2026.06.11.1780949872"></script>
+    <script src="/static/js/theme.js?v=2026.06.11.1781340649"></script>
+    <script src="/static/js/i18n.js?v=2026.06.11.1781378690"></script>
+    <link rel="stylesheet" href="/static/css/canvas.css?v=2026.06.11.1781382444">
+    <link rel="stylesheet" href="/static/css/theme.css?v=2026.06.11.1781377466">
 </head>
 <body>
     <div id="shell" class="shell no-canvas">
@@ -61,9 +77,17 @@
                     <button class="tool-btn" onclick="groupSelectedImages()"><i data-lucide="group" class="w-4 h-4"></i><span data-i18n="canvas.group">分组</span></button>
                 </div>
                 <div class="toolbar-fixed">
-                    <button id="workflowTransferToggle" class="tool-btn toolbar-workflow" type="button" title="导入导出工作流" aria-label="导入导出工作流"><i data-lucide="package-open" class="w-4 h-4"></i><span>工作流</span></button>
-                    <button id="canvasAssetToggle" class="tool-btn toolbar-asset canvas-asset-toggle" type="button" title="资产库" aria-label="资产库"><i data-lucide="library" class="w-4 h-4"></i><span>资产库</span></button>
-                    <button id="canvasLogToggle" class="tool-btn toolbar-log" type="button" onclick="openCanvasLog(event)" title="日志" aria-label="日志" data-i18n-title="canvas.logs"><i data-lucide="list-todo" class="w-4 h-4"></i><span data-i18n="canvas.logs">日志</span></button>
+                    <div class="toolbar-view" role="group" aria-label="画布视图">
+                        <button id="canvasZoomOutBtn" class="tool-btn toolbar-icon-btn" type="button" onclick="adjustCanvasZoom(.9)" title="缩小画布" aria-label="缩小画布"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+                        <button id="canvasZoomLabel" class="tool-btn toolbar-zoom-label" type="button" onclick="resetCanvasZoom()" title="重置缩放" aria-label="重置缩放">100%</button>
+                        <button id="canvasZoomInBtn" class="tool-btn toolbar-icon-btn" type="button" onclick="adjustCanvasZoom(1.1)" title="放大画布" aria-label="放大画布"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+                        <button id="canvasFitBtn" class="tool-btn toolbar-icon-btn" type="button" onclick="fitAllNodesViewport()" title="适配画布" aria-label="适配画布"><i data-lucide="maximize-2" class="w-4 h-4"></i></button>
+                    </div>
+                    <div class="toolbar-panels" role="group" aria-label="画布面板">
+                        <button id="workflowTransferToggle" class="tool-btn toolbar-workflow" type="button" title="导入导出工作流" aria-label="导入导出工作流"><i data-lucide="package-open" class="w-4 h-4"></i><span>工作流</span></button>
+                        <button id="canvasAssetToggle" class="tool-btn toolbar-asset canvas-asset-toggle" type="button" title="资产库" aria-label="资产库"><i data-lucide="library" class="w-4 h-4"></i><span>资产库</span></button>
+                        <button id="canvasLogToggle" class="tool-btn toolbar-log" type="button" onclick="openCanvasLog(event)" title="日志" aria-label="日志" data-i18n-title="canvas.logs"><i data-lucide="list-todo" class="w-4 h-4"></i><span data-i18n="canvas.logs">日志</span></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -196,7 +220,7 @@
                 <div class="canvas-asset-hover-name"></div>
             </div>
         </div>
-        <div class="hint editor-only" data-i18n="canvas.hint">拖拽画布或按住滚轮移动，Shift/Ctrl 框选多选，拖动选中节点可一起移动。图片/提示词节点右下端口拖线到生成节点。</div>
+        <div class="hint editor-only" data-i18n="canvas.hint">拖拽画布或按住空格/滚轮移动，Shift/Ctrl 框选多选，拖动选中节点可一起移动。图片/提示词节点右下端口拖线到生成节点。</div>
         <div id="outputLightbox" class="output-lightbox" onclick="closeOutputLightbox()">
             <div id="outputLightboxShell" class="output-lightbox-shell" onclick="event.stopPropagation()">
             <div id="outputPreview" class="output-preview">
@@ -379,7 +403,7 @@
         </div>
     </div>
 
-    <script src="/static/js/ltx-director-timeline.js?v=2026.06.11.1781322969"></script>
-    <script src="/static/js/canvas.js?v=2026.06.11.1781354199"></script>
+    <script src="/static/js/ltx-director-timeline.js?v=2026.06.11.1781293866"></script>
+    <script src="/static/js/canvas.js?v=2026.06.11.1781383121"></script>
 </body>
 </html>
