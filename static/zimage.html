@@ -334,7 +334,6 @@
         };
 
         let currentEngine = 'local';
-        const MS_TOKEN_KEY = 'modelscope_api_token';
         const ENGINE_MODE_KEY = 'zimage_engine_mode';
 
         // 1. Token handled via index.html sidebar
@@ -382,20 +381,14 @@
 
         // 4. ModelScope 云端逻辑
         async function runCloudTask(prompt) {
-            // 优先用 API 设置里集中管理的 Token（服务端）；localStorage 仅作旧版兜底
-            let apiKey = '';
+            let hasServerToken = false;
             try {
                 const res = await fetch('/api/config/token');
                 const data = await res.json();
-                if (data.token) apiKey = data.token;
+                hasServerToken = !!data.has_token;
             } catch (e) { }
-            if (apiKey) {
-                // 自愈：清掉可能过期的旧版本地 Token，避免覆盖服务端有效 Token
-                try { localStorage.removeItem(MS_TOKEN_KEY); } catch (e) { }
-            } else {
-                apiKey = localStorage.getItem(MS_TOKEN_KEY) || '';
-            }
-            if (!apiKey) return alert(tr('studio.modelscopeTokenRequired'));
+            try { localStorage.removeItem('modelscope_api_token'); } catch (e) { }
+            if (!hasServerToken) return alert(tr('studio.modelscopeTokenRequired'));
 
             const btn = document.getElementById('mainGenBtn');
             setLoading(true);
@@ -409,7 +402,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         prompt: prompt,
-                        api_key: apiKey,
                         resolution: `${document.getElementById('width').value}x${document.getElementById('height').value}`
                     })
                 });

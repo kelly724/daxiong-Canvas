@@ -14,7 +14,7 @@ function canvasMediaPreviewUrl(url, size=512){
     const raw = String(url || '');
     if(!raw || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
     if(!raw.startsWith('/output/') && !raw.startsWith('/assets/')) return raw;
-    if(!/\.(png|jpe?g|webp|gif|bmp|avif|tiff?|mp4|webm|mov|m4v)(\?|#|$)/i.test(raw)) return raw;
+    if(!/\.(png|jpe?g|webp|gif|bmp|avif|tiff?|mp4|webm|mov|m4v|avi|mkv|flv)(\?|#|$)/i.test(raw)) return raw;
     const width = Math.max(64, Math.min(2048, Math.round(Number(size) || 512)));
     return `/api/media-preview?w=${width}&url=${encodeURIComponent(raw)}`;
 }
@@ -22,6 +22,16 @@ function canvasPreviewImgHtml(url, size=512, attrs=''){
     const original = String(url || '');
     const preview = canvasMediaPreviewUrl(original, size);
     return `<img src="${escapeAttr(preview)}" data-preview-src="${escapeAttr(preview)}" data-original-src="${escapeAttr(original)}" data-url="${escapeAttr(original)}"${attrs ? ` ${attrs}` : ''}>`;
+}
+function loadCanvasOriginalImageDimensions(url){
+    const src = String(url || '');
+    if(!src || /^data:/i.test(src) || /^blob:/i.test(src)) return Promise.resolve(null);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve({w:img.naturalWidth || 0, h:img.naturalHeight || 0});
+        img.onerror = () => resolve(null);
+        img.src = src;
+    });
 }
 function canvasVideoPreviewHtml(url, size=512, attrs=''){
     const original = String(url || '');
@@ -222,6 +232,7 @@ let knifeChanged = false;
 let knifeNeedsRender = false;
 let selectDrag = null;
 let isRKeyDown = false;
+let isSpacePanDown = false;
 let menuPoint = null;
 let linkCreateState = null;
 let internalDrag = false;
@@ -1914,7 +1925,7 @@ async function createSmartCanvas(){
 }
 function openSmartCanvasPage(id){
     if(!id) return;
-    window.location.href = `/static/smart-canvas.html?id=${encodeURIComponent(id)}&v=2026.05.22.1`;
+    window.location.href = `/static/smart-canvas.html?id=${encodeURIComponent(id)}&v=2026.06.14.space-pan`;
 }
 function toggleEmojiPicker(id, event){
     event?.preventDefault();
@@ -6489,6 +6500,18 @@ function renderNode(node){
                 }, true);
             }
             body.addEventListener('dblclick', openPreview, true);
+            if(loadedImg && mediaKind === 'image' && !node.natural_w && !node.natural_h && !node._naturalSizeLoading){
+                const original = loadedImg.dataset.originalSrc || node.url;
+                node._naturalSizeLoading = true;
+                loadCanvasOriginalImageDimensions(original).then(size => {
+                    node._naturalSizeLoading = false;
+                    if(!size || node.natural_w || node.natural_h) return;
+                    node.natural_w = size.w;
+                    node.natural_h = size.h;
+                    refreshGeometryAfterLayout();
+                    scheduleSave();
+                }).catch(() => { node._naturalSizeLoading = false; });
+            }
             if(loadedImg && loadedImg.complete && loadedImg.naturalHeight > 0){
                 requestAnimationFrame(refreshGeometry);
             } else if(loadedImg) {
@@ -6706,6 +6729,12 @@ function bindOutputWrap(wrap, node){
             openOutputLightbox(video.dataset.url, node);
         };
     }
+    wrap.addEventListener('click', e => {
+        const fallbackVideo = e.target.closest?.('video[data-output-video-fallback]');
+        if(!fallbackVideo || !wrap.contains(fallbackVideo)) return;
+        e.stopPropagation();
+        openOutputLightbox(fallbackVideo.dataset.url, node);
+    });
     if(fileCard){
         fileCard.onclick = e => {
             e.stopPropagation();
@@ -8905,7 +8934,7 @@ function renderVideoBody(node){
     wrap.className = 'generator-body';
     const inputSources = generatorSources(node);
     const ordered = orderedSources(node, inputSources);
-    const imageInputs = ordered.filter(src => src.refs?.length);
+    const mediaInputs = ordered.filter(src => src.refs?.some(ref => ['image','video','audio'].includes(mediaKindForRef(ref))));
     const promptInputs = ordered.filter(src => src.prompt && !src.refs?.length);
     sanitizeVideoNodeProviderModel(node);
     node.model = node.model || 'veo3-fast';
@@ -9041,7 +9070,7 @@ function renderVideoBody(node){
         };
     });
     const list = wrap.querySelector('.video-img-list');
-    renderVideoImageInputs(list, node, imageInputs);
+    renderVideoImageInputs(list, node, mediaInputs);
     renderPromptPreview(wrap.querySelector('.prompt-list'), promptInputs);
     wrap.querySelector('.gen-btn').onclick = e => { e.stopPropagation(); runCanvasGenerate(node.id); };
     bindCascadeButtons(wrap, node.id);
@@ -9087,11 +9116,19 @@ function renderVideoImageInputs(list, node, imageInputs){
         item.className = 'input-item video-input-item';
         item.draggable = true;
         item.dataset.sourceId = src.id;
-        const frameLabel = node.useFrameRoles && i === 0 ? tr('canvas.videoRoleFirstFrame') : node.useFrameRoles && i === 1 ? tr('canvas.videoRoleLastFrame') : '';
-        const previewHtml = src.preview && !isMissingAssetUrl(src.preview) ? canvasPreviewImgHtml(src.preview, 256) : (src.preview ? missingAssetHtml(src.preview, true) : '<i data-lucide="image" class="w-6 h-6 text-slate-400"></i>');
+        const kind = mediaKindForRef(src.refs?.[0] || {url:src.preview || ''});
+        const frameLabel = kind === 'image' && node.useFrameRoles && i === 0 ? tr('canvas.videoRoleFirstFrame') : kind === 'image' && node.useFrameRoles && i === 1 ? tr('canvas.videoRoleLastFrame') : '';
+        const previewHtml = kind === 'video'
+            ? canvasVideoPreviewHtml(src.preview || src.refs?.[0]?.url || '', 256)
+            : kind === 'audio'
+            ? `<div class="video-input-audio"><i data-lucide="file-audio" class="w-6 h-6"></i><span>${escapeHtml(src.label || 'Audio')}</span></div>`
+            : src.preview && !isMissingAssetUrl(src.preview)
+            ? canvasPreviewImgHtml(src.preview, 256)
+            : (src.preview ? missingAssetHtml(src.preview, true) : '<i data-lucide="image" class="w-6 h-6 text-slate-400"></i>');
+        const typeLabel = kind === 'audio' ? `音频${i + 1}` : kind === 'video' ? `视频${i + 1}` : `图${i + 1}`;
         item.innerHTML = `
             <div class="video-input-thumb">
-                <span class="input-index">${i + 1}</span>
+                <span class="input-index">${typeLabel}</span>
                 ${previewHtml}
                 <span class="input-label">${escapeHtml(src.label)}</span>
             </div>
@@ -10587,6 +10624,9 @@ function refreshGeneratorInputViews(){
         const el = nodesEl.querySelector(`.node[data-id="${gen.id}"]`);
         if(!el) return;
         const sources = orderedSources(gen, generatorSources(gen));
+        const mediaInputs = sources
+            .map(src => ({...src, refs:(src.refs || []).filter(ref => ['image','video','audio'].includes(mediaKindForRef(ref)))}))
+            .filter(src => src.refs?.length);
         const imageInputs = sources
             .map(src => ({...src, refs:imageRefsOnly(src.refs || [])}))
             .filter(src => src.refs?.length);
@@ -10598,7 +10638,7 @@ function refreshGeneratorInputViews(){
             ltxSyncConnectedImagesToTimeline(gen);
             renderComfyImages(el.querySelector('.input-list'), gen, imageInputs);
         }
-        if(gen.type === 'video') renderVideoImageInputs(el.querySelector('.video-img-list'), gen, imageInputs);
+        if(gen.type === 'video') renderVideoImageInputs(el.querySelector('.video-img-list'), gen, mediaInputs);
         if(gen.type === 'rh'){
             const media = rhMediaSources(gen);
             renderRhPromptFields(el.querySelector('.rh-prompt-list'), gen, rhActiveFields(gen));
@@ -10877,8 +10917,10 @@ async function runVideoNode(nodeId, opts={}){
     const sources = orderedSources(node, generatorSources(node));
     const prompt = sources.map(s => s.prompt).filter(Boolean).join('\n\n');
     const allRefs = sources.flatMap(s => s.refs || []);
-    const refs = applyUploadedUrlToRefs(imageRefsOnly(allRefs), node);
-    const videoRefs = applyUploadedUrlToRefs(videoRefsOnly(allRefs), node);
+    const mediaRefs = applyUploadedUrlToRefs((allRefs || []).filter(ref => ['image','video','audio'].includes(mediaKindForRef(ref))), node);
+    const refs = imageRefsOnly(mediaRefs);
+    const videoRefs = videoRefsOnly(mediaRefs);
+    const audioRefs = audioRefsOnly(mediaRefs);
     if(node.useFrameRoles && refs[0]) refs[0] = {...refs[0], role:'first_frame'};
     if(node.useFrameRoles && refs[1]) refs[1] = {...refs[1], role:'last_frame'};
     if(!prompt){ alert(tr('canvas.videoNeedsPrompt')); return; }
@@ -10900,6 +10942,7 @@ async function runVideoNode(nodeId, opts={}){
             videos:manualVideoUrlForNode(node)
                 ? [manualVideoUrlForNode(node)]
                 : videoRefs.map(ref => tempShUploadedUrlForNode(node, ref.url)),
+            audios:audioRefs.map(ref => ref.url).filter(Boolean),
             enhance_prompt:Boolean(node.enhancePrompt),
             enable_upsample:Boolean(node.enableUpsample),
             watermark:Boolean(node.watermark),
@@ -13460,7 +13503,7 @@ function renderOutputMedia(item, useGridLayout=false, outputIndex=0){
         return `<div class="output-img-wrap" data-output-url="${safe}" data-missing-url="${safe}"${indexAttr}${gridStyle}>${missingAssetHtml(url, true)}${timePill}<button class="output-del" title="${tr('common.delete')}">×</button></div>`;
     }
     if(kind === 'video'){
-        return `<div class="output-img-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}>${canvasVideoPreviewHtml(url, useGridLayout ? 512 : 768, 'alt="video output"')}${timePill}<button class="output-download" type="button" title="下载视频"><i data-lucide="download" class="w-3.5 h-3.5"></i></button><button class="canvas-video-play output-video-play" type="button" title="播放"><i data-lucide="play"></i></button><div class="output-video-badge"><i data-lucide="play" class="w-3 h-3"></i>VIDEO</div><button class="output-del" title="${tr('common.delete')}">×</button></div>`;
+        return `<div class="output-img-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}>${canvasVideoPreviewHtml(url, useGridLayout ? 512 : 768, 'alt="video output" data-video-fallback-attrs="controls data-output-video-fallback=&quot;1&quot;"')}${timePill}<button class="output-download" type="button" title="下载视频"><i data-lucide="download" class="w-3.5 h-3.5"></i></button><button class="canvas-video-play output-video-play" type="button" title="播放"><i data-lucide="play"></i></button><div class="output-video-badge"><i data-lucide="play" class="w-3 h-3"></i>VIDEO</div><button class="output-del" title="${tr('common.delete')}">×</button></div>`;
     }
     if(kind === 'audio'){
         return `<div class="output-img-wrap output-audio-wrap" data-output-url="${safe}"${indexAttr}${gridStyle}><div class="output-audio-card"><i data-lucide="file-audio" class="w-7 h-7"></i><span>${escapeHtml(outputImageName(url))}</span><audio src="${safe}" data-url="${safe}" controls preload="metadata"></audio></div>${timePill}<button class="output-del" title="${tr('common.delete')}">×</button></div>`;
@@ -14935,6 +14978,10 @@ async function importWorkflowFile(file){
 }
 function startNodeDrag(e, node){
     if(e.button !== 0) return;
+    if(isSpacePanDown && !isSpacePanIgnoredTarget(e.target)){
+        startBoardPan(e);
+        return;
+    }
     if(startKnifeDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
@@ -15334,19 +15381,29 @@ function updateGroupMembership(movedNodes){
 function portPoint(id, kind){
     const n = nodes.find(x => x.id === id);
     const el = nodesEl.querySelector(`.node[data-id="${id}"]`);
-    if(!n || !el) return {x:0,y:0};
+    if(!n) return {x:0,y:0};
+    if(!el){
+        const w = n.w || 260, h = n.h || 160;
+        const nx = Number(n.x) || 0, ny = Number(n.y) || 0;
+        return kind === 'out' ? {x:nx + w, y:ny + h / 2} : {x:nx, y:ny + h / 2};
+    }
     const port = el.querySelector(`.port.${kind}`);
     if(port){
         const r = port.getBoundingClientRect();
         return screenToWorld(r.left + r.width / 2, r.top + r.height / 2);
     }
     const w = el.offsetWidth || n.w || 260, h = el.offsetHeight || n.h || 160;
-    return kind === 'out' ? {x:n.x + w, y:n.y + h / 2} : {x:n.x, y:n.y + h / 2};
+    const nx = Number(n.x) || 0, ny = Number(n.y) || 0;
+    return kind === 'out' ? {x:nx + w, y:ny + h / 2} : {x:nx, y:ny + h / 2};
+}
+function canResolvePort(id){
+    return Boolean(nodes.find(x => x.id === id));
 }
 function renderLinks(){
     linksEl.innerHTML = '';
     linkControlsEl.innerHTML = '';
     connections.forEach(c => {
+        if(!canResolvePort(c.from) || !canResolvePort(c.to)) return;
         const a = portPoint(c.from, 'out'), b = portPoint(c.to, 'in');
         linksEl.appendChild(pathEl(a.x, a.y, b.x, b.y, 'link'));
         const btn = linkDeleteButton(c, a, b);
@@ -15558,6 +15615,32 @@ function isEditableTarget(target){
     const tag = target?.tagName;
     return tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable || target?.closest?.('select, option');
 }
+function isSpacePanKey(e){
+    return e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar';
+}
+function hasOpenCanvasOverlay(){
+    return Boolean(
+        document.getElementById('imageEditModal')?.classList.contains('open') ||
+        promptTemplateModal?.classList.contains('open') ||
+        outputLightbox?.classList.contains('open') ||
+        assetManagerModal?.classList.contains('open') ||
+        workflowTransferModal?.classList.contains('open') ||
+        logModal?.classList.contains('open') ||
+        errorModal?.classList.contains('open')
+    );
+}
+function setSpacePanMode(active){
+    isSpacePanDown = Boolean(active && canvas && !zoomPreviewState && !hasOpenCanvasOverlay());
+    document.body.classList.toggle('canvas-space-pan', isSpacePanDown);
+}
+function canUseSpacePan(e){
+    return canvas && !zoomPreviewState && !e.ctrlKey && !e.metaKey && !e.altKey && !isEditableTarget(e.target) && !hasOpenCanvasOverlay();
+}
+function isSpacePanIgnoredTarget(target){
+    return isEditableTarget(target) || Boolean(target?.closest?.(
+        '.topbar, .canvas-gate, #createMenu, #linkCreateMenu, #nodeInputMenu, #nodeOutputMenu, #imageNodeMenu, .minimap, #canvasAssetPanel, #assetManagerModal, #workflowTransferModal, #logModal, #promptTemplateModal, #imageEditModal, #outputLightbox, #errorModal'
+    ));
+}
 minimap?.addEventListener('mousedown', e => {
     if(!canvas || e.button !== 0) return;
     e.preventDefault();
@@ -15617,6 +15700,11 @@ function startBoardPan(e, opts={}){
     };
     return true;
 }
+board.addEventListener('mousedown', e => {
+    if(!isSpacePanDown || e.button !== 0) return;
+    if(isSpacePanIgnoredTarget(e.target)) return;
+    if(startBoardPan(e)) e.stopImmediatePropagation?.();
+}, true);
 
 board.onmousedown = e => {
     if(!canvas) return;
@@ -15748,6 +15836,11 @@ window.addEventListener('paste', e => {
 window.addEventListener('keydown', e => {
     if(!canvas) return;
     const key = String(e.key || '').toLowerCase();
+    if(isSpacePanKey(e) && canUseSpacePan(e)){
+        e.preventDefault();
+        if(!e.repeat) setSpacePanMode(true);
+        return;
+    }
     if(key === 'r' && !isEditableTarget(e.target)) isRKeyDown = true;
     if(e.key === 'Escape' && document.getElementById('imageEditModal').classList.contains('open')) { closeImageEditor(); return; }
     if(e.key === 'Escape' && promptTemplateModal?.classList.contains('open')) { closePromptTemplateModal(); return; }
@@ -15808,10 +15901,11 @@ window.addEventListener('keydown', e => {
     }
 });
 window.addEventListener('keyup', e => {
+    if(isSpacePanKey(e)) setSpacePanMode(false);
     if(String(e.key || '').toLowerCase() === 'r') isRKeyDown = false;
     if(e.key === 'Shift') setKnifeMode(false);
 });
-window.addEventListener('blur', () => { isRKeyDown = false; setKnifeMode(false); });
+window.addEventListener('blur', () => { isRKeyDown = false; setSpacePanMode(false); setKnifeMode(false); });
 window.addEventListener('blur', () => {
     if(selectDrag){
         selectionBox.style.display = 'none';

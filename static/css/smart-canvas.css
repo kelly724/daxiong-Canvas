@@ -14,7 +14,12 @@ body { margin:0; height:100vh; overflow:hidden; color:var(--text); font-family:'
 button,input,select,textarea { font:inherit; }
 button { border:0; cursor:pointer; }
 .shell { position:relative; width:100vw; height:100vh; overflow:hidden; background-color:var(--page); background-image:radial-gradient(var(--grid) 1px, transparent 1px); background-size:24px 24px; cursor:grab; }
+.shell.space-pan,
+.shell.space-pan .image-node,
+.shell.space-pan .image-node * { cursor:grab !important; }
 .shell.panning { cursor:grabbing; }
+.shell.space-pan.panning,
+.shell.space-pan.panning * { cursor:grabbing !important; user-select:none !important; }
 .shell.zoom-preview { cursor:crosshair; }
 .world { position:absolute; left:0; top:0; width:6000px; height:4000px; transform-origin:0 0; }
 /* 画布缩放（非 1:1）时，关闭 world 内卡片的 backdrop-filter，避免合成层位图被缩放导致“参数设置”等组件发虚。

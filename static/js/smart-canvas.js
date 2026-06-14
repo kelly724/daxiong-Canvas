@@ -73,6 +73,7 @@ let dragState = null;
 let loopInsertPreview = null;
 let selectionState = null;
 let isRKeyDown = false;
+let isSpacePanDown = false;
 let selectionJustFinished = false;
 let resizeState = null;
 let llmInstructionResizeState = null;
@@ -377,7 +378,7 @@ function smartMediaPreviewUrl(itemOrUrl, size=512){
     const raw = String(url || '');
     if(!raw || raw.startsWith('data:') || raw.startsWith('blob:')) return displayUrl;
     if(!raw.startsWith('/output/') && !raw.startsWith('/assets/')) return displayUrl;
-    if(!/\.(png|jpe?g|webp|gif|bmp|avif|tiff?|mp4|webm|mov|m4v)(\?|#|$)/i.test(raw)) return displayUrl;
+    if(!/\.(png|jpe?g|webp|gif|bmp|avif|tiff?|mp4|webm|mov|m4v|avi|mkv|flv)(\?|#|$)/i.test(raw)) return displayUrl;
     const width = Math.max(64, Math.min(2048, Math.round(Number(size) || 512)));
     return `/api/media-preview?w=${width}&url=${encodeURIComponent(raw)}`;
 }
@@ -911,7 +912,7 @@ function persistActiveSmartSettings(){
     subject.runSettings = settingsForStorage(settings);
     rememberRecentSmartSettings(settings, subject);
 }
-function backToCanvasList(){ savePromptDraftForCurrent(); window.location.href = '/static/canvas.html?v=2026.05.22.1'; }
+function backToCanvasList(){ savePromptDraftForCurrent(); window.location.href = '/static/canvas.html?v=2026.06.14.space-pan'; }
 function promptPlainText(){
     return promptInput.innerText.replace(/\u00a0/g, ' ').trim();
 }
@@ -985,6 +986,32 @@ function selectedNodeIds(){
 function isEditableTarget(target){
     const el = target || document.activeElement;
     return !!el?.closest?.('input, textarea, select, option, [contenteditable="true"], .prompt-node-control, .prompt-input');
+}
+function isSpacePanKey(e){
+    return e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar';
+}
+function hasOpenSmartOverlay(){
+    return Boolean(
+        imageEditModal?.classList.contains('open') ||
+        smartLogModal?.classList.contains('open') ||
+        smartShortcutModal?.classList.contains('open') ||
+        smartWorkflowTransferModal?.classList.contains('open') ||
+        assetDialogBackdrop && !assetDialogBackdrop.hidden ||
+        promptPresetPanel?.classList.contains('open') ||
+        promptTemplatePanel?.classList.contains('open')
+    );
+}
+function setSpacePanMode(active){
+    isSpacePanDown = Boolean(active && canvas && !zoomPreviewState && !hasOpenSmartOverlay());
+    shell.classList.toggle('space-pan', isSpacePanDown);
+}
+function canUseSpacePan(e){
+    return canvas && !zoomPreviewState && !e.ctrlKey && !e.metaKey && !e.altKey && !isEditableTarget(e.target) && !hasOpenSmartOverlay();
+}
+function isSpacePanIgnoredTarget(target){
+    return isEditableTarget(target) || Boolean(target?.closest?.(
+        '.composer,.smart-back,.asset-panel,.asset-toggle,.smart-log-toggle,.smart-shortcut-toggle,.smart-workflow-toggle,.workflow-transfer-panel,.log-modal,.shortcut-modal,.image-edit-modal,.create-menu,.smart-minimap,.prompt-preset-panel,.prompt-template-panel'
+    ));
 }
 function safeScale(value){
     const n = Number(value);
@@ -4131,7 +4158,7 @@ function assetMediaKind(item){
     if(item.kind === 'audio' || item.type === 'audio') return 'audio';
     const url = String(item.url || item.thumbnail || '').toLowerCase().split('?')[0];
     const name = String(item.name || '').toLowerCase();
-    if(/\.(mp4|webm|mov|m4v|avi|mkv)$/.test(url) || /\.(mp4|webm|mov|m4v|avi|mkv)$/.test(name)) return 'video';
+    if(/\.(mp4|webm|mov|m4v|avi|mkv|flv)$/.test(url) || /\.(mp4|webm|mov|m4v|avi|mkv|flv)$/.test(name)) return 'video';
     if(/\.(mp3|wav|m4a|aac|ogg|flac)$/.test(url) || /\.(mp3|wav|m4a|aac|ogg|flac)$/.test(name)) return 'audio';
     if(/\.(json|zip)$/.test(url) || /\.(json|zip)$/.test(name)) return 'workflow';
     return 'image';
@@ -4209,7 +4236,7 @@ function renderAssetLibrary(){
                        <button class="asset-mini-btn" type="button" data-delete-asset="${escapeHtml(item.id)}" title="${escapeHtml(tr('common.delete'))}"><i data-lucide="trash-2"></i></button>`}
             </div>
         </div>
-    `).join('') : `<div class="asset-empty">${escapeHtml(localMode ? '暂无本地素材，拖入图片即可保存' : (smartClass ? '这个智能分类下暂无素材' : (workflowMode ? '暂无工作流资产' : tr('smart.assetEmpty'))))}</div>`;
+    `).join('') : `<div class="asset-empty">${escapeHtml(localMode ? '暂无本地素材，拖入图片、视频或音频即可保存' : (smartClass ? '这个智能分类下暂无素材' : (workflowMode ? '暂无工作流资产' : tr('smart.assetEmpty'))))}</div>`;
     if(workflowMode) bindWorkflowAssetItemEvents();
     else bindAssetItemEvents();
     bindSmartPreviewImageFallbacks(assetGrid);
@@ -4267,6 +4294,10 @@ function showAssetHoverPreview(event, item){
     let media = assetHoverPreview.querySelector('img,video');
     const name = assetHoverPreview.querySelector('.asset-hover-name');
     const kind = assetMediaKind(item);
+    if(kind === 'audio' || kind === 'workflow'){
+        hideAssetHoverPreview();
+        return;
+    }
     if(kind === 'video' && media?.tagName?.toLowerCase() !== 'video'){
         media?.replaceWith(document.createElement('video'));
         media = assetHoverPreview.querySelector('video');
@@ -4958,18 +4989,20 @@ function updateNodeElementDuringResize(node){
 }
 function isVideoMediaItem(img){
     if(!img) return false;
-    if(img.kind === 'video') return true;
+    const kind = String(img.kind || img.mediaKind || img.type || '').toLowerCase();
+    if(kind === 'video') return true;
     const url = String(img.url || '').toLowerCase();
-    return /\.(mp4|webm|mov|m4v)(\?|$)/.test(url);
+    return url.startsWith('data:video/') || /\.(mp4|webm|mov|m4v|avi|mkv|flv)(\?|#|$)/.test(url);
 }
 function isInlineVideoActive(img){
     return Boolean(img && img._inlineVideoActive);
 }
 function isAudioMediaItem(img){
     if(!img) return false;
-    if(img.kind === 'audio') return true;
+    const kind = String(img.kind || img.mediaKind || img.type || '').toLowerCase();
+    if(kind === 'audio') return true;
     const url = String(img.url || '').toLowerCase();
-    return /\.(mp3|wav|m4a|aac|ogg|flac)(\?|$)/.test(url);
+    return url.startsWith('data:audio/') || /\.(mp3|wav|m4a|aac|ogg|flac)(\?|#|$)/.test(url);
 }
 function isTextMediaItem(img){
     if(!img) return false;
@@ -4984,7 +5017,7 @@ function isFileMediaItem(img){
 function mediaKindForFile(file){
     const type = String(file?.type || '').toLowerCase();
     const name = String(file?.name || '').toLowerCase();
-    if(type.startsWith('video/') || /\.(mp4|webm|mov|m4v|avi|mkv)(\?|$)/.test(name)) return 'video';
+    if(type.startsWith('video/') || /\.(mp4|webm|mov|m4v|avi|mkv|flv)(\?|$)/.test(name)) return 'video';
     if(type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|ogg|flac)(\?|$)/.test(name)) return 'audio';
     if(type.startsWith('text/') || /\.(txt|json|csv|srt|vtt|md)(\?|$)/.test(name)) return 'text';
     return 'image';
@@ -6642,6 +6675,11 @@ function bindNodeEvents(){
             capturePendingUndo();
         });
         const beginNodeDrag = e => {
+            if(isSpacePanDown && e.button === 0 && !isSpacePanIgnoredTarget(e.target)){
+                closeCreateMenu();
+                if(startSmartCanvasPan(e)) e.stopImmediatePropagation?.();
+                return;
+            }
             if(e.button !== 0 || e.target.closest('.mini-x, .smart-node-floating-menu, .node-resize-handle, .thumb-item, .node-port, select, input, button')) return;
             if(e.target.closest('.prompt-node-pill, textarea:not(.prompt-node-text)')) return;
             e.preventDefault(); e.stopPropagation();
@@ -9686,7 +9724,7 @@ function isSupportedUploadFile(file){
     const type = String(file?.type || '').toLowerCase();
     const name = String(file?.name || '').toLowerCase();
     return type.startsWith('image/') || type.startsWith('video/') || type.startsWith('audio/')
-        || /\.(png|jpe?g|webp|gif|mp4|webm|mov|m4v|mp3|wav|m4a|aac|ogg|flac)(\?|$)/.test(name);
+        || /\.(png|jpe?g|webp|gif|mp4|webm|mov|m4v|avi|mkv|flv|mp3|wav|m4a|aac|ogg|flac)(\?|$)/.test(name);
 }
 function dataTransferItemEntry(item){
     try { return item?.webkitGetAsEntry?.() || null; } catch { return null; }
@@ -9725,6 +9763,7 @@ function uploadTitleForItems(items, fallback='Upload'){
     return list.length > 1 ? 'Group' : 'Image';
 }
 const SMART_IMAGE_DROP_EXT_RE = /\.(png|jpe?g|webp|gif)$/i;
+const SMART_MEDIA_DROP_EXT_RE = /\.(png|jpe?g|webp|gif|mp4|webm|mov|m4v|avi|mkv|flv|mp3|wav|m4a|aac|ogg|flac)$/i;
 const SMART_IMAGE_DROP_TEXT_TYPES = [
     'text/uri-list',
     'text/plain',
@@ -9738,7 +9777,7 @@ const SMART_IMAGE_DROP_TEXT_TYPES = [
     'FileName',
     'FileNameW'
 ];
-const SMART_IMAGE_DROP_TYPE_HINT_RE = /^(?:files?|image\/.+|text\/(?:uri-list|html|plain|x-moz-url|x-file-url)|downloadurl|public\.(?:file-url|url)|uniformresourcelocator|filenamew?)$|application\/x-qt-(?:windows-mime|image)|application\/x-moz-file|com\.eagle/i;
+const SMART_IMAGE_DROP_TYPE_HINT_RE = /^(?:files?|image\/.+|video\/.+|audio\/.+|text\/(?:uri-list|html|plain|x-moz-url|x-file-url)|downloadurl|public\.(?:file-url|url)|uniformresourcelocator|filenamew?)$|application\/x-qt-(?:windows-mime|image)|application\/x-moz-file|com\.eagle/i;
 function smartImageFilesFromDataTransfer(dataTransfer){
     return [...(dataTransfer?.files || [])].filter(isSupportedUploadFile);
 }
@@ -9778,7 +9817,7 @@ function smartDropTextFragments(value){
         const item = line.trim();
         if(item) fragments.push(item);
     });
-    const downloadUrl = text.match(/^image\/[^\s:]+:(.+)$/i);
+    const downloadUrl = text.match(/^(?:image|video|audio)\/[^\s:]+:(.+)$/i);
     if(downloadUrl) fragments.push(downloadUrl[1]);
     return fragments;
 }
@@ -9800,7 +9839,28 @@ function smartDropTextCandidates(dataTransfer){
 }
 function isRemoteSmartImageDropValue(value){
     const text = String(value || '').trim();
-    return /^https?:\/\/.+/i.test(text) || /^data:image\//i.test(text) || /^blob:/i.test(text);
+    return /^https?:\/\/.+/i.test(text) || /^data:(?:image|video|audio)\//i.test(text) || /^blob:/i.test(text);
+}
+function smartMediaKindFromUrl(url, fallback='image'){
+    const text = String(url || '').trim().toLowerCase();
+    if(text.startsWith('data:video/')) return 'video';
+    if(text.startsWith('data:audio/')) return 'audio';
+    if(text.startsWith('data:image/')) return 'image';
+    if(isVideoMediaItem({url:text})) return 'video';
+    if(isAudioMediaItem({url:text})) return 'audio';
+    if(isTextMediaItem({url:text})) return 'text';
+    return fallback;
+}
+async function uploadSmartDataUrl(dataUrl, name='media'){
+    const contentType = String(dataUrl || '').match(/^data:([^;,]+)/i)?.[1] || '';
+    const response = await fetch('/api/ai/upload-base64', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({data:dataUrl, name:name || 'media', content_type:contentType})
+    });
+    if(!response.ok) throw new Error(await smartResponseErrorMessage(response, tr('smart.toastUploadFail')));
+    const data = await response.json();
+    return data.files || [];
 }
 function isLocalSmartImageDropValue(value){
     const text = String(value || '').trim();
@@ -9821,15 +9881,52 @@ function isLocalSmartImageDropValue(value){
     const isPosixPath = clean.startsWith('/');
     return (isWindowsPath || isPosixPath) && SMART_IMAGE_DROP_EXT_RE.test(clean);
 }
+function isLocalSmartMediaDropValue(value){
+    const text = String(value || '').trim();
+    if(!text) return false;
+    let path = text;
+    if(/^file:/i.test(path)){
+        try {
+            const url = new URL(path);
+            if(url.protocol !== 'file:') return false;
+            path = decodeURIComponent(url.pathname || path);
+        } catch(_) {
+            return false;
+        }
+    }
+    if(/^\/[a-zA-Z]:[\\/]/.test(path)) path = path.slice(1);
+    const clean = path.split(/[?#]/, 1)[0];
+    const isWindowsPath = /^[a-zA-Z]:[\\/]/.test(clean);
+    const isPosixPath = clean.startsWith('/');
+    return (isWindowsPath || isPosixPath) && SMART_MEDIA_DROP_EXT_RE.test(clean);
+}
 function smartLocalImagePathsFromDataTransfer(dataTransfer){
     return uniqueSmartDropValues(smartDropTextCandidates(dataTransfer).filter(isLocalSmartImageDropValue));
 }
+function smartUnsupportedLocalMediaPathsFromDataTransfer(dataTransfer){
+    return uniqueSmartDropValues(smartDropTextCandidates(dataTransfer).filter(value => isLocalSmartMediaDropValue(value) && !isLocalSmartImageDropValue(value)));
+}
 function smartImageNameFromUrl(url){
     try {
+        const raw = String(url || '');
+        if(/^data:/i.test(raw)){
+            const mime = raw.match(/^data:([^;,]+)/i)?.[1]?.toLowerCase() || '';
+            const kind = smartMediaKindFromUrl(raw, 'media');
+            const ext = mime.includes('mpeg') ? 'mp3'
+                : mime.includes('mp4') ? (kind === 'audio' ? 'm4a' : 'mp4')
+                : mime.includes('wav') ? 'wav'
+                : mime.includes('ogg') ? 'ogg'
+                : mime.includes('webm') ? 'webm'
+                : mime.includes('jpeg') ? 'jpg'
+                : mime.includes('webp') ? 'webp'
+                : mime.includes('gif') ? 'gif'
+                : 'png';
+            return `data-${kind}.${ext}`;
+        }
         const clean = String(url || '').split('?', 1)[0].split('#', 1)[0];
-        return decodeURIComponent(clean.split('/').pop() || 'image');
+        return decodeURIComponent(clean.split('/').pop() || 'media');
     } catch(_) {
-        return 'image';
+        return 'media';
     }
 }
 function smartImageDropPayload(dataTransfer){
@@ -9837,6 +9934,8 @@ function smartImageDropPayload(dataTransfer){
     if(files.length) return {type:'files', files};
     const localPaths = smartLocalImagePathsFromDataTransfer(dataTransfer);
     if(localPaths.length) return {type:'localPaths', localPaths};
+    const unsupportedLocalMediaPaths = smartUnsupportedLocalMediaPathsFromDataTransfer(dataTransfer);
+    if(unsupportedLocalMediaPaths.length) return {type:'unsupportedLocalMedia', paths:unsupportedLocalMediaPaths};
     const url = smartDropTextCandidates(dataTransfer).find(isRemoteSmartImageDropValue) || '';
     if(url) return {type:'url', url};
     return {type:'none'};
@@ -9938,9 +10037,15 @@ async function handleSmartImageDropPayload(payload, targetId='', opts={}){
         else if(payload.type === 'localPaths') {
             if(!opts.skipUndo) pushUndo();
             appendImagesToSmartNode(await importSmartLocalImages(payload.localPaths), targetId, opts);
+        } else if(payload.type === 'unsupportedLocalMedia') {
+            toast('本地音频/视频路径需要直接拖拽文件本体，暂不支持纯路径导入');
         } else if(payload.type === 'url') {
             if(!opts.skipUndo) pushUndo();
-            appendImagesToSmartNode([{url:payload.url, name:smartImageNameFromUrl(payload.url), kind:'image'}], targetId, opts);
+            if(/^data:(?:image|video|audio)\//i.test(String(payload.url || ''))){
+                appendImagesToSmartNode(await uploadSmartDataUrl(payload.url, smartImageNameFromUrl(payload.url)), targetId, opts);
+            } else {
+                appendImagesToSmartNode([{url:payload.url, name:smartImageNameFromUrl(payload.url), kind:smartMediaKindFromUrl(payload.url)}], targetId, opts);
+            }
         }
     } catch(e) {
         toast(e.message || tr('smart.toastUploadFail'));
@@ -13309,6 +13414,21 @@ shell.addEventListener('click', e => {
     if(nodeEl?.dataset?.id) exitZoomPreviewToNode(nodeEl.dataset.id);
     else exitZoomPreview(screenToWorld(e));
 }, true);
+function startSmartCanvasPan(e){
+    if(e.button !== 0 && e.button !== 1) return false;
+    e.preventDefault();
+    e.stopPropagation();
+    didPan = false;
+    panState = {button:e.button, startX:e.clientX, startY:e.clientY, ox:viewport.x, oy:viewport.y};
+    shell.classList.add('panning');
+    return true;
+}
+shell.addEventListener('mousedown', e => {
+    if(!isSpacePanDown || e.button !== 0) return;
+    if(isSpacePanIgnoredTarget(e.target)) return;
+    closeCreateMenu();
+    if(startSmartCanvasPan(e)) e.stopImmediatePropagation?.();
+}, true);
 shell.onmousedown = e => {
     if(zoomPreviewState && e.button === 0 && !e.target.closest('.composer,.smart-back,.asset-panel,.asset-toggle,.smart-log-toggle,.smart-shortcut-toggle,.smart-workflow-toggle,.log-modal,.shortcut-modal,.image-edit-modal,.create-menu,.smart-minimap')) return;
     if(e.target.closest('.image-node,.composer,.smart-back,.asset-panel,.asset-toggle,.smart-log-toggle,.smart-shortcut-toggle,.smart-workflow-toggle,.log-modal,.shortcut-modal,.create-menu,.smart-minimap')) return;
@@ -13328,10 +13448,7 @@ shell.onmousedown = e => {
         return;
     }
     if(e.button !== 0 && e.button !== 1) return;
-    e.preventDefault();
-    didPan = false;
-    panState = {button:e.button, startX:e.clientX, startY:e.clientY, ox:viewport.x, oy:viewport.y};
-    shell.classList.add('panning');
+    startSmartCanvasPan(e);
 };
 shell.oncontextmenu = e => {
     if((e.ctrlKey || e.metaKey) || isRKeyDown){
@@ -13774,6 +13891,11 @@ window.addEventListener('paste', e => {
 });
 window.addEventListener('keydown', e => {
     const key = String(e.key || '').toLowerCase();
+    if(isSpacePanKey(e) && canUseSpacePan(e)){
+        e.preventDefault();
+        if(!e.repeat) setSpacePanMode(true);
+        return;
+    }
     if(key === 'r' && !isEditableTarget(e.target)) isRKeyDown = true;
     if(imageEditModal.classList.contains('open') && imageEditMode === 'preview' && !isEditableTarget(e.target)){
         if(e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
@@ -13842,9 +13964,11 @@ window.addEventListener('keydown', e => {
     }
 });
 window.addEventListener('keyup', e => {
+    if(isSpacePanKey(e)) setSpacePanMode(false);
     if(String(e.key || '').toLowerCase() === 'r') isRKeyDown = false;
 });
 window.addEventListener('blur', () => {
+    setSpacePanMode(false);
     isRKeyDown = false;
 });
 engineSelect.onchange = () => {
@@ -14239,8 +14363,15 @@ async function handleAssetPanelDrop(e){
                 const imported = await importSmartLocalImages(payload.localPaths);
                 for(const file of imported) if(file?.url) await addUrlToAssetLibrary(file.url, file.name || '');
             }
+        } else if(payload.type === 'unsupportedLocalMedia') {
+            toast('本地音频/视频路径需要直接拖拽文件本体，暂不支持纯路径导入');
         } else if(payload.type === 'url') {
-            await addUrlToAssetLibrary(payload.url, smartImageNameFromUrl(payload.url));
+            if(/^data:(?:image|video|audio)\//i.test(String(payload.url || '')) && !assetLibraryIsLocal()){
+                const uploaded = await uploadSmartDataUrl(payload.url, smartImageNameFromUrl(payload.url));
+                for(const file of uploaded) if(file?.url) await addUrlToAssetLibrary(file.url, file.name || '');
+            } else {
+                await addUrlToAssetLibrary(payload.url, smartImageNameFromUrl(payload.url));
+            }
         }
     } catch(err) {
         toast(err.message || tr('smart.assetAddFail'));

@@ -5343,3 +5343,199 @@ html.studio-theme-dark body .recommend-tag.recommend-free-tag svg {
     color:#34d399 !important;
     stroke:#34d399 !important;
 }
+
+/* 推荐 API 页面布局稳定化：避免外层应用壳内的内容列把中文文案压成竖排 */
+.recommend-inline-card {
+    container-type:inline-size;
+    min-height:0 !important;
+    gap:16px !important;
+}
+
+.recommend-inline-card > .onboarding-head {
+    display:none !important;
+}
+
+.recommend-inline-body {
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+}
+
+.recommend-platform-card {
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) !important;
+    grid-template-areas:none !important;
+    gap:12px !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+    padding:14px !important;
+}
+
+.recommend-platform-info,
+.recommend-platform-setup {
+    min-width:0 !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+}
+
+.recommend-platform-info {
+    justify-content:flex-start !important;
+    gap:8px !important;
+}
+
+.recommend-platform-head {
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) auto !important;
+    align-items:start !important;
+    gap:10px !important;
+}
+
+.recommend-name {
+    min-width:0 !important;
+    line-height:1.25 !important;
+}
+
+.recommend-name span {
+    display:block;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.recommend-platform-summary {
+    max-width:none !important;
+    margin:0 !important;
+    word-break:normal !important;
+    overflow-wrap:break-word !important;
+    text-wrap:pretty;
+}
+
+.recommend-tags {
+    align-items:flex-start !important;
+    min-width:0 !important;
+}
+
+.recommend-tag {
+    max-width:100%;
+    height:auto !important;
+    min-height:22px !important;
+    padding:4px 7px !important;
+    line-height:1.25 !important;
+    white-space:normal !important;
+}
+
+.recommend-platform-setup {
+    justify-content:flex-start !important;
+    gap:8px !important;
+}
+
+.recommend-setup-flow {
+    grid-template-columns:1fr !important;
+    align-items:stretch !important;
+    gap:8px !important;
+}
+
+.recommend-guide-source {
+    min-width:0 !important;
+    min-height:0 !important;
+}
+
+.recommend-guide-key-btn {
+    width:100% !important;
+    min-width:0 !important;
+    min-height:36px !important;
+    height:36px !important;
+    padding:0 12px !important;
+}
+
+.recommend-guide-arrow {
+    display:none !important;
+}
+
+.recommend-guide-save {
+    min-width:0 !important;
+    min-height:0 !important;
+    grid-template-columns:minmax(0, 1fr) auto !important;
+    align-items:end !important;
+    gap:10px !important;
+    padding:10px !important;
+}
+
+.recommend-guide-save .onboarding-key-field {
+    min-width:0 !important;
+}
+
+.recommend-guide-save .onboarding-key-field input {
+    min-width:0 !important;
+}
+
+.recommend-guide-save-btn {
+    width:auto !important;
+    min-width:78px !important;
+}
+
+@container (min-width: 820px) {
+    .recommend-platform-card {
+        grid-template-columns:minmax(0, .96fr) minmax(0, 1.04fr) !important;
+        align-items:stretch !important;
+    }
+
+    .recommend-platform-setup {
+        justify-content:center !important;
+    }
+
+    .recommend-setup-flow {
+        grid-template-columns:minmax(126px, .42fr) 24px minmax(0, 1fr) !important;
+        align-items:center !important;
+    }
+
+    .recommend-guide-arrow {
+        display:block !important;
+        width:24px !important;
+        min-width:24px !important;
+    }
+}
+
+@media (max-width:720px) {
+    .recommend-guide-save {
+        grid-template-columns:1fr !important;
+    }
+
+    .recommend-guide-save-btn {
+        width:100% !important;
+    }
+}
+
+@media (max-width:900px) {
+    html body .recommend-inline-card section.recommend-card.recommend-platform-card {
+        grid-template-columns:minmax(0, 1fr) !important;
+        grid-template-areas:none !important;
+        align-items:stretch !important;
+    }
+
+    html body .recommend-inline-card .recommend-platform-info,
+    html body .recommend-inline-card .recommend-platform-setup,
+    html body .recommend-inline-card .recommend-guide-source,
+    html body .recommend-inline-card .recommend-guide-save {
+        width:100% !important;
+        min-width:0 !important;
+    }
+
+    html body .recommend-inline-card .recommend-setup-flow {
+        grid-template-columns:minmax(0, 1fr) !important;
+        gap:8px !important;
+    }
+
+    html body .recommend-inline-card .recommend-guide-arrow {
+        display:none !important;
+    }
+
+    html body .recommend-inline-card .recommend-guide-save {
+        grid-template-columns:minmax(0, 1fr) !important;
+    }
+
+    html body .recommend-inline-card .recommend-guide-save-btn {
+        width:100% !important;
+    }
+}

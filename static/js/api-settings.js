@@ -83,7 +83,6 @@ const MS_BUILTIN_IMAGE_MODELS = [
 const MS_DEFAULT_BASE_URL = 'https://api-inference.modelscope.cn/v1';
 const RH_DEFAULT_BASE_URL = 'https://www.runninghub.cn';
 const EXAMPLE_BASE_URL = 'https://api.example.com/v1';
-const RH_DEFAULT_IMAGE_MODELS = ['/openapi/v2/text2image'];
 const JIMENG_DEFAULT_IMAGE_MODELS = ['5.0', '4.6', '4.5', '4.1', '4.0', '3.1', '3.0'];
 const JIMENG_DEFAULT_VIDEO_MODELS = ['seedance2.0fast_vip', 'seedance2.0_vip'];
 const JIMENG_LEGACY_IMAGE_MODELS = new Set(['jimeng-image-2k', 'jimeng-image-4k']);
@@ -623,7 +622,9 @@ function applyProviderOnboardingDefaults(id){
     } else if(id === 'runninghub'){
         item.base_url = RH_DEFAULT_BASE_URL;
         item.protocol = 'runninghub';
-        item.image_models = unique([...(item.image_models || []), ...RH_DEFAULT_IMAGE_MODELS]);
+        item.image_models = unique(item.image_models || []);
+        item.chat_models = unique(item.chat_models || []);
+        item.video_models = unique(item.video_models || []);
         ensureRunningHubLists(item);
     } else if(id === 'volcengine'){
         item.base_url = VOLCENGINE_DEFAULT_BASE_URL;
@@ -715,7 +716,7 @@ function updateProtocolFromInput(){
     const item = provider();
     if(!item || !protocolInput || item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng' || item.id === 'codex_cli' || item.id === 'lovart') return;
     const value = String(protocolInput.value || 'openai').toLowerCase();
-    item.protocol = ['openai', 'apimart', 'gemini', 'volcengine', 'jimeng', 'codex_cli', 'lovart'].includes(value) ? value : 'openai';
+    item.protocol = ['openai', 'apimart', 'gemini', 'volcengine', 'runninghub', 'jimeng', 'codex_cli', 'lovart'].includes(value) ? value : 'openai';
     if(['jimeng', 'codex_cli'].includes(item.protocol)) item.base_url = '';
     document.body.classList.toggle('show-jimeng', item.protocol === 'jimeng');
     document.body.classList.toggle('show-codex-cli', item.protocol === 'codex_cli');
@@ -2275,7 +2276,7 @@ function renderEditor(){
     clearVerifyResult();
     baseInput.placeholder = EXAMPLE_BASE_URL;
     baseInput.value = item.base_url || '';
-    if(protocolInput) protocolInput.value = item.id === 'runninghub' ? 'openai' : item.id === 'volcengine' ? 'volcengine' : item.id === 'jimeng' ? 'jimeng' : item.id === 'codex_cli' ? 'codex_cli' : item.id === 'lovart' ? 'lovart' : (item.protocol || 'openai');
+    if(protocolInput) protocolInput.value = item.id === 'runninghub' ? 'runninghub' : item.id === 'volcengine' ? 'volcengine' : item.id === 'jimeng' ? 'jimeng' : item.id === 'codex_cli' ? 'codex_cli' : item.id === 'lovart' ? 'lovart' : (item.protocol || 'openai');
     if(imageRequestModeInput) imageRequestModeInput.value = normalizeImageRequestMode(item.image_request_mode);
     keyInput.value = '';
     keyInput.placeholder = item.has_key ? `${tr('api.keepCurrentKey')} ${item.key_preview || ''}` : tr('api.enterKey');
@@ -2737,6 +2738,14 @@ function normalizeImageRequestMode(value){
 function imageRequestModeLabel(mode){
     return normalizeImageRequestMode(mode) === 'openai-json' ? 'OpenAI JSON' : 'OpenAI 标准';
 }
+function isRunningHubContext(item, baseUrl=''){
+    const protocol = String(protocolInput?.value || item?.protocol || '').trim().toLowerCase();
+    const url = String(baseUrl || baseInput?.value || item?.base_url || '').trim().toLowerCase();
+    return item?.id === 'runninghub'
+        || protocol === 'runninghub'
+        || url.includes('runninghub.cn')
+        || url.includes('runninghub.ai');
+}
 function applyDetectedImageRequestMode(mode){
     const item = provider();
     if(!item || !imageRequestModeInput) return false;
@@ -2749,7 +2758,7 @@ function applyDetectedImageRequestMode(mode){
 function applyDetectedProtocol(protocol){
     const item = provider();
     const detected = String(protocol || '').toLowerCase();
-    if(!item || !protocolInput || !['openai', 'apimart', 'gemini', 'volcengine', 'jimeng', 'codex_cli', 'lovart'].includes(detected)) return false;
+    if(!item || !protocolInput || !['openai', 'apimart', 'gemini', 'volcengine', 'runninghub', 'jimeng', 'codex_cli', 'lovart'].includes(detected)) return false;
     if(String(protocolInput.value || '').toLowerCase() === detected && String(item.protocol || '').toLowerCase() === detected) return false;
     protocolInput.value = detected;
     item.protocol = detected;
@@ -2759,8 +2768,27 @@ function applyDetectedProtocol(protocol){
         item.volcengine_project_name = item.volcengine_project_name || VOLCENGINE_DEFAULT_PROJECT_NAME;
         item.volcengine_region = item.volcengine_region || VOLCENGINE_DEFAULT_REGION;
     }
+    if(detected === 'runninghub'){
+        item.base_url = item.base_url || RH_DEFAULT_BASE_URL;
+        item.image_models = unique(item.image_models || []);
+        item.chat_models = unique(item.chat_models || []);
+        item.video_models = unique(item.video_models || []);
+    }
     protocolInput.dispatchEvent(new Event('change'));
     return true;
+}
+
+function runninghubModelSourceNote(data){
+    const raw = data?.raw || {};
+    const source = String(raw.source || '').toLowerCase();
+    const sourceLabel = source === 'openapi'
+        ? '官方 OpenAPI'
+        : source === 'github'
+        ? '官方 GitHub 注册表'
+        : source === 'fallback'
+        ? '内置兜底'
+        : source || '';
+    return sourceLabel ? ` · 来源：${sourceLabel}` : '';
 }
 
 async function probeAsync(){
@@ -2779,6 +2807,33 @@ async function probeAsync(){
     try {
         const apiKey = currentProviderApiKey(item);
         const currentProtocol = String(protocolInput?.value || item.protocol || 'openai').toLowerCase();
+        if(isRunningHubContext(item, baseUrl)){
+            const data = await fetch('/api/providers/test-connection', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    base_url:baseUrl,
+                    api_key:apiKey,
+                    provider_id:'runninghub',
+                    protocol:'runninghub',
+                    image_request_mode:'openai'
+                })
+            }).then(async r => {
+                if(!r.ok) throw new Error((await r.json()).detail || '请求失败');
+                return r.json();
+            });
+            applyDetectedProtocol('runninghub');
+            lastFetchedAll = data.all || [];
+            lastFetchedSuggestion = {
+                image: new Set(data.image_models || []),
+                chat: new Set(data.chat_models || []),
+                video: new Set(data.video_models || []),
+            };
+            const openBtn = document.getElementById('openPickerBtn');
+            if(openBtn){ openBtn.disabled = false; openBtn.style.opacity = '1'; }
+            showVerifyResult(`<span style="color:#15803d;font-size:11px;font-weight:800">✓ RunningHub OpenAPI 验证通过 · 找到 ${data.model_count || data.total || 0} 个模型${runninghubModelSourceNote(data)}</span>`);
+            return;
+        }
         const data = await fetch('/api/providers/probe-async', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -2796,7 +2851,7 @@ async function probeAsync(){
         const detectedProtocol = String(data.protocol || '').toLowerCase();
         const isAsync = data.ok === true && detectedProtocol === 'apimart';
         const isOpenAiCompat = data.ok === true && detectedProtocol === 'openai';
-        const keepManualProtocol = ['gemini', 'volcengine', 'jimeng'].includes(currentProtocol);
+        const keepManualProtocol = ['gemini', 'volcengine', 'runninghub', 'jimeng'].includes(currentProtocol);
         if(protocolInput && !keepManualProtocol){
             applyDetectedProtocol(detectedProtocol || (isAsync ? 'apimart' : 'openai'));
         }
@@ -2823,7 +2878,7 @@ async function probeAsync(){
                 <pre style="margin-top:6px;padding:10px 12px;border-radius:10px;background:var(--soft);border:1px solid var(--line-2);font-size:10.5px;font-family:ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all;color:var(--text);max-height:200px;overflow:auto">${escapeHtml(rawJson)}</pre>
             </details>`);
     } catch(e){
-        const keepManualProtocol = ['gemini', 'volcengine', 'jimeng'].includes(String(protocolInput?.value || item.protocol || '').toLowerCase());
+        const keepManualProtocol = ['gemini', 'volcengine', 'runninghub', 'jimeng'].includes(String(protocolInput?.value || item.protocol || '').toLowerCase());
         if(protocolInput && !keepManualProtocol){ protocolInput.value = 'openai'; protocolInput.dispatchEvent(new Event('change')); }
         const suffix = keepManualProtocol ? '，已保留当前手动选择的协议' : '，协议已设为 OpenAI 兼容';
         showVerifyResult(`<div style="font-size:11px;font-weight:800;color:#b45309">⚠ ${escapeHtml(e.message || String(e))}${suffix}</div>`);
@@ -2845,13 +2900,14 @@ async function testConnection(){
     showVerifyResult(`<span style="color:var(--muted);font-size:11px;font-weight:700">验证中...</span>`);
     try {
         const apiKey = currentProviderApiKey(item);
+        const runninghubContext = isRunningHubContext(item, baseUrl);
         const data = await fetch('/api/providers/test-connection', {
             method: 'POST', headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
                 base_url: baseUrl,
                 api_key: apiKey,
-                provider_id: item.id,
-                protocol: isCodexCli ? 'codex_cli' : (protocolInput?.value || 'openai'),
+                provider_id: runninghubContext ? 'runninghub' : item.id,
+                protocol: runninghubContext ? 'runninghub' : isCodexCli ? 'codex_cli' : (protocolInput?.value || 'openai'),
                 image_request_mode: imageRequestModeInput?.value || item.image_request_mode || 'openai',
                 lovart_access_key: item.id === 'lovart' ? (keyInput?.value.trim() || '') : '',
                 lovart_secret_key: item.id === 'lovart' ? (lovartSkInput?.value.trim() || '') : ''
@@ -2875,7 +2931,8 @@ async function testConnection(){
             };
             const openBtn = document.getElementById('openPickerBtn');
             if(openBtn){ openBtn.disabled = false; openBtn.style.opacity = '1'; }
-            const isVolcengineNow = detectedProtocol === 'volcengine' || isVolcengineProvider(item);
+            const isRunningHubNow = runninghubContext || detectedProtocol === 'runninghub';
+            const isVolcengineNow = !isRunningHubNow && (detectedProtocol === 'volcengine' || isVolcengineProvider(item));
             const volcengineNote = isVolcengineNow
                 ? `<div style="margin-top:6px;color:#92400e;font-size:11px;font-weight:700">${detectedProtocol === 'volcengine' ? '已自动识别为方舟/Ark 任务协议。' : ''}火山协议提示：模型列表只代表可见模型，聊天模型建议填写你在方舟控制台创建的 <code>ep-...</code> 推理接入点。</div>`
                 : '';
@@ -2883,6 +2940,7 @@ async function testConnection(){
             const lovartNote = isLovart ? `<div style="margin-top:6px;color:#15803d;font-size:11px;font-weight:700">Lovart AK/SK 已可用；模型成本以确认弹窗返回为准。</div>` : '';
             const codexNote = isCodexCli ? `<div style="margin-top:6px;color:#15803d;font-size:11px;font-weight:700">Codex CLI 已配置，可在画布里选择“Codex CLI 本机生图”。</div>` : '';
             const imageModeNote = isCodexCli ? '' : ` · 图片接口：${imageRequestModeLabel(imageRequestModeInput?.value || item.image_request_mode)}`;
+            const runninghubNote = isRunningHubNow ? ` · RunningHub OpenAPI${runninghubModelSourceNote(data)}` : imageModeNote;
             if(isLovart && data.model_metadata) item.model_metadata = data.model_metadata;
             if(isCodexCli){
                 item.local_auth_configured = Boolean(data.configured || item.local_auth_configured);
@@ -2894,7 +2952,7 @@ async function testConnection(){
                 renderProviderList();
             }
             const passLabel = isCodexCli ? '连通性测试通过' : '地址验证通过';
-            showVerifyResult(`<span style="color:#15803d;font-size:11px;font-weight:800">✓ ${passLabel} · 找到 ${data.model_count} 个模型${isLovart ? '' : imageModeNote}</span>${volcengineNote}${jimengNote}${lovartNote}${codexNote}`);
+            showVerifyResult(`<span style="color:#15803d;font-size:11px;font-weight:800">✓ ${passLabel} · 找到 ${data.model_count} 个模型${isLovart ? '' : runninghubNote}</span>${volcengineNote}${jimengNote}${lovartNote}${codexNote}`);
         } else {
             if(isCodexCli){
                 setCodexCliStatus(data.configured ? '不可用' : '未同步', false);
@@ -2934,14 +2992,15 @@ async function fetchModels(){
     if(btn){ btn.disabled = true; btn.querySelector('span').textContent = tr('api.fetchingModels') || '拉取中...'; }
     setStatus(tr('api.fetchingModels') || '正在从上游拉取模型列表...');
     try {
+        const runninghubContext = isRunningHubContext(item, baseUrl);
         const data = await fetch('/api/providers/fetch-models', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({
                 base_url:baseUrl,
                 api_key:apiKey,
-                provider_id:item.id,
-                protocol:protocolInput?.value || 'openai',
+                provider_id:runninghubContext ? 'runninghub' : item.id,
+                protocol:runninghubContext ? 'runninghub' : (protocolInput?.value || 'openai'),
                 image_request_mode:imageRequestModeInput?.value || item.image_request_mode || 'openai',
                 lovart_access_key:item.id === 'lovart' ? (keyInput?.value.trim() || '') : '',
                 lovart_secret_key:item.id === 'lovart' ? (lovartSkInput?.value.trim() || '') : ''
@@ -2965,7 +3024,9 @@ async function fetchModels(){
         // 启用「选择模型」按钮，并 statusbar 显示已拉取数量
         const openBtn = document.getElementById('openPickerBtn');
         if(openBtn){ openBtn.disabled = false; openBtn.style.opacity = '1'; }
-        const extra = (detectedProtocol === 'volcengine' || isVolcengineProvider(item)) ? ' · 已识别方舟协议，火山聊天建议改填 ep-... 接入点' : '';
+        const extra = (runninghubContext || detectedProtocol === 'runninghub' || item.id === 'runninghub')
+            ? ` · RunningHub OpenAPI${runninghubModelSourceNote(data)}`
+            : (detectedProtocol === 'volcengine' || isVolcengineProvider(item)) ? ' · 已识别方舟协议，火山聊天建议改填 ep-... 接入点' : '';
         const imageModeExtra = normalizeImageRequestMode(imageRequestModeInput?.value || item.image_request_mode) === 'openai-json' ? ' · 图片接口已设为 OpenAI JSON' : '';
         setStatus(`已拉取 ${data.total} 个模型 · 点「选择模型」勾选要导入的${extra}${imageModeExtra}`);
         openModelPicker();
@@ -3418,7 +3479,7 @@ async function saveProviders(){
             ? 'codex_cli'
             : item.id === 'lovart'
             ? 'lovart'
-            : ['openai', 'apimart', 'gemini', 'volcengine', 'jimeng', 'codex_cli', 'lovart'].includes(String(item.protocol || '').toLowerCase()) ? String(item.protocol).toLowerCase() : 'openai';
+            : ['openai', 'apimart', 'gemini', 'volcengine', 'runninghub', 'jimeng', 'codex_cli', 'lovart'].includes(String(item.protocol || '').toLowerCase()) ? String(item.protocol).toLowerCase() : 'openai';
         item.image_request_mode = normalizeImageRequestMode(
             item.id === 'modelscope' || item.id === 'runninghub' || item.id === 'volcengine' || item.id === 'jimeng' || item.id === 'codex_cli' || item.id === 'lovart'
                 ? 'openai'

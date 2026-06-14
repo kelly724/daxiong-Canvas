@@ -805,28 +805,23 @@
                     const strength = parseFloat(document.getElementById('msStrengthSlider').value) || 0.8;
                     const prompt = document.getElementById('msPromptInput').value.trim()
                         || 'masterpiece, best quality, ultra-detailed, high resolution';
-                    // 优先用 API 设置里集中管理的 Token（服务端）；localStorage 仅作旧版兜底
-                    let token = '';
+                    let hasServerToken = false;
                     try {
                         const tokenRes = await fetch('/api/config/token');
                         if (tokenRes.ok) {
                             const tokenData = await tokenRes.json();
-                            token = tokenData.token || '';
+                            hasServerToken = !!tokenData.has_token;
                         }
                     } catch (e) {
                         console.warn('Failed to fetch ModelScope token', e);
                     }
-                    if (token) {
-                        try { localStorage.removeItem('modelscope_api_token'); } catch (e) { }
-                    } else {
-                        token = localStorage.getItem('modelscope_api_token') || '';
-                    }
+                    try { localStorage.removeItem('modelscope_api_token'); } catch (e) { }
+                    if (!hasServerToken) throw new Error("请先在 API 设置里配置 ModelScope Token");
                     const msRes = await fetch('/api/ms/generate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             prompt,
-                            api_key: token,
                             model: 'black-forest-labs/FLUX.2-klein-9B',
                             image_urls: [inputRef],
                             width: msSize.width,
