@@ -13584,55 +13584,113 @@ board.addEventListener('mousemove', e => {
 });
 board.addEventListener('mouseleave', () => setHoveredConnection(''));
 board.ondblclick = null;
-// ── iPad / touch drag support via Pointer Events ──
-// The industry-standard approach: pointerdown + preventDefault + setPointerCapture
-// prevents iOS Safari from firing pointercancel (which eats the entire gesture).
-// Synthetic MouseEvents are dispatched to trigger the existing onmousedown-based drag code.
-
+// ── iPad / touch drag support ──
+// Directly calls existing drag functions — no synthetic event dispatching.
+// This is the most reliable approach for iOS Safari.
 (function(){
-    let capturing = false;
-    function isTouchDragTarget(el) {
-        return !!el.closest('.node, .port, .board, #board, #world, #links, #nodes');
+    let touchActive = false;
+
+    function fakeEvt(touch, target) {
+        return {
+            button: 0,
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            screenX: touch.screenX,
+            screenY: touch.screenY,
+            target: target,
+            preventDefault: function(){},
+            stopPropagation: function(){},
+            stopImmediatePropagation: function(){},
+            altKey: false,
+            shiftKey: false,
+            ctrlKey: false,
+            metaKey: false,
+            detail: 1
+        };
     }
-    board.addEventListener('pointerdown', function(e) {
-        if (e.pointerType !== 'touch') return;        // mouse handled natively
-        if (e.isPrimary === false) return;            // only primary touch
-        if (!isTouchDragTarget(e.target)) return;     // not a canvas element
 
-        e.preventDefault();                           // ⚠ critical: prevents pointercancel on iOS Safari
-        board.setPointerCapture(e.pointerId);         // keeps events coming even if finger strays
-        capturing = true;
+    document.addEventListener('touchstart', function(e) {
+        if (e.touches.length !== 1) return;
+        var target = e.target;
 
-        e.target.dispatchEvent(new MouseEvent('mousedown', {
-            bubbles: true, cancelable: true, view: window,
-            clientX: e.clientX, clientY: e.clientY,
-            screenX: e.screenX, screenY: e.screenY,
-            button: 0, buttons: 1
-        }));
-    });
-    board.addEventListener('pointermove', function(e) {
-        if (!capturing || !window.onmousemove) return;
-        window.onmousemove({
-            clientX: e.clientX, clientY: e.clientY,
-            stopPropagation: function(){}, preventDefault: function(){}
-        });
-    });
-    board.addEventListener('pointerup', function(e) {
-        if (!capturing) return;
-        capturing = false;
-        board.releasePointerCapture(e.pointerId);
-        document.dispatchEvent(new MouseEvent('mouseup', {
-            bubbles: true, cancelable: true, view: window
-        }));
-    });
-    board.addEventListener('pointercancel', function(e) {
-        if (!capturing) return;
-        capturing = false;
-        board.releasePointerCapture(e.pointerId);
-        document.dispatchEvent(new MouseEvent('mouseup', {
-            bubbles: true, cancelable: true, view: window
-        }));
-    });
+        // Only handle touches on canvas elements
+        var nodeEl = target.closest('.node');
+        var onBoard = target.closest('.board, #board, #world, #nodes, #links');
+
+        if (!nodeEl && !onBoard) return;
+
+        // Don't interfere with form controls inside nodes
+        if (target.closest('textarea, input, select, button, [contenteditable="true"], .gen-btn, .comfy-run, video')) return;
+
+        e.preventDefault(); // Stop Safari from scrolling / zooming / delaying
+        touchActive = true;
+
+        var t = e.touches[0];
+        var fe = fakeEvt(t, target);
+
+        if (nodeEl && nodeEl.dataset.id) {
+            var node = nodes.find(function(n){ return n.id === nodeEl.dataset.id; });
+            if (!node) return;
+
+            // Check if touching the node head
+            var onHead = target.closest('.node-head');
+            if (onHead && !isNodeControl(target)) {
+                startNodeDrag(fe, node);
+                return;
+            }
+
+            // Check if touching a port
+            var port = target.closest('.port');
+            if (port) {
+                var kind = port.classList.contains('out') ? 'out' : 'in';
+                startLink(fe, node.id, kind);
+                return;
+            }
+
+            // Check if touching resize handle
+            if (target.closest('.resize-handle')) {
+                startNodeResize(fe, node);
+                return;
+            }
+
+            // Node body drag
+            if (isNodeDragSurface(target)) {
+                startNodeDrag(fe, node);
+                return;
+            }
+
+            // Fallback: still try to drag
+            startNodeDrag(fe, node);
+        } else if (onBoard) {
+            // Board pan
+            startBoardPan(fe, {clearSelectionOnClick: true});
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function(e) {
+        if (!touchActive || e.touches.length !== 1) return;
+        e.preventDefault();
+        var t = e.touches[0];
+        if (window.onmousemove) {
+            window.onmousemove(fakeEvt(t, e.target));
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchend', function(e) {
+        if (!touchActive) return;
+        touchActive = false;
+        if (window.onmouseup) {
+            window.onmouseup(fakeEvt(e.changedTouches[0], e.target));
+        } else {
+            endDrag();
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchcancel', function() {
+        if (!touchActive) return;
+        touchActive = false;
+        endDrag();
+    }, { passive: false });
 })();
 board.oncontextmenu = e => {
     if(!canvas) return;
