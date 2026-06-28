@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir \
     requests \
     pydantic \
     python-dotenv \
+    python-multipart \
     websockets \
     watchfiles
 
