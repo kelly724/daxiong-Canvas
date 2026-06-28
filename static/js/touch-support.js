@@ -1,59 +1,42 @@
 // ── iPad / touch support ──
-// Handles: node drag, board pan, node-tap-to-link
+// Correctly hooks into the existing startLink / endLink flow
 (function(){
-    var ts = null;       // touch state for drag/pan
-    var selNode = null;   // first tapped node (for linking)
-
-    // ── Helper: is this element a port or inside a port? ──
-    function isPort(el) {
-        return !!(el && el.closest && el.closest('.port'));
-    }
+    var ts = null; // { mode:'node'|'board', ... }
 
     // ── Touch Start ──
     document.addEventListener('touchstart', function(e) {
-        if (e.touches.length !== 1) { ts = null; return; }
+        if (e.touches.length !== 1) { cancelTouchDrag(); return; }
         var t = e.touches[0];
         var target = e.target;
 
-        // === PORT tap: start link (try both out and in) ===
-        if (isPort(target)) {
+        // === Port: start link (call original startLink) ===
+        var portEl = target.closest('.port');
+        if (portEl) {
             e.preventDefault();
-            var nodeEl = target.closest('.node');
+            var nodeEl = portEl.closest('.node');
             if (!nodeEl || !nodeEl.dataset.id) return;
-            var nid = nodeEl.dataset.id;
-
-            if (selNode && selNode !== nid) {
-                // Second tap: link selNode → nid
-                doLink(selNode, nid);
-                selNode = null;
-                clearNodeHighlights();
-            } else {
-                // First tap: highlight this node
-                selNode = nid;
-                highlightNode(nid);
+            var nodeId = nodeEl.dataset.id;
+            var kind   = portEl.classList.contains('out') ? 'out' : 'in';
+            // Build a fake mouse event and call startLink directly
+            var fe = {
+                clientX: t.clientX, clientY: t.clientY,
+                stopPropagation: function(){}, preventDefault: function(){},
+                button: 0, target: portEl
+            };
+            if (typeof startLink === 'function') {
+                startLink(fe, nodeId, kind);
+                setupTouchLinkMove();
             }
             return;
         }
 
-        // === Node tap (not on port, not on controls) ===
-        var nodeEl = target.closest('.node');
-        if (nodeEl && nodeEl.dataset.id) {
+        // === Node drag ===
+        var nodeEl2 = target.closest('.node');
+        if (nodeEl2 && nodeEl2.dataset.id) {
             if (target.closest('textarea,input,select,button,[contenteditable="true"],.resize-handle')) return;
             e.preventDefault();
-            var nid = nodeEl.dataset.id;
-
-            if (selNode && selNode !== nid) {
-                doLink(selNode, nid);
-                selNode = null;
-                clearNodeHighlights();
-                return;
-            }
-
-            // Start drag
-            var node = nodes.find(function(n){ return n.id === nid; });
+            var node = nodes.find(function(n){ return n.id === nodeEl2.dataset.id; });
             if (!node) return;
-            selNode = nid;
-            highlightNode(nid);
             ts = { mode:'node', node:node, sx:t.clientX, sy:t.clientY, ox:node.x, oy:node.y };
             document.body.classList.add('canvas-node-drag');
             return;
@@ -67,11 +50,45 @@
         }
     }, { passive: false });
 
-    // ── Touch Move ──
+    // ── Touch Move: update tempLink + node/board drag ──
+    function setupTouchLinkMove() {
+        // Override mousemove to use touch position for tempLink
+        var origMouseMove = window.onmousemove;
+        window.onmousemove = function(e2) {
+            // e2 may be a fake event; tempLink update in startLink uses e2.clientX/Y
+            // We let the original handler run, but it expects real mouse events
+            // Instead, we update tempLink directly
+            if (tempLink) {
+                var t = event.touches ? event.touches[0] : (e2 || event);
+                // Find current touch
+                var touch = null;
+                if (event.touches && event.touches.length > 0) touch = event.touches[0];
+                else if (event.changedTouches && event.changedTouches.length > 0) touch = event.changedTouches[0];
+                if (touch) {
+                    var p = screenToWorld(touch.clientX, touch.clientY);
+                    tempLink.x2 = p.x;
+                    tempLink.y2 = p.y;
+                    renderLinks();
+                }
+            }
+            if (origMouseMove) origMouseMove(e2);
+        };
+    }
+
     document.addEventListener('touchmove', function(e) {
-        if (!ts || e.touches.length !== 1) return;
+        if (e.touches.length !== 1) return;
         e.preventDefault();
         var t = e.touches[0];
+
+        // Update tempLink from touch position
+        if (tempLink) {
+            var p = screenToWorld(t.clientX, t.clientY);
+            tempLink.x2 = p.x;
+            tempLink.y2 = p.y;
+            renderLinks();
+        }
+
+        if (!ts) return;
         if (ts.mode === 'node') {
             var dx = (t.clientX - ts.sx) / viewport.scale;
             var dy = (t.clientY - ts.sy) / viewport.scale;
@@ -88,8 +105,24 @@
         }
     }, { passive: false });
 
-    // ── Touch End ──
-    document.addEventListener('touchend', function() {
+    // ── Touch End: complete or cancel link ──
+    document.addEventListener('touchend', function(e) {
+        // If linking, complete the link via original endLink logic
+        if (tempLink) {
+            var touch = e.changedTouches[0];
+            // Simulate mouseup at touch position to trigger startLink's onmouseup
+            var fe = {
+                clientX: touch.clientX, clientY: touch.clientY,
+                stopPropagation: function(){}, preventDefault: function(){},
+                target: document.elementFromPoint(touch.clientX, touch.clientY)
+            };
+            if (window.onmouseup) window.onmouseup(fe);
+            tempLink = null;
+            window.onmousemove = null;
+            window.onmouseup = null;
+            return;
+        }
+
         if (!ts) return;
         if (ts.mode === 'node') scheduleSave();
         if (ts.mode === 'board' && !ts.moved) { selected.clear(); refreshSelectionVisuals(); }
@@ -100,38 +133,11 @@
 
     // ── Touch Cancel ──
     document.addEventListener('touchcancel', function() {
-        if (!ts) return;
+        if (tempLink) { tempLink = null; window.onmousemove = null; window.onmouseup = null; renderLinks(); }
         ts = null;
         document.body.classList.remove('canvas-node-drag', 'canvas-board-pan');
         render();
     }, { passive: false });
 
-    // ── Link two nodes: connect first out → first in ──
-    function doLink(fromId, toId) {
-        // Find first out port on fromId, first in port on toId
-        var fromNode = nodes.find(function(n){ return n.id === fromId; });
-        var toNode   = nodes.find(function(n){ return n.id === toId; });
-        if (!fromNode || !toNode) return;
-
-        // Check if link already exists
-        var exists = links.some(function(lk){
-            return (lk.from === fromId && lk.to === toId);
-        });
-        if (exists) return;
-
-        links.push({ from: fromId, to: toId });
-        renderLinks();
-        scheduleSave();
-    }
-
-    // ── Highlight a node (visual feedback for selection) ──
-    function highlightNode(nid) {
-        clearNodeHighlights();
-        var el = nodesEl.querySelector('.node[data-id="'+nid+'"]');
-        if (el) el.style.outline = '3px solid #007AFF';
-    }
-    function clearNodeHighlights() {
-        var els = nodesEl.querySelectorAll('.node');
-        for (var i = 0; i < els.length; i++) els[i].style.outline = '';
-    }
+    function cancelTouchDrag() { ts = null; }
 })();
