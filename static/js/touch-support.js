@@ -1,31 +1,36 @@
-// ── iPad / touch drag support ──
-// Handles: node drag, board pan, port linking
+// ── iPad / touch support ──
+// Handles: node drag, board pan, port linking (tap-to-link)
 (function(){
-    var ts = null; // { mode:'node'|'board'|'link', ... }
+    var ts = null;            // touch state for drag/pan
+    var linkStart = null;      // { nodeId, portKind } for tap-to-link
+    var lastTap = 0;          // for double-tap detection
+    var tapTimer = null;       // long-press timer
 
     // ── Touch Start ──
     document.addEventListener('touchstart', function(e) {
-        if (e.touches.length !== 1) { ts = null; return; }
+        if (e.touches.length !== 1) { ts = null; linkStart = null; return; }
         var t = e.touches[0];
         var target = e.target;
 
-        // === Port linking (touch port to start link) ===
+        // === Port tap-to-link ===
         var portEl = target.closest('.port');
         if (portEl && portEl.dataset.node && portEl.dataset.port) {
             e.preventDefault();
+            var now = Date.now();
             var nodeEl = portEl.closest('.node');
-            var node = nodeEl ? nodes.find(function(n){ return n.id === nodeEl.dataset.id; }) : null;
-            if (node) {
-                var kind = portEl.classList.contains('out') ? 'out' : 'in';
-                // Simulate mousedown on the port to start link
-                var fe = { button:0, clientX:t.clientX, clientY:t.clientY, target:portEl,
-                    preventDefault:function(){}, stopPropagation:function(){} };
-                // Directly call startLink if available, otherwise dispatch mousedown
-                if (typeof startLink === 'function') {
-                    startLink(fe, node.id, kind);
-                }
-                ts = { mode:'link' };
-                document.body.classList.add('canvas-linking');
+            var nodeId = nodeEl ? nodeEl.dataset.id : null;
+            var kind = portEl.classList.contains('out') ? 'out' : 'in';
+
+            if (linkStart && linkStart.nodeId !== nodeId) {
+                // Second tap: complete the link
+                completeLink(linkStart.nodeId, linkStart.portKind, nodeId, kind);
+                linkStart = null;
+            } else {
+                // First tap: select this port as link start
+                linkStart = { nodeId: nodeId, portKind: kind };
+                // Visual feedback: highlight the port
+                portEl.style.outline = '2px solid #007AFF';
+                setTimeout(function(){ portEl.style.outline = ''; }, 800);
             }
             return;
         }
@@ -55,7 +60,6 @@
         if (!ts || e.touches.length !== 1) return;
         e.preventDefault();
         var t = e.touches[0];
-
         if (ts.mode === 'node') {
             var dx = (t.clientX - ts.sx) / viewport.scale;
             var dy = (t.clientY - ts.sy) / viewport.scale;
@@ -69,56 +73,48 @@
             viewport.x = ts.ox + (t.clientX - ts.sx);
             viewport.y = ts.oy + (t.clientY - ts.sy);
             applyViewport();
-        } else if (ts.mode === 'link') {
-            // Update temp link position during touch move
-            if (typeof tempLink !== 'undefined' && tempLink) {
-                // tempLink is updated via renderLinks, we just need to trigger a render
-                // The link follows the mouse in desktop; for touch we update via the same mechanism
-                if (window.onmousemove) {
-                    window.onmousemove({ clientX:t.clientX, clientY:t.clientY,
-                        stopPropagation:function(){}, preventDefault:function(){} });
-                }
-            }
         }
     }, { passive: false });
 
     // ── Touch End ──
-    document.addEventListener('touchend', function(e) {
+    document.addEventListener('touchend', function() {
         if (!ts) return;
-
-        if (ts.mode === 'link') {
-            // Check if touch ended on a port (to complete the link)
-            var touch = e.changedTouches[0];
-            var el = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (el) {
-                var targetPort = el.closest('.port');
-                if (targetPort && typeof endLink === 'function') {
-                    var fe = { clientX:touch.clientX, clientY:touch.clientY, target:targetPort,
-                        preventDefault:function(){}, stopPropagation:function(){} };
-                    endLink(fe);
-                } else if (typeof cancelLink === 'function') {
-                    cancelLink();
-                }
-            } else if (typeof cancelLink === 'function') {
-                cancelLink();
-            }
-            document.body.classList.remove('canvas-linking');
-            render();
-        } else {
-            if (ts.mode === 'node') scheduleSave();
-            if (ts.mode === 'board' && !ts.moved) { selected.clear(); refreshSelectionVisuals(); }
-            render();
-        }
+        if (ts.mode === 'node') scheduleSave();
+        if (ts.mode === 'board' && !ts.moved) { selected.clear(); refreshSelectionVisuals(); }
         ts = null;
         document.body.classList.remove('canvas-node-drag', 'canvas-board-pan');
+        render();
     }, { passive: false });
 
     // ── Touch Cancel ──
     document.addEventListener('touchcancel', function() {
         if (!ts) return;
-        if (ts.mode === 'link' && typeof cancelLink === 'function') cancelLink();
         ts = null;
-        document.body.classList.remove('canvas-node-drag', 'canvas-board-pan', 'canvas-linking');
+        document.body.classList.remove('canvas-node-drag', 'canvas-board-pan');
         render();
     }, { passive: false });
+
+    // ── Complete link helper ──
+    function completeLink(fromNodeId, fromKind, toNodeId, toKind) {
+        // Determine correct from/to based on port kinds
+        var fromNode = nodes.find(function(n){ return n.id === fromNodeId; });
+        var toNode   = nodes.find(function(n){ return n.id === toNodeId; });
+        if (!fromNode || !toNode) return;
+
+        // out → in  or  in → out  are valid
+        var actualFrom = (fromKind === 'out') ? fromNodeId : toNodeId;
+        var actualTo   = (fromKind === 'out') ? toNodeId   : fromNodeId;
+
+        // Check if link already exists
+        var exists = links.some(function(lk){
+            return (lk.from === actualFrom && lk.to === actualTo) ||
+                   (lk.from === actualTo && lk.to === actualFrom);
+        });
+        if (exists) { linkStart = null; return; }
+
+        var newLink = { from: actualFrom, to: actualTo };
+        links.push(newLink);
+        renderLinks();
+        scheduleSave();
+    }
 })();
