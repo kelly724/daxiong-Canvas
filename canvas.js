@@ -13584,20 +13584,56 @@ board.addEventListener('mousemove', e => {
 });
 board.addEventListener('mouseleave', () => setHoveredConnection(''));
 board.ondblclick = null;
-// Touch event proxy: forward touchmove to active mousemove handler (iPad support)
-window.addEventListener('touchmove', e => {
-    if (window.onmousemove && e.touches.length === 1) {
-        e.preventDefault();
-        const t = e.touches[0];
-        window.onmousemove({ clientX: t.clientX, clientY: t.clientY, stopPropagation: ()=>{}, preventDefault: ()=>{} });
+// ── iPad / touch drag support via Pointer Events ──
+// The industry-standard approach: pointerdown + preventDefault + setPointerCapture
+// prevents iOS Safari from firing pointercancel (which eats the entire gesture).
+// Synthetic MouseEvents are dispatched to trigger the existing onmousedown-based drag code.
+
+(function(){
+    let capturing = false;
+    function isTouchDragTarget(el) {
+        return !!el.closest('.node, .port, .board, #board, #world, #links, #nodes');
     }
-}, { passive: false });
-// Prevent touch-driven page scroll/zoom on canvas elements
-window.addEventListener('touchstart', e => {
-    if (e.target.closest('.node, .node-head, .port, .board, #nodes, #world, #links')) {
-        e.preventDefault();
-    }
-}, { passive: false });
+    board.addEventListener('pointerdown', function(e) {
+        if (e.pointerType !== 'touch') return;        // mouse handled natively
+        if (e.isPrimary === false) return;            // only primary touch
+        if (!isTouchDragTarget(e.target)) return;     // not a canvas element
+
+        e.preventDefault();                           // ⚠ critical: prevents pointercancel on iOS Safari
+        board.setPointerCapture(e.pointerId);         // keeps events coming even if finger strays
+        capturing = true;
+
+        e.target.dispatchEvent(new MouseEvent('mousedown', {
+            bubbles: true, cancelable: true, view: window,
+            clientX: e.clientX, clientY: e.clientY,
+            screenX: e.screenX, screenY: e.screenY,
+            button: 0, buttons: 1
+        }));
+    });
+    board.addEventListener('pointermove', function(e) {
+        if (!capturing || !window.onmousemove) return;
+        window.onmousemove({
+            clientX: e.clientX, clientY: e.clientY,
+            stopPropagation: function(){}, preventDefault: function(){}
+        });
+    });
+    board.addEventListener('pointerup', function(e) {
+        if (!capturing) return;
+        capturing = false;
+        board.releasePointerCapture(e.pointerId);
+        document.dispatchEvent(new MouseEvent('mouseup', {
+            bubbles: true, cancelable: true, view: window
+        }));
+    });
+    board.addEventListener('pointercancel', function(e) {
+        if (!capturing) return;
+        capturing = false;
+        board.releasePointerCapture(e.pointerId);
+        document.dispatchEvent(new MouseEvent('mouseup', {
+            bubbles: true, cancelable: true, view: window
+        }));
+    });
+})();
 board.oncontextmenu = e => {
     if(!canvas) return;
     if((e.ctrlKey || e.metaKey) || isRKeyDown){
