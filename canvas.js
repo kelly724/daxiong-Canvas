@@ -13585,111 +13585,71 @@ board.addEventListener('mousemove', e => {
 board.addEventListener('mouseleave', () => setHoveredConnection(''));
 board.ondblclick = null;
 // ── iPad / touch drag support ──
-// Directly calls existing drag functions — no synthetic event dispatching.
-// This is the most reliable approach for iOS Safari.
+// Single touchstart handler: node drag + board pan. No event forwarding.
 (function(){
-    let touchActive = false;
-
-    function fakeEvt(touch, target) {
-        return {
-            button: 0,
-            clientX: touch.clientX,
-            clientY: touch.clientY,
-            screenX: touch.screenX,
-            screenY: touch.screenY,
-            target: target,
-            preventDefault: function(){},
-            stopPropagation: function(){},
-            stopImmediatePropagation: function(){},
-            altKey: false,
-            shiftKey: false,
-            ctrlKey: false,
-            metaKey: false,
-            detail: 1
-        };
-    }
+    var ts = null; // touch state: null | { mode, ... }
+    alert('iPad触摸支持已加载 v3'); // 临时调试：确认代码已加载
 
     document.addEventListener('touchstart', function(e) {
-        if (e.touches.length !== 1) return;
+        if (e.touches.length !== 1) { ts = null; return; }
+        var t = e.touches[0];
         var target = e.target;
 
-        // Only handle touches on canvas elements
+        // === Node drag ===
         var nodeEl = target.closest('.node');
-        var onBoard = target.closest('.board, #board, #world, #nodes, #links');
-
-        if (!nodeEl && !onBoard) return;
-
-        // Don't interfere with form controls inside nodes
-        if (target.closest('textarea, input, select, button, [contenteditable="true"], .gen-btn, .comfy-run, video')) return;
-
-        e.preventDefault(); // Stop Safari from scrolling / zooming / delaying
-        touchActive = true;
-
-        var t = e.touches[0];
-        var fe = fakeEvt(t, target);
-
         if (nodeEl && nodeEl.dataset.id) {
+            // Skip form controls inside node
+            if (target.closest('textarea,input,select,button,[contenteditable="true"],.port,.resize-handle')) return;
+            e.preventDefault();
             var node = nodes.find(function(n){ return n.id === nodeEl.dataset.id; });
             if (!node) return;
+            ts = { mode:'node', node:node, sx:t.clientX, sy:t.clientY, ox:node.x, oy:node.y };
+            document.body.classList.add('canvas-node-drag');
+            return;
+        }
 
-            // Check if touching the node head
-            var onHead = target.closest('.node-head');
-            if (onHead && !isNodeControl(target)) {
-                startNodeDrag(fe, node);
-                return;
-            }
-
-            // Check if touching a port
-            var port = target.closest('.port');
-            if (port) {
-                var kind = port.classList.contains('out') ? 'out' : 'in';
-                startLink(fe, node.id, kind);
-                return;
-            }
-
-            // Check if touching resize handle
-            if (target.closest('.resize-handle')) {
-                startNodeResize(fe, node);
-                return;
-            }
-
-            // Node body drag
-            if (isNodeDragSurface(target)) {
-                startNodeDrag(fe, node);
-                return;
-            }
-
-            // Fallback: still try to drag
-            startNodeDrag(fe, node);
-        } else if (onBoard) {
-            // Board pan
-            startBoardPan(fe, {clearSelectionOnClick: true});
+        // === Board pan ===
+        if (target.closest('.board,#board,#world,#nodes,#links')) {
+            e.preventDefault();
+            ts = { mode:'board', sx:t.clientX, sy:t.clientY, ox:viewport.x, oy:viewport.y, moved:false };
+            document.body.classList.add('canvas-board-pan');
         }
     }, { passive: false });
 
     document.addEventListener('touchmove', function(e) {
-        if (!touchActive || e.touches.length !== 1) return;
+        if (!ts || e.touches.length !== 1) return;
         e.preventDefault();
         var t = e.touches[0];
-        if (window.onmousemove) {
-            window.onmousemove(fakeEvt(t, e.target));
+        if (ts.mode === 'node') {
+            var dx = (t.clientX - ts.sx) / viewport.scale;
+            var dy = (t.clientY - ts.sy) / viewport.scale;
+            ts.node.x = Math.round(ts.ox + dx);
+            ts.node.y = Math.round(ts.oy + dy);
+            var el = nodesEl.querySelector('.node[data-id="'+ts.node.id+'"]');
+            if (el) { el.style.left = ts.node.x+'px'; el.style.top = ts.node.y+'px'; }
+            renderLinks();
+        } else if (ts.mode === 'board') {
+            if (Math.hypot(t.clientX-ts.sx, t.clientY-ts.sy) > 4) ts.moved = true;
+            viewport.x = ts.ox + (t.clientX - ts.sx);
+            viewport.y = ts.oy + (t.clientY - ts.sy);
+            applyViewport();
         }
     }, { passive: false });
 
-    document.addEventListener('touchend', function(e) {
-        if (!touchActive) return;
-        touchActive = false;
-        if (window.onmouseup) {
-            window.onmouseup(fakeEvt(e.changedTouches[0], e.target));
-        } else {
-            endDrag();
-        }
+    document.addEventListener('touchend', function() {
+        if (!ts) return;
+        if (ts.mode === 'node') scheduleSave();
+        if (ts.mode === 'board' && !ts.moved) { selected.clear(); refreshSelectionVisuals(); }
+        ts = null;
+        document.body.classList.remove('canvas-node-drag', 'canvas-board-pan');
+        render();
     }, { passive: false });
 
     document.addEventListener('touchcancel', function() {
-        if (!touchActive) return;
-        touchActive = false;
-        endDrag();
+        if (!ts) return;
+        ts = null;
+        document.body.classList.remove('canvas-node-drag', 'canvas-board-pan');
+        render();
     }, { passive: false });
 })();
 board.oncontextmenu = e => {
