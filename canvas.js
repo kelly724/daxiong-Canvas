@@ -13585,11 +13585,17 @@ board.addEventListener('mousemove', e => {
 board.addEventListener('mouseleave', () => setHoveredConnection(''));
 board.ondblclick = null;
 // Touch event proxy: forward touchmove to active mousemove handler (iPad support)
-board.addEventListener('touchmove', e => {
+window.addEventListener('touchmove', e => {
     if (window.onmousemove && e.touches.length === 1) {
         e.preventDefault();
         const t = e.touches[0];
         window.onmousemove({ clientX: t.clientX, clientY: t.clientY, stopPropagation: ()=>{}, preventDefault: ()=>{} });
+    }
+}, { passive: false });
+// Prevent touch-driven page scroll/zoom on canvas elements
+window.addEventListener('touchstart', e => {
+    if (e.target.closest('.node, .node-head, .port, .board, #nodes, #world, #links')) {
+        e.preventDefault();
     }
 }, { passive: false });
 board.oncontextmenu = e => {
