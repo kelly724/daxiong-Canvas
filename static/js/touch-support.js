@@ -1,9 +1,13 @@
 // ── iPad / touch support ──
-// Handles: node drag, board pan, port tap-to-link
+// Handles: node drag, board pan, node-tap-to-link
 (function(){
     var ts = null;       // touch state for drag/pan
-    var linkStart = null; // { nodeId, portEl } for tap-to-link
-    var firstNodeId = null;// node id when touch started on a port
+    var selNode = null;   // first tapped node (for linking)
+
+    // ── Helper: is this element a port or inside a port? ──
+    function isPort(el) {
+        return !!(el && el.closest && el.closest('.port'));
+    }
 
     // ── Touch Start ──
     document.addEventListener('touchstart', function(e) {
@@ -11,36 +15,45 @@
         var t = e.touches[0];
         var target = e.target;
 
-        // === Port tap detection (before node drag!) ===
-        var portEl = target.closest('.port');
-        if (portEl) {
+        // === PORT tap: start link (try both out and in) ===
+        if (isPort(target)) {
             e.preventDefault();
-            var nodeEl = portEl.closest('.node');
+            var nodeEl = target.closest('.node');
             if (!nodeEl || !nodeEl.dataset.id) return;
-            var nodeId = nodeEl.dataset.id;
-            var kind   = portEl.classList.contains('out') ? 'out' : 'in';
+            var nid = nodeEl.dataset.id;
 
-            if (linkStart && linkStart.nodeId !== nodeId) {
-                // Second tap: complete link
-                completeLink(linkStart.nodeId, linkStart.portKind, nodeId, kind);
-                linkStart = null;
+            if (selNode && selNode !== nid) {
+                // Second tap: link selNode → nid
+                doLink(selNode, nid);
+                selNode = null;
+                clearNodeHighlights();
             } else {
-                // First tap: store as link start
-                linkStart = { nodeId: nodeId, portKind: kind };
-                // Visual feedback
-                portEl.style.boxShadow = '0 0 0 3px #007AFF80';
-                setTimeout(function(){ portEl.style.boxShadow = ''; }, 600);
+                // First tap: highlight this node
+                selNode = nid;
+                highlightNode(nid);
             }
-            return; // <-- IMPORTANT: stop here, don't start node drag
+            return;
         }
 
-        // === Node drag ===
-        var nodeEl2 = target.closest('.node');
-        if (nodeEl2 && nodeEl2.dataset.id) {
+        // === Node tap (not on port, not on controls) ===
+        var nodeEl = target.closest('.node');
+        if (nodeEl && nodeEl.dataset.id) {
             if (target.closest('textarea,input,select,button,[contenteditable="true"],.resize-handle')) return;
             e.preventDefault();
-            var node = nodes.find(function(n){ return n.id === nodeEl2.dataset.id; });
+            var nid = nodeEl.dataset.id;
+
+            if (selNode && selNode !== nid) {
+                doLink(selNode, nid);
+                selNode = null;
+                clearNodeHighlights();
+                return;
+            }
+
+            // Start drag
+            var node = nodes.find(function(n){ return n.id === nid; });
             if (!node) return;
+            selNode = nid;
+            highlightNode(nid);
             ts = { mode:'node', node:node, sx:t.clientX, sy:t.clientY, ox:node.x, oy:node.y };
             document.body.classList.add('canvas-node-drag');
             return;
@@ -93,26 +106,32 @@
         render();
     }, { passive: false });
 
-    // ── Complete link helper ──
-    function completeLink(fromId, fromKind, toId, toKind) {
+    // ── Link two nodes: connect first out → first in ──
+    function doLink(fromId, toId) {
+        // Find first out port on fromId, first in port on toId
         var fromNode = nodes.find(function(n){ return n.id === fromId; });
         var toNode   = nodes.find(function(n){ return n.id === toId; });
         if (!fromNode || !toNode) return;
 
-        // out → in is valid; same-kind links are invalid
-        if (fromKind === toKind) return;
-
-        var actualFrom = (fromKind === 'out') ? fromId : toId;
-        var actualTo   = (fromKind === 'out') ? toId   : fromId;
-
-        // Check duplicate
+        // Check if link already exists
         var exists = links.some(function(lk){
-            return (lk.from === actualFrom && lk.to === actualTo);
+            return (lk.from === fromId && lk.to === toId);
         });
         if (exists) return;
 
-        links.push({ from: actualFrom, to: actualTo });
+        links.push({ from: fromId, to: toId });
         renderLinks();
         scheduleSave();
+    }
+
+    // ── Highlight a node (visual feedback for selection) ──
+    function highlightNode(nid) {
+        clearNodeHighlights();
+        var el = nodesEl.querySelector('.node[data-id="'+nid+'"]');
+        if (el) el.style.outline = '3px solid #007AFF';
+    }
+    function clearNodeHighlights() {
+        var els = nodesEl.querySelectorAll('.node');
+        for (var i = 0; i < els.length; i++) els[i].style.outline = '';
     }
 })();
